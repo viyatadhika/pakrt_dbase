@@ -1,0 +1,882 @@
+body {
+  padding-bottom: 70px;
+  font-family: "Poppins", sans-serif;
+}
+
+.super-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  color: #4b5563;
+  padding-top: 4px;
+}
+
+.super-menu span {
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.menu-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 22px;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: all 0.18s ease;
+}
+
+.super-menu:hover .menu-icon {
+  transform: translateY(-3px) scale(1.06);
+}
+
+/* Bottom Navbar – Tinggi sedikit lebih besar untuk ruang icon */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  height: 68px; /* DIBESARKAN sedikit agar lega */
+
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start; /* supaya padding-top bekerja */
+
+  padding-top: 10px; /* RUANG ATAS UNTUK ICON */
+  padding-bottom: env(safe-area-inset-bottom);
+
+  z-index: 100;
+  backdrop-filter: blur(12px);
+}
+
+/* Nav Item */
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: #6b7280;
+  text-decoration: none;
+  transition: 0.22s ease;
+}
+
+.nav-item i {
+  font-size: 18px;
+  transition: 0.22s ease;
+}
+
+.bottom-nav .nav-item.active {
+  color: #0ea5e9 !important;
+}
+
+.bottom-nav .nav-item.active i {
+  color: #0284c7 !important;
+  transform: scale(1.15);
+}
+
+.page-container {
+  padding: 0 22px;
+  margin-top: -28px;
+  padding-bottom: 90px;
+}
+
+.page-header {
+  margin-bottom: 16px;
+}
+
+.page-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0c4a6e;
+}
+
+.page-header .sub {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Filter box */
+.filter-box {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 18px;
+}
+
+.filter-box label {
+  font-size: 12px;
+  color: #475569;
+}
+
+.input-modern {
+  width: 100%;
+  margin-top: 3px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid #dce4ea;
+  background: #f8fafc;
+}
+
+.btn-filter {
+  width: 100%;
+  margin-top: 6px;
+  padding: 11px;
+  background: #0284c7;
+  color: white;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.riwayat-page {
+  padding-top: 50px !important;
+}
+
+/* Data Cards */
+.riwayat-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: 0.2s ease;
+  margin-bottom: 10px;
+}
+
+.riwayat-card:hover {
+  background: #f0f9ff;
+  transform: translateY(-1px);
+}
+
+.riwayat-card h3 {
+  color: #0369a1;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.riwayat-card p {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.riwayat-card span {
+  font-size: 12px;
+  color: #475569;
+}
+
+.arrow {
+  color: #94a3b8;
+}
+
+/* No Data */
+.nodata {
+  text-align: center;
+  padding: 40px 0;
+  color: #94a3b8;
+}
+
+.nodata .icon {
+  font-size: 48px;
+  margin-bottom: 6px;
+}
+
+.detail-container {
+  padding: 16px;
+  padding-bottom: 90px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* === BUTTON === */
+.btn-primary {
+  background: linear-gradient(to right, #0284c7, #38bdf8);
+  color: white;
+  font-weight: 600;
+  padding: 0.85rem;
+  border-radius: 9999px;
+  width: 100%;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+}
+
+.btn-outline {
+  border: 1px solid #0284c7;
+  color: #0284c7;
+  font-weight: 600;
+  padding: 0.85rem;
+  border-radius: 9999px;
+  width: 100%;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+}
+.btn-outline:hover {
+  background-color: #e0f2fe;
+  transform: scale(1.03);
+}
+
+/* === BUTTON BACK === */
+.btn-back {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border-radius: 0.8rem;
+  padding: 0.6rem 0.8rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  color: #0284c7;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+.btn-back:hover {
+  transform: scale(1.05);
+}
+
+.detail-box {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.detail-row {
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-row .label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.detail-row .value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0ea5e9;
+}
+
+.note {
+  margin-top: 4px;
+  background: #f9fafb;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.detail-photo {
+  width: 100%;
+  border-radius: 14px;
+  margin-top: 8px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+#latestActivity {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.activity-card {
+  display: flex;
+  justify-content: space-between;
+  background: #ffffff;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #e0e7ff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.activity-card:hover {
+  transform: translateY(-3px);
+}
+
+.activity-card p {
+  margin: 0;
+  color: #000000;
+  font-size: 13px;
+}
+
+.activity-card .date {
+  font-size: 11px;
+  color: #000000;
+}
+.empty {
+  text-align: center;
+  color: #000000;
+  padding: 10px 0;
+}
+
+/* === LOGIN & REGISTER CONTAINER === */
+.login-container,
+.register-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 5rem auto 0 auto;
+  padding: 1rem 1.5rem;
+  animation: fadeUp 0.9s ease forwards;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex: 1;
+}
+
+@media (max-height: 650px) {
+  .login-container,
+  .register-container {
+    margin-top: 4rem;
+  }
+}
+@media (min-height: 750px) {
+  .login-container,
+  .register-container {
+    margin-top: 6rem;
+  }
+}
+
+/* === TITLE & SUBTITLE === */
+.title {
+  color: #0ea5e9; /* biru lembut khas tema akun */
+  font-size: 1.5rem; /* sedikit lebih kecil agar tidak terlalu dekat tombol back */
+  font-weight: 700; /* sedikit lebih tebal */
+  text-align: left;
+  letter-spacing: 0.3px; /* biar teks lebih halus */
+  margin-top: -30px; /* sedikit naik */
+  margin-bottom: 4px; /* lebih rapat dengan subtitle */
+}
+
+.subtitle {
+  color: #475569; /* abu netral */
+  font-size: 0.95rem;
+  font-weight: 400;
+  margin-top: 0;
+}
+
+/* === INPUT FIELD (gaya Daftar Akun) === */
+.input-field {
+  position: relative;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.input-box {
+  width: 100%;
+  padding: 12px 44px;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background-color: #f9fafb;
+  font-size: 0.95rem;
+  color: #334155; /* abu teks */
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.input-box::placeholder {
+  color: #94a3b8; /* abu placeholder */
+}
+
+.input-box:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+  background-color: #fff;
+  color: #1e293b;
+}
+
+/* Ikon kiri */
+.input-field i.fa-solid {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #0284c7;
+  font-size: 1rem;
+}
+
+.select-custom.placeholder-text {
+  color: #94a3b8; /* warna abu-abu seperti placeholder input */
+}
+
+.select-custom:focus {
+  color: #111827 !important;
+}
+
+/* Ikon mata untuk toggle password */
+.toggle-eye {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.3s;
+}
+.toggle-eye:hover {
+  color: #0284c7;
+}
+
+.seamless-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: white;
+  padding: 12px 16px;
+  margin-bottom: 0;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px); /* untuk Safari */
+  border-radius: 0.8rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  color: #0284c7;
+  text-decoration: none;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  margin-right: 12px;
+}
+
+back-btn:hover {
+  transform: scale(1.05);
+}
+
+/* =====================================================
+   CAROUSEL — tanpa background abu-abu
+===================================================== */
+.swiper {
+  margin-top: 15px;
+}
+
+.swiper-slide {
+  height: 130px;
+  border-radius: 22px;
+  padding: 15px;
+
+  display: flex;
+  justify-content: flex-end;
+  flex-direction: column;
+
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+
+  /* box-shadow: 0 6px 18px rgba(0,0,0,0.1); */
+}
+
+.swiper-slide:nth-child(1) {
+  background: linear-gradient(150deg, #c6ddff, #3b82f6);
+}
+.swiper-slide:nth-child(2) {
+  background: linear-gradient(150deg, #d2ceff, #6366f1);
+}
+.swiper-slide:nth-child(3) {
+  background: linear-gradient(150deg, #ffd7c2, #fb923c);
+}
+
+.tag {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+}
+
+/* =====================================================
+   HEADER — iOS Clean
+===================================================== */
+header {
+  background: #ffffff;
+  padding: 16px 22px 48px 22px;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #f3f4f6;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 20px;
+  color: #555;
+
+  box-shadow: inset 0 1px 1px #fff, 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.header-text h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+}
+
+.header-text p {
+  font-size: 13px;
+  color: #6e6e73;
+  margin-top: -2px;
+}
+
+.header-right i {
+  font-size: 22px;
+  color: #333;
+  cursor: pointer;
+}
+
+/* =====================================================
+   SEARCH BAR — iOS Clean
+===================================================== */
+.search-box {
+  width: 100%;
+  background: #ffffff;
+  padding: 13px 16px;
+
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+
+  font-size: 15px;
+}
+
+/* =====================================================
+   QUICK MENU — iOS Pastel Blue Theme
+===================================================== */
+.section-title {
+  margin-top: 8px;
+  margin-bottom: 8px;
+
+  font-size: 15px;
+  font-weight: 600;
+  color: #000000; /* biru iOS */
+}
+
+.quick-menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 10px;
+}
+
+.super-menu {
+  text-decoration: none;
+  color: #1c1c1e;
+  font-size: 13px;
+  font-weight: 500;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.icon-box {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  font-size: 22px;
+
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.bg-blue {
+  background: #e0edff;
+  color: #2563eb;
+}
+.bg-purple {
+  background: #f1e4ff;
+  color: #7c3aed;
+}
+.bg-green {
+  background: #dcfce7;
+  color: #059669;
+}
+.bg-orange {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+/* =====================================================
+   KPI GRID — iOS Modern Premium
+===================================================== */
+.kinerja-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.kinerja-card {
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.badge {
+  position: absolute;
+  top: -2px;
+  left: -12px;
+
+  padding: 10px;
+  border-radius: 14px;
+
+  font-size: 16px;
+}
+
+.k-label {
+  font-size: 13px;
+  color: #676b70;
+  margin-top: 12px;
+  margin-left: 8px;
+}
+
+.k-value {
+  font-size: 22px;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.carousel {
+  scroll-snap-type: x mandatory;
+}
+.carousel-item {
+  scroll-snap-align: start;
+  flex: 0 0 100%;
+}
+
+/* HIDE SCROLLBAR */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* === DOT MINIMALIS === */
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: rgba(228, 228, 229, 0.5);
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+}
+.dot.active {
+  background-color: #3b82f6;
+}
+.dot,
+.dot.active {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* === MODAL LOGOUT (iOS Minimalist Putih) === */
+#logoutModal {
+  position: fixed;
+  inset: 0;
+  display: none; /* default hidden */
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(12px);
+  z-index: 999;
+  transition: background 0.3s ease;
+}
+
+#logoutModal.active {
+  display: flex !important;
+}
+
+.logout-card {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  padding: 1.5rem 1.2rem;
+  width: 90%;
+  max-width: 320px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transform: scale(0.95);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#logoutBox.show-modal {
+  transform: scale(1);
+  opacity: 1;
+}
+
+#logoutBox.hide-modal {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+.logout-card h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.logout-card p {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.logout-actions button {
+  border-radius: 9999px;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.logout-actions .btn-primary {
+  background: linear-gradient(to right, #0284c7, #38bdf8);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+}
+.logout-actions .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+}
+
+.logout-actions .btn-outline {
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  background-color: #f9fafb;
+}
+.logout-actions .btn-outline:hover {
+  background-color: #e2e8f0;
+  color: #0284c7;
+}
+
+/* === SHEET MENU === */
+.sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-top-left-radius: 1.2rem;
+  border-top-right-radius: 1.2rem;
+  transform: translateY(100%);
+  transition: transform 0.35s ease;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  max-height: 85vh;
+  overflow-y: auto;
+  z-index: 50;
+}
+.sheet.show {
+  transform: translateY(0);
+}
+
+.fade-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 40;
+}
+.fade-bg.show {
+  opacity: 1;
+  pointer-events: all;
+  backdrop-filter: blur(4px);
+}
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 9999px;
+  margin: 10px auto;
+}
+
+/* ===============================
+   HALAMAN LAINNYA (Rapih)
+================================*/
+.lainnya-page {
+  padding-top: 50px; /* Turunkan konten dari header */
+}
+
+.lainnya-content {
+  padding: 8px 4px 80px;
+  background: #ffffff;
+  min-height: calc(100vh - 140px); /* agar penuh & tidak nabrak navbar */
+}
+
+.lainnya-content section {
+  margin-bottom: 28px;
+}
+
+.lainnya-content h2 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 12px;
+}
