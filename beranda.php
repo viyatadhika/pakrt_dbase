@@ -7,11 +7,22 @@ if (!isset($_SESSION['user'])) {
 
 include 'config.php';
 $activePage = basename($_SERVER['PHP_SELF']);
+
 $title = "Beranda";
 include 'header.php';
 
 $namaLengkap = $_SESSION['user']['nama'] ?? '';
 $namaDepan = explode(' ', trim($namaLengkap))[0];
+
+// $namaLengkap = $_SESSION['user']['nama'] ?? 'User';
+$fotoProfil  = $_SESSION['user']['foto_profil'] ?? null; // pastikan field ini ada di DB
+
+// ambil inisial
+$parts = explode(" ", trim($namaLengkap));
+$initial = strtoupper(substr($parts[0], 0, 1));
+if (count($parts) > 1) {
+    $initial .= strtoupper(substr(end($parts), 0, 1));
+}
 
 /* ===================== SUMMARY DASHBOARD ===================== */
 
@@ -59,7 +70,14 @@ while ($row = $qAreaChart->fetch_assoc()) {
 <body data-page="beranda">
     <header>
         <div class="header-left">
-            <div class="profile-avatar"><i class="fas fa-user"></i></div>
+            <div class="profile-avatar">
+                <?php if ($fotoProfil && file_exists("uploads/$fotoProfil")): ?>
+                    <img src="uploads/<?= $fotoProfil ?>" alt="Foto Profil">
+                <?php else: ?>
+                    <span class="avatar-text"><?= $initial ?></span>
+                <?php endif; ?>
+            </div>
+
             <div class="header-text">
                 <h3>Halo, <?= htmlspecialchars($namaDepan); ?>👋</h3>
                 <p>Semoga harimu menyenangkan</p>
@@ -69,11 +87,11 @@ while ($row = $qAreaChart->fetch_assoc()) {
     </header>
 
     <div class="page-container">
-
-        <div class="search-box mb-3">
+        <div class="search-box mb-3" id="openSearch">
             <i class="fas fa-search"></i>
-            <input type="text" placeholder="Cari laporan, petugas, area...">
+            <input type="text" placeholder="Cari laporan, petugas, area..." readonly>
         </div>
+
 
         <!-- BANNER / CAROUSEL -->
         <div id="carousel" class="flex overflow-x-auto scrollbar-hide gap-3 rounded-2xl scroll-smooth mt-2">
@@ -114,30 +132,52 @@ while ($row = $qAreaChart->fetch_assoc()) {
         <!-- QUICK MENU -->
         <h3 class="section-title">Menu Cepat</h3>
 
-        <div class="quick-menu">
-            <a href="riwayat.php" class="super-menu">
-                <div class="icon-box bg-blue"><i class="fa-solid fa-clock"></i></div>
-                Riwayat
+        <div class="quick-menu clean-menu">
+
+            <!-- Timetable Kegiatan -->
+            <a href="https://docs.google.com/spreadsheets/d/1UpJrbk6gDnNie_jXzb7xfgpVGhc68MelDuFlmYU4boQ/edit"
+                target="_blank"
+                class="super-menu clean-item">
+                <div class="icon-box bg-blue">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+                <span>Timetable Kegiatan</span>
             </a>
 
-            <a href="statistik.php" class="super-menu">
-                <div class="icon-box bg-purple"><i class="fa-solid fa-chart-line"></i></div>
-                Statistik
+            <!-- Cekin Peserta -->
+            <a href="https://docs.google.com/spreadsheets/d/1BAQtY1h_msfZtQc4sw0UC15DmZK0AihKC-M10F3Tz-I/edit?usp=sharing"
+                target="_blank"
+                class="super-menu clean-item">
+                <div class="icon-box bg-purple">
+                    <i class="fa-solid fa-bed"></i>
+                </div>
+                <span>Cekin Asrama</span>
             </a>
 
-            <a href="lainnya.php" class="super-menu">
-                <div class="icon-box bg-green"><i class="fa-solid fa-layer-group"></i></div>
-                Lainnya
+            <!-- Laporan Kerusakan -->
+            <a href="https://docs.google.com/spreadsheets/d/1H3wMRJaw5R241OE0cgzMWumyR2oeGvVf0HzHBsu8Omg/edit"
+                target="_blank"
+                class="super-menu clean-item">
+                <div class="icon-box bg-orange">
+                    <i class="fa-solid fa-wrench"></i>
+                </div>
+                <span>Laporan Kerusakan</span>
             </a>
 
-            <a href="profil.php" class="super-menu">
-                <div class="icon-box bg-orange"><i class="fa-solid fa-user"></i></div>
-                Profil
+            <!-- Lainnya -->
+            <a href="lainnya.php" class="super-menu clean-item">
+                <div class="icon-box bg-green">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <span>Menu Lainnya</span>
             </a>
+
         </div>
 
+
+
         <!-- AKTIVITAS TERBARU -->
-        <h3 class="mt-6 mb-2 font-semibold text-black-1000 text-sm">Aktivitas Terbaru</h3>
+        <h3 class="section-title">Aktivitas Terbaru</h3>
         <div id="latestActivity" class="space-y-3"></div>
 
         <!-- KINERJA UTAMA -->
@@ -152,19 +192,19 @@ while ($row = $qAreaChart->fetch_assoc()) {
             </div>
 
             <div class="kinerja-card">
-                <div class="badge bg-orange"><i class="fa-solid fa-user"></i></div>
+                <div class="badge bg-orange"><i class="fa-solid fa-user-group"></i></div>
                 <p class="k-label">Total Petugas</p>
                 <p class="k-value"><?= $totalPetugas ?></p>
             </div>
 
             <div class="kinerja-card">
-                <div class="badge bg-green"><i class="fa-solid fa-users"></i></div>
+                <div class="badge bg-green"><i class="fa-solid fa-list-check"></i></div>
                 <p class="k-label">Jenis Form</p>
                 <p class="k-value"><?= $totalForm ?></p>
             </div>
 
             <div class="kinerja-card">
-                <div class="badge bg-purple"><i class="fa-solid fa-shield"></i></div>
+                <div class="badge bg-purple"><i class="fa-solid fa-location-dot"></i></div>
                 <p class="k-label">Area Kerja</p>
                 <p class="k-value"><?= $totalArea ?></p>
             </div>

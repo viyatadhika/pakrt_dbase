@@ -7,6 +7,7 @@ if (!isset($_SESSION['user'])) {
 
 include 'config.php';
 $activePage = basename($_SERVER['PHP_SELF']);
+
 $title = "Statistik";
 include 'header.php';
 
@@ -65,8 +66,8 @@ $areaColors = generateColors(count($areaLabels));
 ?>
 
 <!-- HEADER -->
-<div class="p-6 text-center">
-    <h2 class="text-xl font-bold text-sky-700">📊 Statistik Checklist</h2>
+<div class="p-6 text-left">
+    <h2 class="text-xl font-bold text-sky-700">Statistik Checklist</h2>
     <p class="text-sm text-gray-500 mt-1">Rekap data pekerjaan secara menyeluruh</p>
 </div>
 
@@ -219,8 +220,8 @@ $areaColors = generateColors(count($areaLabels));
     /* FIX PIE CHART MOBILE */
     .chart-container {
         width: 100%;
-        height: 300px !important;
-        min-height: 300px !important;
+        height: 320px !important;
+        min-height: 320px !important;
         position: relative;
     }
 </style>

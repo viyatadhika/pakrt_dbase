@@ -5,210 +5,252 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
+
+
 include 'config.php';
+
 $activePage = basename($_SERVER['PHP_SELF']);
-$title = "Riwayat Checklist";
+
+$title      = "Riwayat Checklist";
 include 'header.php';
 
-// Ambil filter
-$tgl_awal = $_GET['start'] ?? "";
-$tgl_akhir = $_GET['end'] ?? "";
-$petugas = $_GET['petugas'] ?? "";
-$form_type = $_GET['form_type'] ?? "";
+// ==================== AMBIL FILTER ====================
+$tgl_awal   = $_GET['start']     ?? "";
+$tgl_akhir  = $_GET['end']       ?? "";
+$petugas    = $_GET['petugas']   ?? "";
+$form_type  = $_GET['form_type'] ?? "";
 
-// Query dasar
+// ==================== QUERY DASAR ====================
 $query = "SELECT * FROM checklist_forms WHERE 1";
 
-// Filter
+// Filter tanggal
 if ($tgl_awal && $tgl_akhir) {
     $query .= " AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir'";
 }
+
+// Filter jenis form
 if ($form_type) {
     $query .= " AND form_type = '$form_type'";
 }
+
+// Filter petugas
 if ($petugas) {
     $query .= " AND nama_petugas LIKE '%$petugas%'";
 }
 
 $query .= " ORDER BY tanggal DESC, id DESC";
-
 $result = $conn->query($query);
 
-// Ambil daftar Form Type (ganti area)
-$qForm = $conn->query("SELECT DISTINCT form_type FROM checklist_forms ORDER BY form_type");
-$listForm = $qForm ? $qForm->fetch_all(MYSQLI_ASSOC) : [];
+// ==================== DATA DROPDOWN ====================
+$listForm = $conn->query("
+    SELECT DISTINCT form_type 
+    FROM checklist_forms 
+    ORDER BY form_type
+")->fetch_all(MYSQLI_ASSOC);
 
-// Ambil daftar petugas unik
-$qPetugas = $conn->query("SELECT DISTINCT nama_petugas FROM checklist_forms ORDER BY nama_petugas");
-$listPetugas = $qPetugas ? $qPetugas->fetch_all(MYSQLI_ASSOC) : [];
+$listPetugas = $conn->query("
+    SELECT DISTINCT nama_petugas 
+    FROM checklist_forms 
+    ORDER BY nama_petugas
+")->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<div class="page-container riwayat-page">
+<!-- ==================== HEADER SECTION ==================== -->
+<div class="p-6 text-left">
+    <h2 class="text-xl font-bold text-sky-700">Riwayat Checklist</h2>
+    <p class="text-sm text-gray-500 mt-1">Semua aktivitas checklist petugas</p>
+</div>
 
-    <div class="page-header">
-        <h1>Riwayat Checklist</h1>
-        <p class="sub">Semua aktivitas checklist petugas</p>
+<!-- ==================== FILTER BOX ==================== -->
+<form method="GET" class="filter-box">
+
+    <div class="grid grid-cols-2 gap-3">
+        <div>
+            <label>Dari</label>
+            <input type="date" name="start" class="input-modern"
+                value="<?= htmlspecialchars($tgl_awal); ?>">
+        </div>
+
+        <div>
+            <label>Sampai</label>
+            <input type="date" name="end" class="input-modern"
+                value="<?= htmlspecialchars($tgl_akhir); ?>">
+        </div>
     </div>
 
-    <!-- Filter Box -->
-    <form method="GET" class="filter-box">
+    <div>
+        <label>Jenis Form</label>
+        <select name="form_type" class="input-modern">
+            <option value="">Semua Form</option>
+            <?php foreach ($listForm as $f): ?>
+                <option value="<?= $f['form_type']; ?>"
+                    <?= $form_type == $f['form_type'] ? "selected" : ""; ?>>
+                    <?= strtoupper($f['form_type']); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
 
-        <div class="grid grid-cols-2 gap-3">
-            <div>
-                <label>Dari</label>
-                <input type="date" name="start" class="input-modern"
-                    value="<?= htmlspecialchars($tgl_awal); ?>">
-            </div>
+    <div>
+        <label>Nama Petugas</label>
+        <select name="petugas" class="input-modern">
+            <option value="">Semua Petugas</option>
+            <?php foreach ($listPetugas as $p): ?>
+                <option value="<?= $p['nama_petugas']; ?>"
+                    <?= $petugas == $p['nama_petugas'] ? "selected" : ""; ?>>
+                    <?= $p['nama_petugas']; ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
 
-            <div>
-                <label>Sampai</label>
-                <input type="date" name="end" class="input-modern"
-                    value="<?= htmlspecialchars($tgl_akhir); ?>">
-            </div>
-        </div>
+    <button type="submit" class="btn-primary mt-4">Terapkan Filter</button>
+</form>
 
-        <div>
-            <label>Jenis Form</label>
-            <select name="form_type" class="input-modern">
-                <option value="">Semua Form</option>
-                <?php foreach ($listForm as $f): ?>
-                    <option value="<?= $f['form_type']; ?>" <?= $form_type == $f['form_type'] ? "selected" : ""; ?>>
-                        <?= strtoupper($f['form_type']); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+<?php
+// Cek apakah filter sudah digunakan
+$filterUsed = ($tgl_awal || $tgl_akhir || $petugas || $form_type);
+?>
 
-        <div>
-            <label>Nama Petugas</label>
-            <select name="petugas" class="input-modern">
-                <option value="">Semua Petugas</option>
-                <?php foreach ($listPetugas as $p): ?>
-                    <option value="<?= $p['nama_petugas']; ?>" <?= $petugas == $p['nama_petugas'] ? "selected" : ""; ?>>
-                        <?= $p['nama_petugas']; ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
+<!-- ==================== RESULT LIST ==================== -->
+<!-- ==================== RESULT SECTION ==================== -->
 
-        <button type="submit" class="btn-filter">Terapkan Filter</button>
-    </form>
+<?php if ($filterUsed): ?>
 
-    <div class="result-list">
+    <!-- Result muncul dengan animasi -->
+    <div class="result-list fade-in">
 
         <?php if ($result && $result->num_rows > 0): ?>
+
             <?php while ($row = $result->fetch_assoc()): ?>
+
                 <?php
-                // tanggal sudah disimpan di DB; tampilkan versi Indonesia
                 $tanggal = date('d M Y', strtotime($row['tanggal']));
 
-                // kita tidak menampilkan uraian checklist di halaman riwayat
-                $checklist_preview = '';
-
-                // lokasi: gunakan field yang ada pada checklist_forms
+                // Lokasi
                 $lokasiParts = [];
-                if (!empty($row['area_kerja'])) $lokasiParts[] = $row['area_kerja'];
-                if (!empty($row['area_gedung'])) $lokasiParts[] = $row['area_gedung'];
-                if (!empty($row['lantai'])) $lokasiParts[] = $row['lantai'];
-                if (!empty($row['rumah'])) $lokasiParts[] = $row['rumah'];
-                if (!empty($row['pos_jaga'])) $lokasiParts[] = $row['pos_jaga'];
-                $lokasi = implode(' • ', $lokasiParts);
+                foreach (['area_kerja', 'area_gedung', 'lantai', 'rumah', 'pos_jaga'] as $key) {
+                    if (!empty($row[$key])) $lokasiParts[] = $row[$key];
+                }
+                $lokasi = implode(' • ', $lokasiParts) ?: '-';
 
-                // cek apakah koridor
-                $isKoridor = stripos($lokasi, 'koridor') !== false;
+                // Nama form
+                $rawFormType = $row['form_type'] ?? '';
+                $key = strtolower(trim($rawFormType));
+                $prettyMap = [
+                    'piketob' => 'Piket OB',
+                    'piket_ob' => 'Piket OB',
+                    'piket ob' => 'Piket OB',
+                    'plotingjaga' => 'Ploting Jaga',
+                    'general_cleaning' => 'General Cleaning',
+                    'ptsp' => 'PTSP',
+                ];
+                $displayForm = $prettyMap[$key] ?? ucwords(str_replace(['_', '-'], ' ', $rawFormType));
+
+                $detailUrl = 'detail.php?' . http_build_query(['id' => (int)$row['id']]);
                 ?>
 
+                <!-- ==================== CARD ITEM ==================== -->
                 <div class="group bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-2">
-                            <div class="w-9 h-9 flex items-center justify-center bg-sky-100 text-sky-600 rounded-xl">
+
+                    <div class="flex justify-between items-start mb-2">
+
+                        <!-- ================== KIRI: ICON + INFO ============== -->
+                        <div class="flex items-start gap-2">
+
+                            <div class="w-9 h-9 flex items-center justify-center bg-sky-100 text-sky-600 rounded-xl mt-0.5">
                                 <i class="fa-solid fa-building text-base"></i>
                             </div>
 
                             <div>
-                                <?php
-                                // Normalize and prettify form_type for display
-                                $rawFormType = $row['form_type'] ?? '';
-                                $key = is_string($rawFormType) ? strtolower(trim($rawFormType)) : '';
-
-                                $prettyMap = [
-                                    'piketob' => 'Piket OB',
-                                    'piket_ob' => 'Piket OB',
-                                    'piket ob' => 'Piket OB',
-                                    'plotingjaga' => 'Ploting Jaga',
-                                    'general_cleaning' => 'General Cleaning',
-                                    'ptsp' => 'PTSP',
-                                    // keep other known mappings here if needed
-                                ];
-
-                                if (isset($prettyMap[$key])) {
-                                    $displayForm = $prettyMap[$key];
-                                } else {
-                                    // fallback: replace underscores with spaces and title-case
-                                    $displayForm = ucwords(str_replace(['_', '-'], ' ', $rawFormType));
-                                }
-                                ?>
-
-                                <p class="font-semibold text-gray-800"><?php echo htmlspecialchars($displayForm); ?></p>
-
-                                <p class="text-xs text-gray-500">
-                                    <?= htmlspecialchars($lokasi ?: '-'); ?>
+                                <!-- JENIS FORM -->
+                                <p class="font-semibold text-gray-800">
+                                    <?= htmlspecialchars($displayForm); ?>
                                 </p>
-                                <?php
-                                // show room/house number when available
-                                $nomor = trim((string)($row['nomor_rumah'] ?? ''));
-                                $formTypeKey = strtolower(trim($row['form_type'] ?? ''));
-                                if ($nomor !== ''):
-                                    if (!empty($row['area_gedung'])):
-                                        // asrama case
-                                ?>
-                                        <p class="text-xs text-gray-500 mt-1">Kamar No: <?= htmlspecialchars($nomor) ?></p>
-                                    <?php elseif (!empty($row['rumah'])): ?>
-                                        <p class="text-xs text-gray-500 mt-1">No. Rumah: <?= htmlspecialchars($nomor) ?></p>
-                                    <?php endif; ?>
+
+                                <!-- LOKASI -->
+                                <p class="text-xs text-gray-500">
+                                    <?= htmlspecialchars($lokasi); ?>
+                                </p>
+
+                                <!-- NOMOR RUMAH/KAMAR -->
+                                <?php if (!empty($row['nomor_rumah'])): ?>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <?= !empty($row['area_gedung']) ? "Kamar No: " : "No. Rumah: "; ?>
+                                        <?= htmlspecialchars($row['nomor_rumah']); ?>
+                                    </p>
                                 <?php endif; ?>
                             </div>
                         </div>
 
-                        <span class="text-xs text-gray-400"><?= htmlspecialchars($tanggal); ?></span>
+                        <!-- ================== KANAN: TANGGAL + NAMA PETUGAS ============== -->
+                        <div class="flex flex-col items-end min-w-[90px] text-right">
+                            <!-- TANGGAL -->
+                            <span class="text-xs text-gray-400">
+                                <?= htmlspecialchars($tanggal); ?>
+                            </span>
+
+                            <!-- NAMA PETUGAS -->
+                            <span class="text-[11px] text-gray-600 flex items-center gap-1 mt-1">
+                                <i class="fa-solid fa-user text-[10px]"></i>
+                                <?= htmlspecialchars($row['nama_petugas']); ?>
+                            </span>
+                        </div>
+
                     </div>
 
-                    <!-- Uraian checklist tidak ditampilkan di halaman riwayat -->
+                    <!-- ================== BAWAH: STATUS + DETAIL BUTTON ============== -->
+                    <div class="flex justify-between items-center mt-2">
 
-                    <?php
-                    $detailUrl = 'detail.php?' . http_build_query([
-                        'id' => (int)$row['id']
-                    ]);
-                    ?>
-
-                    <div class="flex justify-between items-center">
-                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-200 bg-green-50 text-green-700">
-                            <i class="fa-solid fa-check mr-1 text-[10px]"></i> Selesai
+                        <!-- STATUS SELESAI -->
+                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-200 bg-green-50 text-green-700 flex items-center">
+                            <i class="fa-solid fa-check mr-1 text-[10px]"></i>
+                            Selesai
                         </span>
 
+                        <!-- TOMBOL LIHAT DETAIL -->
                         <a href="<?= htmlspecialchars($detailUrl); ?>"
                             class="inline-flex items-center gap-2 text-xs font-medium text-sky-600 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-full transition">
-                            <i class="fa-solid fa-eye text-[11px]"></i> Lihat Detail
+                            <i class="fa-solid fa-eye text-[11px]"></i>
+                            Lihat Detail
                         </a>
+
                     </div>
 
-
                 </div>
+
+
 
             <?php endwhile; ?>
 
         <?php else: ?>
+            <div class="empty-state fade-in">
+                <div class="icon-wrap">
+                    <i class="fa-solid fa-filter"></i>
+                </div>
+                <h3 class="empty-title">Belum Ada Data</h3>
+                <p class="empty-sub">
+                    Tidak ada data sesuai filter.
+                </p>
 
-            <div class="text-center text-gray-500 mt-24 p-8 rounded-2xl border border-gray-100">
-                <i class="fa-solid fa-calendar-check text-6xl text-sky-400 mb-4"></i>
-                <p class="text-lg font-semibold text-gray-700 mb-1">Belum Ada Riwayat</p>
-                <p class="text-sm">Belum ada kegiatan yang tercatat dalam bulan ini.</p>
             </div>
-
         <?php endif; ?>
 
     </div>
 
+
+<?php else: ?>
+    <!-- ==================== UI KETIKA FILTER BELUM DIGUNAKAN ==================== -->
+    <div class="empty-state fade-in">
+        <div class="icon-wrap">
+            <i class="fa-solid fa-filter"></i>
+        </div>
+        <h3 class="empty-title">Belum Ada Data</h3>
+        <p class="empty-sub">
+            Silakan gunakan filter untuk menampilkan riwayat checklist.
+        </p>
+    </div>
+<?php endif; ?>
 </div>
 
 <?php include 'nav_monitoring.php'; ?>

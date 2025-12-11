@@ -43,8 +43,8 @@ $avatarColor = $colors[$colorIndex];
 ?>
 
 <!-- ===================== HEADER ===================== -->
-<div class="p-6 pb-2 text-center">
-    <h1 class="text-2xl font-bold text-sky-600">Profil Pengguna</h1>
+<div class="p-6 pb-2 text-left">
+    <h2 class="text-xl font-bold text-sky-700">Profil Pengguna</h2>
 </div>
 
 <!-- ===================== AVATAR ===================== -->
@@ -131,7 +131,7 @@ $avatarColor = $colors[$colorIndex];
 <!-- ===================== LOGOUT ===================== -->
 <div class="px-6 mt-10 mb-24 max-w-md mx-auto">
     <button onclick="window.location.href='logout.php'"
-        class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-semibold shadow-md active:scale-95">
+        class="btn-primary">
         Keluar Akun
     </button>
 </div>

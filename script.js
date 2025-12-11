@@ -82,18 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  new Swiper(".mySwiper", {
-    slidesPerView: 1.15,
-    spaceBetween: 16,
-    loop: true,
-    autoplay: {
-      delay: 2500,
-      disableOnInteraction: false,
-    },
-  });
-});
-
 // === CAROUSEL BARU (AMAN, TIDAK NARIK KE ATAS) ===
 document.addEventListener("DOMContentLoaded", () => {
   const carousel = document.getElementById("carousel");
@@ -233,91 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// === SHEET UPLOAD PRESENSI PPPK ===
-document.addEventListener("DOMContentLoaded", () => {
-  const openUploadPresensi = document.getElementById("openUploadPresensi");
-  const sheetPresensi = document.getElementById("sheetPresensi");
-  const fadeBgPresensi = document.getElementById("fadeBgPresensi");
-  const closeSheetPresensi = document.getElementById("closeSheetPresensi");
-  const sheetPresensiContent = document.getElementById("sheetPresensiContent");
-
-  // kalau elemen-elemen ini tidak ada (misal bukan di lainnya.php) → stop
-  if (!openUploadPresensi || !sheetPresensi || !fadeBgPresensi || !closeSheetPresensi || !sheetPresensiContent) return;
-
-  const openSheetPresensi = () => {
-    sheetPresensi.style.transition = "none";
-    sheetPresensi.style.transform = "translateY(100%)";
-
-    requestAnimationFrame(() => {
-      sheetPresensi.classList.add("show");
-      fadeBgPresensi.classList.add("show");
-      sheetPresensi.style.transition = "transform 0.35s ease";
-      sheetPresensi.style.transform = "translateY(0)";
-    });
-  };
-
-  const closeSheetPresensiFn = () => {
-    sheetPresensi.style.transition = "transform 0.35s ease";
-    sheetPresensi.style.transform = "translateY(100%)";
-    fadeBgPresensi.classList.remove("show");
-
-    setTimeout(() => {
-      sheetPresensi.classList.remove("show");
-      sheetPresensi.style.transform = "translateY(100%)";
-    }, 400);
-  };
-
-  // buka sheet saat klik menu Upload Presensi
-  openUploadPresensi.addEventListener("click", openSheetPresensi);
-
-  // klik background / tombol X → tutup
-  fadeBgPresensi.addEventListener("click", closeSheetPresensiFn);
-  closeSheetPresensi.addEventListener("click", closeSheetPresensiFn);
-
-  // SWIPE DOWN untuk tutup (kayak sheet sebelumnya)
-  let startY = 0,
-    currentY = 0,
-    isDragging = false,
-    canClose = false;
-
-  sheetPresensiContent.addEventListener("touchstart", (e) => {
-    if (sheetPresensiContent.scrollTop <= 0) {
-      canClose = true;
-      startY = e.touches[0].clientY;
-      isDragging = true;
-      sheetPresensi.style.transition = "none";
-    } else {
-      canClose = false;
-    }
-  });
-
-  sheetPresensiContent.addEventListener("touchmove", (e) => {
-    if (!isDragging || !canClose) return;
-
-    currentY = e.touches[0].clientY;
-    const deltaY = currentY - startY;
-
-    if (deltaY > 0) {
-      e.preventDefault();
-      sheetPresensi.style.transform = `translateY(${deltaY}px)`;
-    }
-  });
-
-  sheetPresensiContent.addEventListener("touchend", () => {
-    if (!isDragging) return;
-    isDragging = false;
-
-    const deltaY = currentY - startY;
-    sheetPresensi.style.transition = "transform 0.35s ease";
-
-    if (canClose && deltaY > 100) {
-      closeSheetPresensiFn();
-    } else {
-      sheetPresensi.style.transform = "translateY(0)";
-    }
-  });
-});
-
 // === TOGGLE PASSWORD VISIBILITY ===
 document.addEventListener("DOMContentLoaded", () => {
   const toggleIcons = document.querySelectorAll(".toggle-eye");
@@ -330,4 +233,19 @@ document.addEventListener("DOMContentLoaded", () => {
       icon.classList.toggle("fa-eye-slash");
     });
   });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  let current = window.location.pathname.split("/").pop();
+  if (current === "" || current === "index.php") current = "beranda.php";
+
+  document.querySelectorAll(".bottom-nav .nav-item").forEach((item) => {
+    if (item.dataset.page === current) {
+      item.classList.add("active");
+    }
+  });
+});
+
+document.getElementById("openSearch").addEventListener("click", function () {
+  window.location.href = "search.php";
 });
