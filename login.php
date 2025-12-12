@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="login-container">
     <div class="mb-8">
         <h2 class="title">Selamat Datang</h2>
-        <p class="subtitle">Silakan masuk ke akun WARGA RT Anda</p>
+        <p class="subtitle">Silakan masuk ke akun PAK RT Anda</p>
     </div>
 
     <?php if (!empty($error)) : ?>
