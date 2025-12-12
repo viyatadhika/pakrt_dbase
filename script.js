@@ -249,3 +249,9 @@ document.addEventListener("DOMContentLoaded", function () {
 document.getElementById("openSearch").addEventListener("click", function () {
   window.location.href = "search.php";
 });
+
+function escapeHtml(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+escapeHtml(item.form_type);
