@@ -133,6 +133,15 @@ function initLogoutModal() {
   });
 }
 
+function initLatestActivity() {
+  const box = document.getElementById("latestActivity");
+  if (!box) return;
+
+  fetch("api/get_latest_activity.php")
+    .then((r) => r.text())
+    .then((html) => (box.innerHTML = html));
+}
+
 /* =====================================================
    INIT — ONE ENTRY POINT
 ===================================================== */
@@ -142,4 +151,5 @@ onReady(() => {
   initSearchHintSlide();
   initTogglePassword();
   initLogoutModal();
+  initLatestActivity();
 });
