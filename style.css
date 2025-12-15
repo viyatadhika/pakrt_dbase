@@ -1191,3 +1191,40 @@ header {
     transform: translateY(0);
   }
 }
+
+.search-input::placeholder {
+  color: #94a3b8;
+  transition: opacity 0.35s ease;
+}
+
+.search-input.fade::placeholder {
+  opacity: 0;
+}
+
+.search-box {
+  position: relative;
+}
+
+/* teks animasi */
+.search-hint {
+  position: absolute;
+  left: 42px; /* sejajar teks input */
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  color: #94a3b8;
+  pointer-events: none;
+  opacity: 1;
+  transition: all 0.45s ease;
+}
+
+/* animasi naik */
+.search-hint.slide-up {
+  transform: translateY(-110%);
+  opacity: 0;
+}
+
+/* saat user fokus / mengetik */
+.search-box.active .search-hint {
+  opacity: 0;
+}

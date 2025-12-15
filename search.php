@@ -56,17 +56,28 @@ include 'header.php';
     }
 </style>
 
-<!-- ================= HEADER SEARCH ================= -->
+<!-- ================= HEADER SEARCH (SAMA DENGAN BERANDA) ================= -->
 <div class="search-header">
-    <div class="search-input-container">
-        <i class="fas fa-search text-gray-500"></i>
+    <div class="search-box">
+
+        <!-- ICON -->
+        <i class="fa-solid fa-magnifying-glass"></i>
+
+        <!-- TEKS ANIMASI -->
+        <span id="searchHint" class="search-hint">
+            Cari laporan hari ini
+        </span>
+
+        <!-- INPUT -->
         <input
             type="text"
             id="searchQuery"
-            placeholder="Cari laporan, petugas, area..."
+            class="search-input"
+            autocomplete="off"
             autofocus>
     </div>
 </div>
+
 
 <!-- ================= SEARCH RESULTS ================= -->
 <div id="searchResults" class="search-results">

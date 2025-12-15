@@ -87,10 +87,37 @@ while ($row = $qAreaChart->fetch_assoc()) {
     </header>
 
     <div class="page-container">
-        <div class="search-box mb-3" id="openSearch">
+        <!-- <div class="search-box mb-3" id="openSearch">
             <i class="fas fa-search"></i>
             <input type="text" placeholder="Cari laporan, petugas, area..." readonly>
+        </div> -->
+
+        <!-- <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+                type="text"
+                id="searchQuery"
+                class="search-input"
+                placeholder="Cari laporan hari ini…">
+        </div> -->
+
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <!-- TEKS ANIMASI -->
+            <span id="searchHint" class="search-hint">
+                Cari laporan hari ini
+            </span>
+
+            <input
+                type="text"
+                id="searchQuery"
+                class="search-input"
+                autocomplete="off">
         </div>
+
+
+
 
 
         <!-- BANNER / CAROUSEL -->
@@ -173,8 +200,6 @@ while ($row = $qAreaChart->fetch_assoc()) {
             </a>
 
         </div>
-
-
 
         <!-- AKTIVITAS TERBARU -->
         <h3 class="section-title">Aktivitas Terbaru</h3>
