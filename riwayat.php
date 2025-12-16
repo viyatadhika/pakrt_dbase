@@ -41,6 +41,9 @@ if ($petugas) {
 $query .= " ORDER BY tanggal DESC, id DESC";
 $result = $conn->query($query);
 
+// DELETE FROM checklist_forms WHERE nip_user = '123';
+// DELETE FROM users WHERE nip = '123';
+
 // ==================== DATA DROPDOWN ====================
 $listForm = $conn->query("
     SELECT DISTINCT form_type 
