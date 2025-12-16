@@ -142,6 +142,117 @@ function initLatestActivity() {
     .then((html) => (box.innerHTML = html));
 }
 
+function initBerandaCarousel() {
+  const carousel = document.getElementById("carousel");
+  if (!carousel) return;
+
+  const items = Array.from(carousel.querySelectorAll(".carousel-item"));
+  const dots = Array.from(document.querySelectorAll(".dot"));
+  if (!items.length) return;
+
+  let currentIndex = 0;
+  let autoTimer = null;
+
+  /* ===============================
+     HELPER
+  ============================== */
+  const setActiveDot = (index) => {
+    dots.forEach((d) => d.classList.remove("active"));
+    dots[index]?.classList.add("active");
+  };
+
+  const scrollToItem = (index) => {
+    const target = items[index];
+    if (!target) return;
+
+    const left = target.offsetLeft - (carousel.clientWidth - target.clientWidth) / 2;
+
+    carousel.scrollTo({
+      left,
+      behavior: "smooth",
+    });
+  };
+
+  const goTo = (index) => {
+    currentIndex = (index + items.length) % items.length;
+    scrollToItem(currentIndex);
+    setActiveDot(currentIndex);
+  };
+
+  /* ===============================
+     AUTO SLIDE
+  ============================== */
+  const startAuto = () => {
+    if (autoTimer || items.length <= 1) return;
+    autoTimer = setInterval(() => {
+      goTo(currentIndex + 1);
+    }, 4000);
+  };
+
+  const stopAuto = () => {
+    clearInterval(autoTimer);
+    autoTimer = null;
+  };
+
+  /* ===============================
+     OBSERVER (AMAN, TIDAK NARIK KE ATAS)
+  ============================== */
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) startAuto();
+          else stopAuto();
+        });
+      },
+      { threshold: 0.4 }
+    );
+    observer.observe(carousel);
+  } else {
+    startAuto();
+  }
+
+  /* ===============================
+     DOT CLICK
+  ============================== */
+  dots.forEach((dot, i) => {
+    dot.addEventListener("click", () => {
+      goTo(i);
+      stopAuto();
+      startAuto();
+    });
+  });
+
+  /* ===============================
+     UPDATE DOT SAAT SWIPE MANUAL
+  ============================== */
+  let scrollTimeout;
+  carousel.addEventListener("scroll", () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      const center = carousel.scrollLeft + carousel.clientWidth / 2;
+      let nearest = 0;
+      let min = Infinity;
+
+      items.forEach((item, i) => {
+        const dist = Math.abs(item.offsetLeft + item.clientWidth / 2 - center);
+        if (dist < min) {
+          min = dist;
+          nearest = i;
+        }
+      });
+
+      currentIndex = nearest;
+      setActiveDot(currentIndex);
+    }, 80);
+  });
+
+  /* ===============================
+     INIT
+  ============================== */
+  setActiveDot(0);
+}
+
 /* =====================================================
    INIT — ONE ENTRY POINT
 ===================================================== */
@@ -152,4 +263,5 @@ onReady(() => {
   initTogglePassword();
   initLogoutModal();
   initLatestActivity();
+  initBerandaCarousel();
 });

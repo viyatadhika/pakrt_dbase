@@ -202,7 +202,7 @@ while ($row = $qAreaChart->fetch_assoc()) {
         </div>
 
         <!-- AKTIVITAS TERBARU -->
-        <h3 class="section-title">Aktivitas Terbaru</h3>
+        <!-- <h3 class="section-title">Aktivitas Terbaru</h3> -->
         <div id="latestActivity" class="space-y-3"></div>
 
         <!-- KINERJA UTAMA -->

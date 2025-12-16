@@ -1228,3 +1228,181 @@ header {
 .search-box.active .search-hint {
   opacity: 0;
 }
+
+/* ===============================
+   AKTIVITAS TERBARU — FINAL
+================================ */
+
+/* SECTION — SAMA DENGAN QUICK MENU */
+.latest-section {
+  /* padding: 0 16px; ✅ sejajar quick menu */
+  margin: 14px 0 22px;
+  overflow: visible; /* 🔑 badge tidak kepotong */
+}
+
+/* HEADER */
+.latest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.latest-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.latest-header a {
+  font-size: 11px;
+  font-weight: 500;
+  color: #0284c7;
+  text-decoration: none;
+}
+
+/* ===============================
+   GRID — 3 CARD TANPA SCROLL
+================================ */
+.latest-scroll {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 🔑 3 card sejajar */
+  gap: 12px;
+  overflow: visible; /* 🔑 badge aman */
+}
+
+/* ===============================
+   CARD
+================================ */
+.latest-card {
+  position: relative;
+  height: 160px;
+
+  padding: 18px 12px 12px;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  text-decoration: none;
+  transition: transform 0.25s ease;
+  overflow: visible; /* 🔑 badge tidak kepotong */
+}
+
+.latest-card:hover {
+  transform: translateY(-2px);
+}
+
+/* ===============================
+   BADGE — POJOK KANAN LUAR
+================================ */
+.latest-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+
+  padding: 5px 10px;
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 600;
+  background: linear-gradient(to right, #0284c7, #38bdf8);
+  color: #ffffff;
+
+  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.35);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+/* ===============================
+   CONTENT
+================================ */
+.latest-title {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* .latest-sub {
+  font-size: 11px;
+  font-weight: 600; 
+  color: #64748b;
+  margin-top: 2px;
+} */
+
+/* ===============================
+   LOKASI — RESPONSIVE SMART CLAMP
+================================ */
+
+/* === DEFAULT: MOBILE (layar kecil) === */
+.latest-sub {
+  font-size: 10px;
+  color: #64748b;
+  /* text-align: center; */
+  line-height: 1.35;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1; /* 1 baris di HP kecil */
+  line-clamp: 1; /* properti standar (hilangkan warning) */
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+/* === HP BESAR / TABLET === */
+@media (min-width: 480px) {
+  .latest-sub {
+    -webkit-line-clamp: 2; /* 2 baris */
+    line-clamp: 2;
+    font-size: 11px;
+  }
+}
+
+/* === DESKTOP / LAYAR BESAR === */
+@media (min-width: 768px) {
+  .latest-sub {
+    display: block;
+    overflow: visible;
+    white-space: normal;
+    font-size: 12px;
+  }
+}
+
+/* ===============================
+   FOOTER
+================================ */
+.latest-bottom {
+  font-size: 11px;
+  font-weight: 600;
+  color: #0284c7;
+  /* color: #0f172a; */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ===============================
+   ICON
+================================ */
+.latest-icon {
+  width: 34px;
+  height: 34px;
+  margin-top: 6px;
+
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0284c7;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+}

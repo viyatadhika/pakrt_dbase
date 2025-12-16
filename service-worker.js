@@ -1,7 +1,7 @@
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open("monitoring-v1").then((cache) => {
-      return cache.addAll(["index.php", "style.css", "layout.php"]);
+      return cache.addAll(["index.php", "style.css", "script.js"]);
     })
   );
 });
