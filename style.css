@@ -1406,3 +1406,15 @@ header {
 
   font-size: 14px;
 }
+
+/* Fade animation for auto refresh */
+.fade-refresh {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.fade-refresh.show {
+  opacity: 1;
+  transform: translateY(0);
+}

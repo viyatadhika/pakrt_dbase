@@ -133,14 +133,14 @@ function initLogoutModal() {
   });
 }
 
-function initLatestActivity() {
-  const box = document.getElementById("latestActivity");
-  if (!box) return;
+// function initLatestActivity() {
+//   const box = document.getElementById("latestActivity");
+//   if (!box) return;
 
-  fetch("api/get_latest_activity.php")
-    .then((r) => r.text())
-    .then((html) => (box.innerHTML = html));
-}
+//   fetch("api/get_latest_activity.php")
+//     .then((r) => r.text())
+//     .then((html) => (box.innerHTML = html));
+// }
 
 function initBerandaCarousel() {
   const carousel = document.getElementById("carousel");
@@ -251,6 +251,48 @@ function initBerandaCarousel() {
      INIT
   ============================== */
   setActiveDot(0);
+}
+
+/* =====================================================
+   LATEST ACTIVITY — AUTO REFRESH + FADE ANIMATION
+===================================================== */
+function initLatestActivity() {
+  const containerId = "latestActivity";
+  const url = "api/get_latest_activity.php";
+  const interval = 15000;
+
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // pastikan state awal
+  container.classList.add("show");
+
+  async function refreshLatestActivity() {
+    try {
+      // FADE OUT
+      container.classList.remove("show");
+      container.classList.add("fade-refresh");
+
+      // tunggu animasi fade out
+      await new Promise((r) => setTimeout(r, 250));
+
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) return;
+
+      const html = await res.text();
+      container.innerHTML = html;
+
+      // FADE IN
+      requestAnimationFrame(() => {
+        container.classList.add("show");
+      });
+    } catch (err) {
+      console.error("Gagal refresh aktivitas terbaru:", err);
+    }
+  }
+
+  // refresh berkala
+  setInterval(refreshLatestActivity, interval);
 }
 
 /* =====================================================

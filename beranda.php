@@ -101,10 +101,9 @@ while ($row = $qAreaChart->fetch_assoc()) {
                 placeholder="Cari laporan hari ini…">
         </div> -->
 
-        <div class="search-box">
+        <div class="search-box mb-4">
             <i class="fa-solid fa-magnifying-glass"></i>
 
-            <!-- TEKS ANIMASI -->
             <span id="searchHint" class="search-hint">
                 Cari laporan hari ini
             </span>
@@ -117,43 +116,57 @@ while ($row = $qAreaChart->fetch_assoc()) {
         </div>
 
 
+        <!-- ===================== CAROUSEL ===================== -->
+        <div class="relative mb-4">
+            <div id="carousel"
+                class="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth snap-x">
 
+                <!-- SLIDE 1 -->
+                <div class="carousel-item flex-shrink-0 snap-center
+                    bg-gradient-to-r from-blue-500 to-indigo-600
+                    text-white p-4 rounded-2xl shadow
+                    flex items-center gap-3
+                    w-full sm:w-80 h-24">
+                    <img src="dokumen.png" class="w-12 h-12" alt="">
+                    <div>
+                        <h2 class="text-sm font-semibold text-white drop-shadow-sm">Cek Administrasi</h2>
+                        <p class="text-xs opacity-80">Pantau laporan harian dan kegiatan terbaru</p>
+                    </div>
+                </div>
 
+                <!-- SLIDE 2 -->
+                <div class="carousel-item flex-shrink-0 snap-center
+                    bg-gradient-to-r from-green-400 to-emerald-600
+                    text-white p-4 rounded-2xl shadow
+                    flex items-center gap-3
+                    w-full sm:w-80 h-24">
+                    <img src="cleaning.png" class="w-12 h-12" alt="">
+                    <div>
+                        <h2 class="text-sm font-semibold text-white drop-shadow-sm">Update Kebersihan</h2>
+                        <p class="text-xs opacity-80">Laporan checklist kebersihan tersedia</p>
+                    </div>
+                </div>
 
-        <!-- BANNER / CAROUSEL -->
-        <div id="carousel" class="flex overflow-x-auto scrollbar-hide gap-3 rounded-2xl scroll-smooth mt-2">
-            <!-- SLIDE 1 -->
-            <div class="carousel-item flex-shrink-0 snap-center bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 rounded-2xl shadow flex items-center gap-3 w-[90%] sm:w-80 h-24 fade-up" style="animation-delay:0.2s">
-                <img src="dokumen.png" alt="Dokumen" class="w-12 h-12">
-                <div>
-                    <h2 class="text-sm font-semibold">Cek Administrasi</h2>
-                    <p class="text-xs opacity-80">Pantau laporan harian dan kegiatan terbaru</p>
+                <!-- SLIDE 3 -->
+                <div class="carousel-item flex-shrink-0 snap-center
+                    bg-gradient-to-r from-orange-400 to-red-500
+                    text-white p-4 rounded-2xl shadow
+                    flex items-center gap-3
+                    w-full sm:w-80 h-24">
+                    <img src="kinerja.png" class="w-12 h-12" alt="">
+                    <div>
+                        <h2 class="text-sm font-semibold text-white drop-shadow-sm">Pemantauan Kinerja</h2>
+                        <p class="text-xs opacity-80">Data progres pekerjaan tersedia</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- SLIDE 2 -->
-            <div class="carousel-item flex-shrink-0 snap-center bg-gradient-to-r from-green-400 to-emerald-600 text-white p-4 rounded-2xl shadow flex items-center gap-3 w-[90%] sm:w-80 h-24 fade-up" style="animation-delay:0.3s">
-                <img src="cleaning.png" alt="Cleaning" class="w-12 h-12">
-                <div>
-                    <h2 class="text-sm font-semibold">Update Kebersihan</h2>
-                    <p class="text-xs opacity-80">Laporan checklist kebersihan tersedia</p>
-                </div>
+            <!-- DOT -->
+            <div class="flex justify-center mt-2 gap-2">
+                <span class="dot active"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
             </div>
-
-            <!-- SLIDE 3 -->
-            <div class="carousel-item flex-shrink-0 snap-center bg-gradient-to-r from-orange-400 to-red-500 text-white p-4 rounded-2xl shadow flex items-center gap-3 w-[90%] sm:w-80 h-24 fade-up" style="animation-delay:0.4s">
-                <img src="kinerja.png" alt="Kinerja" class="w-12 h-12">
-                <div>
-                    <h2 class="text-sm font-semibold">Pemantauan Kinerja</h2>
-                    <p class="text-xs opacity-80">Data progres pekerjaan tersedia</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex justify-center mt-2 gap-2">
-            <span class="dot active" id="dot0"></span>
-            <span class="dot" id="dot1"></span>
-            <span class="dot" id="dot2"></span>
         </div>
 
         <!-- QUICK MENU -->
@@ -203,7 +216,10 @@ while ($row = $qAreaChart->fetch_assoc()) {
 
         <!-- AKTIVITAS TERBARU -->
         <!-- <h3 class="section-title">Aktivitas Terbaru</h3> -->
-        <div id="latestActivity" class="space-y-3"></div>
+        <div id="latestActivity" class="space-y-3">
+            <?php include 'api/get_latest_activity.php'; ?>
+        </div>
+
 
         <!-- KINERJA UTAMA -->
         <h3 class="section-title">Kinerja Utama</h3>
