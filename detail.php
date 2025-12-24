@@ -75,34 +75,35 @@ while ($r = $resItems->fetch_assoc()) {
 $stmtItems->close();
 
 /* =========================
-   Ambil Foto
+   Ambil Foto (FINAL: ambil id + reactions)
 ========================= */
 $photos = [];
-$stmtPhotos = $conn->prepare("SELECT jenis, foto_path FROM checklist_fotos WHERE form_id = ?");
+$stmtPhotos = $conn->prepare("SELECT id, jenis, foto_path, reactions FROM checklist_fotos WHERE form_id = ?");
 $stmtPhotos->bind_param("i", $id);
 $stmtPhotos->execute();
 $resPhotos = $stmtPhotos->get_result();
 
 while ($r = $resPhotos->fetch_assoc()) {
-    $photos[$r['jenis']][] = $r['foto_path'];
+    $photos[$r['jenis']][] = $r; // simpan record lengkap
 }
 $stmtPhotos->close();
 
 /* =========================
-   Convert Path Foto
+   Convert Path Foto (FINAL FIX)
 ========================= */
 function photo_to_web_src($raw)
 {
     if (!$raw) return '';
+
     $filename = basename($raw);
     $host = $_SERVER['HTTP_HOST'];
 
-    // Localhost (XAMPP)
+    // LOCALHOST (file ada di wargart_html/uploads)
     if (strpos($host, "localhost") !== false) {
         return "http://localhost/wargart_html/uploads/" . $filename;
     }
 
-    // Server LAN
+    // SERVER (file ada di wargart/uploads)
     return "http://{$host}/wargart/uploads/" . $filename;
 }
 
@@ -110,36 +111,26 @@ $formTypeLower = strtolower(trim($data['form_type']));
 ?>
 
 <style>
-    /* ===============================
-   HEADER DETAIL — PREMIUM
-================================*/
     .detail-header-bar {
         position: sticky;
         top: 0;
         z-index: 100;
         background: #ffffff;
-
         padding: 14px 20px 12px;
         display: flex;
         align-items: center;
         gap: 15px;
-        /* 
-        border-bottom: 1px solid #eef2f7;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); */
     }
 
     .detail-back-btn {
         width: 40px;
         height: 40px;
         border-radius: 14px;
-
         background: #ffffff;
         border: 1px solid #e2e8f0;
-
         display: flex;
         align-items: center;
         justify-content: center;
-
         color: #0369a1;
         font-size: 17px;
         transition: .18s ease-in-out;
@@ -156,14 +147,10 @@ $formTypeLower = strtolower(trim($data['form_type']));
         margin: 0;
     }
 
-    /* ===============================
-   WRAPPER KONTEN
-================================*/
     .detail-content-wrapper {
         padding: 18px 20px 100px;
     }
 
-    /* Card utama */
     .detail-card {
         background: #ffffff;
         padding: 18px;
@@ -172,9 +159,6 @@ $formTypeLower = strtolower(trim($data['form_type']));
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     }
 
-    /* ===============================
-   TEXT SPACING
-================================*/
     .detail-card p {
         font-size: 14px;
         color: #374151;
@@ -185,38 +169,8 @@ $formTypeLower = strtolower(trim($data['form_type']));
         color: #0c4a6e;
     }
 
-    /* ===============================
-   CHECKLIST SECTION
-================================*/
-    .checklist-section {
-        margin-top: 16px;
-        padding: 12px;
-        background: #f9fafb;
-        border-radius: 14px;
-    }
-
-    .checklist-section h4 {
-        font-size: 15px;
-        font-weight: 600;
-        color: #0284c7;
-        margin-bottom: 6px;
-    }
-
-    .checklist-section ul {
-        margin-top: 4px;
-        padding-left: 20px;
-    }
-
-    .checklist-section ul li {
-        color: #374151;
-        font-size: 13px;
-        margin-bottom: 4px;
-    }
-
-    /* Ukuran font checklist lebih kecil */
     .checklist-items {
         font-size: 13px;
-        /* default */
         line-height: 1.35;
     }
 
@@ -228,20 +182,8 @@ $formTypeLower = strtolower(trim($data['form_type']));
 
     .checklist-items li {
         font-size: 14px;
-        /* ukuran item lebih kecil */
         margin-left: 14px;
         margin-bottom: 2px;
-    }
-
-
-    /* ===============================
-   FOTO SECTION
-================================*/
-    .photo-title {
-        margin-top: 18px;
-        font-size: 15px;
-        font-weight: 600;
-        color: #334155;
     }
 
     .photo-full {
@@ -274,7 +216,6 @@ $formTypeLower = strtolower(trim($data['form_type']));
         border-radius: 16px;
     }
 
-    /* Tombol X selalu di atas */
     #photoModal .close {
         position: absolute;
         top: 20px;
@@ -284,7 +225,54 @@ $formTypeLower = strtolower(trim($data['form_type']));
         font-weight: bold;
         cursor: pointer;
         z-index: 10000;
-        /* <<< fix terpenting */
+    }
+
+    /* === REACTION UI === */
+    .photo-reactions {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+    }
+
+    .reaction-badge {
+        background: #f1f5f9;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .reaction-picker {
+        display: flex;
+        gap: 10px;
+        font-size: 20px;
+        margin-top: 6px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .react-users {
+        margin-top: 6px;
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 13px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .react-users div {
+        padding: 3px 0;
+        border-bottom: 1px dashed #e5e7eb;
+    }
+
+    .react-users div:last-child {
+        border-bottom: 0;
+    }
+
+    .hidden {
+        display: none;
     }
 </style>
 
@@ -296,7 +284,6 @@ $formTypeLower = strtolower(trim($data['form_type']));
 
     <h2 class="detail-title">Detail Riwayat</h2>
 </div>
-
 
 <!-- CONTENT -->
 <div class="detail-content-wrapper">
@@ -323,6 +310,12 @@ $formTypeLower = strtolower(trim($data['form_type']));
                 <p><strong><?= $label ?>:</strong> <?= htmlspecialchars($data[$field]) ?></p>
         <?php endif;
         endforeach; ?>
+
+        <?php if ($formTypeLower === 'plotingjaga' && !empty($data['pergeseran'])): ?>
+            <p><strong>Pergeseran Plotingan:</strong>
+                <?= htmlspecialchars($data['pergeseran']) ?>
+            </p>
+        <?php endif; ?>
 
         <?php if (!empty($data['catatan_kerusakan'])): ?>
             <p><strong>Catatan Khusus:</strong><br>
@@ -352,19 +345,15 @@ $formTypeLower = strtolower(trim($data['form_type']));
         <?php endif; ?>
 
         <?php
-        // MAPPING LABEL YANG RAPI
         $labelMap = [
             "foto_pekerjaan_sesi1"   => "Foto Pekerjaan Sesi 1",
             "foto_kerusakan_sesi1"   => "Foto Kerusakan Sesi 1",
             "foto_pelayanan_sesi1"   => "Foto Pelayanan Sesi 1",
-
             "foto_pekerjaan_sesi2"   => "Foto Pekerjaan Sesi 2",
             "foto_kerusakan_sesi2"   => "Foto Kerusakan Sesi 2",
             "foto_pelayanan_sesi2"   => "Foto Pelayanan Sesi 2",
-
             "foto_apelpagi"          => "Foto Apel Pagi",
             "foto_apelmalam"         => "Foto Apel Malam",
-
             "foto_ploting"           => "Foto Ploting Jaga",
             "foto_pekerjaan"         => "Foto Pekerjaan",
         ];
@@ -375,23 +364,57 @@ $formTypeLower = strtolower(trim($data['form_type']));
 
             <?php foreach ($photos as $jenis => $arr): ?>
 
-                <?php
-                // CARI LABEL YANG RAPI
-                $label = $labelMap[$jenis] ?? ucwords(str_replace('_', ' ', $jenis));
-                ?>
-
+                <?php $label = $labelMap[$jenis] ?? ucwords(str_replace('_', ' ', $jenis)); ?>
                 <p class="font-medium mt-3"><?= htmlspecialchars($label) ?></p>
 
-                <?php foreach ($arr as $file):
-                    $src = photo_to_web_src($file);
+                <?php foreach ($arr as $foto):
+                    $fotoId = (int)$foto['id'];
+                    $src = photo_to_web_src($foto['foto_path']);
                     if (!$src) continue;
+
+                    // reactions JSON: { nip: {emoji, nama}, ... }
+                    $reactUsers = [];
+                    $reactSummary = [];
+                    if (!empty($foto['reactions'])) {
+                        $reactUsers = json_decode($foto['reactions'], true);
+                        if (!is_array($reactUsers)) $reactUsers = [];
+
+                        foreach ($reactUsers as $u) {
+                            if (!isset($u['emoji'])) continue;
+                            $reactSummary[$u['emoji']] = ($reactSummary[$u['emoji']] ?? 0) + 1;
+                        }
+                    }
                 ?>
                     <img src="<?= $src ?>" class="photo-full" onclick="openPhotoModal('<?= $src ?>')">
+
+                    <div class="photo-reactions" id="reactions-<?= $fotoId ?>">
+                        <?php foreach ($reactSummary as $emoji => $total): ?>
+                            <span class="reaction-badge" onclick="toggleReactUsers(<?= $fotoId ?>)">
+                                <?= htmlspecialchars($emoji) ?> <?= (int)$total ?>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="reaction-picker" aria-label="Reaction picker">
+                        <?php foreach (['👍', '❤️', '😂', '😮', '😢', '🙏'] as $e): ?>
+                            <span onclick="reactPhoto(<?= $fotoId ?>,'<?= $e ?>')"><?= $e ?></span>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="react-users hidden" id="users-<?= $fotoId ?>">
+                        <?php if (!empty($reactUsers)): ?>
+                            <?php foreach ($reactUsers as $u): ?>
+                                <div><?= htmlspecialchars($u['emoji'] ?? '') ?> <?= htmlspecialchars($u['nama'] ?? '-') ?></div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="text-gray-500">Belum ada reaction</div>
+                        <?php endif; ?>
+                    </div>
+
                 <?php endforeach; ?>
 
             <?php endforeach; ?>
         <?php endif; ?>
-
 
     </div>
 </div>
@@ -400,8 +423,6 @@ $formTypeLower = strtolower(trim($data['form_type']));
     <span class="close">&times;</span>
     <img id="modalImage" src="">
 </div>
-
-
 
 <script>
     function openPhotoModal(src) {
@@ -415,16 +436,68 @@ $formTypeLower = strtolower(trim($data['form_type']));
 
     // Tutup saat klik tombol X
     document.querySelector("#photoModal .close").addEventListener("click", function(e) {
-        e.stopPropagation(); // cegah klik merembet ke modal
+        e.stopPropagation();
         closePhotoModal();
     });
 
     // Tutup saat klik area luar foto
     document.getElementById("photoModal").addEventListener("click", function(e) {
-        if (e.target.id === "photoModal") {
-            closePhotoModal();
-        }
+        if (e.target.id === "photoModal") closePhotoModal();
     });
+
+    // === Reaction: AJAX (tanpa reload)
+    function reactPhoto(fotoId, emoji) {
+        fetch("react_photo.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: "foto_id=" + fotoId + "&emoji=" + encodeURIComponent(emoji)
+            })
+            .then(res => res.json())
+            .then(data => {
+                // update summary badges
+                const wrap = document.getElementById("reactions-" + fotoId);
+                wrap.innerHTML = "";
+
+                const entries = Object.entries(data.summary || {});
+                entries.forEach(([emo, total]) => {
+                    const span = document.createElement("span");
+                    span.className = "reaction-badge";
+                    span.textContent = emo + " " + total;
+                    span.onclick = () => toggleReactUsers(fotoId);
+                    wrap.appendChild(span);
+                });
+
+                // update user list
+                const usersBox = document.getElementById("users-" + fotoId);
+                usersBox.innerHTML = "";
+
+                const users = data.users || {};
+                const list = Object.values(users);
+
+                if (!list.length) {
+                    const div = document.createElement("div");
+                    div.className = "text-gray-500";
+                    div.textContent = "Belum ada reaction";
+                    usersBox.appendChild(div);
+                    return;
+                }
+
+                list.forEach(u => {
+                    const div = document.createElement("div");
+                    div.textContent = (u.emoji || "") + " " + (u.nama || "-");
+                    usersBox.appendChild(div);
+                });
+            })
+            .catch(err => console.error("Gagal react:", err));
+    }
+
+    function toggleReactUsers(fotoId) {
+        const el = document.getElementById("users-" + fotoId);
+        if (!el) return;
+        el.classList.toggle("hidden");
+    }
 </script>
 
 <?php include 'footer.php'; ?>

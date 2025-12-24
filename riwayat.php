@@ -20,6 +20,15 @@ $tgl_akhir  = $_GET['end']       ?? "";
 $petugas    = $_GET['petugas']   ?? "";
 $form_type  = $_GET['form_type'] ?? "";
 
+$prettyMap = [
+    'piketob'            => 'Piket OB',
+    'piket_ob'           => 'Piket OB',
+    'piket ob'           => 'Piket OB',
+    'plotingjaga'        => 'Ploting Jaga',
+    'general_cleaning'   => 'General Cleaning',
+    'ptsp'               => 'PTSP',
+];
+
 // ==================== QUERY DASAR ====================
 $query = "SELECT * FROM checklist_forms WHERE 1";
 
@@ -40,9 +49,6 @@ if ($petugas) {
 
 $query .= " ORDER BY tanggal DESC, id DESC";
 $result = $conn->query($query);
-
-// DELETE FROM checklist_forms WHERE nip_user = '123';
-// DELETE FROM users WHERE nip = '123';
 
 // ==================== DATA DROPDOWN ====================
 $listForm = $conn->query("
@@ -85,27 +91,59 @@ $listPetugas = $conn->query("
         <label>Jenis Form</label>
         <select name="form_type" class="input-modern">
             <option value="">Semua Form</option>
-            <?php foreach ($listForm as $f): ?>
-                <option value="<?= $f['form_type']; ?>"
-                    <?= $form_type == $f['form_type'] ? "selected" : ""; ?>>
-                    <?= strtoupper($f['form_type']); ?>
+
+            <?php
+            $usedLabels = [];
+
+            foreach ($listForm as $f):
+                $raw = $f['form_type'];
+                $key = strtolower(trim($raw));
+
+                $label = $prettyMap[$key]
+                    ?? ucwords(str_replace(['_', '-'], ' ', $raw));
+
+                // Hindari duplikat label (Piket OB muncul sekali)
+                if (in_array($label, $usedLabels)) continue;
+                $usedLabels[] = $label;
+            ?>
+                <option value="<?= htmlspecialchars($raw); ?>"
+                    <?= $form_type === $raw ? 'selected' : ''; ?>>
+                    <?= htmlspecialchars($label); ?>
                 </option>
             <?php endforeach; ?>
         </select>
     </div>
 
-    <div>
+
+    <div class="relative">
         <label>Nama Petugas</label>
-        <select name="petugas" class="input-modern">
-            <option value="">Semua Petugas</option>
+
+        <input
+            type="text"
+            id="petugasInput"
+            name="petugas"
+            class="input-modern"
+            placeholder="Ketik nama petugas…"
+            value="<?= htmlspecialchars($petugas ?? ''); ?>"
+            autocomplete="off">
+
+        <div id="petugasDropdown"
+            class="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden z-20 max-h-40 overflow-auto">
+
             <?php foreach ($listPetugas as $p): ?>
-                <option value="<?= $p['nama_petugas']; ?>"
-                    <?= $petugas == $p['nama_petugas'] ? "selected" : ""; ?>>
-                    <?= $p['nama_petugas']; ?>
-                </option>
+                <div
+                    class="px-3 py-2 text-sm hover:bg-sky-50 cursor-pointer petugas-item"
+                    data-nama="<?= htmlspecialchars(strtolower($p['nama_petugas'])); ?>">
+                    <?= htmlspecialchars($p['nama_petugas']); ?>
+                </div>
             <?php endforeach; ?>
-        </select>
+
+        </div>
     </div>
+
+
+
+
 
     <button type="submit" class="btn-primary mt-4">Terapkan Filter</button>
 </form>
@@ -115,7 +153,6 @@ $listPetugas = $conn->query("
 $filterUsed = ($tgl_awal || $tgl_akhir || $petugas || $form_type);
 ?>
 
-<!-- ==================== RESULT LIST ==================== -->
 <!-- ==================== RESULT SECTION ==================== -->
 
 <?php if ($filterUsed): ?>

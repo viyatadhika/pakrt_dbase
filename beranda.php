@@ -175,7 +175,7 @@ while ($row = $qAreaChart->fetch_assoc()) {
         <div class="quick-menu clean-menu">
 
             <!-- Timetable Kegiatan -->
-            <a href="https://docs.google.com/spreadsheets/d/1UpJrbk6gDnNie_jXzb7xfgpVGhc68MelDuFlmYU4boQ/edit"
+            <a href="https://docs.google.com/spreadsheets/d/1Kq94vQRRZ4IHSyUEAwgihH0Px3ZMLna4MeiHH0zra10/edit?usp=sharing"
                 target="_blank"
                 class="super-menu clean-item">
                 <div class="icon-box bg-blue">

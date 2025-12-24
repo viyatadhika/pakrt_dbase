@@ -1,7 +1,16 @@
 /* =====================================================
-   HELPERS
+   HELPERS (GLOBAL)
 ===================================================== */
-const onReady = (fn) => document.addEventListener("DOMContentLoaded", fn);
+const onReady = (fn) => {
+  if (document.readyState !== "loading") fn();
+  else document.addEventListener("DOMContentLoaded", fn, { once: true });
+};
+
+const $id = (id) => document.getElementById(id);
+const $qs = (sel, root = document) => root.querySelector(sel);
+const $qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+const safeOn = (el, ev, fn, opt) => el && el.addEventListener(ev, fn, opt);
 
 const normalizePage = (val = "") =>
   String(val)
@@ -23,72 +32,68 @@ function getCurrentPageKey() {
 }
 
 /* =====================================================
-   FEATURES
+   FEATURE: NAV ACTIVE
 ===================================================== */
-
-/* === NAVBAR ACTIVE === */
 function initNavActive() {
   const currentKey = getCurrentPageKey();
 
-  document.querySelectorAll(".bottom-nav .nav-item, .nav-item").forEach((nav) => {
-    const navKey = normalizePage(nav.dataset.page);
+  $qsa(".bottom-nav .nav-item, .nav-item").forEach((nav) => {
+    const navKey = normalizePage(nav.dataset?.page || "");
     nav.classList.toggle("active", navKey && navKey === currentKey);
   });
 }
 
-/* === SEARCH PAGE REDIRECT === */
+/* =====================================================
+   FEATURE: SEARCH
+===================================================== */
 function initOpenSearch() {
-  const btn = document.getElementById("searchQuery");
+  const btn = $id("searchQuery");
   if (!btn) return;
-
-  btn.addEventListener("click", () => {
-    window.location.href = "search.php";
-  });
+  safeOn(btn, "click", () => (window.location.href = "search.php"));
 }
 
-/* === SEARCH HINT SLIDE (GOJEK STYLE) === */
 function initSearchHintSlide() {
-  const input = document.getElementById("searchQuery");
-  const hint = document.getElementById("searchHint");
+  const input = $id("searchQuery");
+  const hint = $id("searchHint");
   if (!input || !hint) return;
 
   const texts = ["Cari laporan hari ini", "Cari berdasarkan petugas", "Cari area kerja", "Cari riwayat checklist"];
 
   let index = 0;
-  let timer = null;
+  let timer = setInterval(nextHint, 3000);
 
-  const nextHint = () => {
+  function nextHint() {
     hint.classList.add("slide-up");
-
     setTimeout(() => {
       index = (index + 1) % texts.length;
       hint.textContent = texts[index];
       hint.classList.remove("slide-up");
     }, 450);
-  };
-
-  timer = setInterval(nextHint, 3000);
+  }
 
   const stop = () => {
     clearInterval(timer);
-    input.parentElement.classList.add("active");
+    timer = null;
+    input.parentElement?.classList.add("active");
   };
 
   const resume = () => {
     if (input.value !== "") return;
-    input.parentElement.classList.remove("active");
-    timer = setInterval(nextHint, 3000);
+    input.parentElement?.classList.remove("active");
+    if (!timer) timer = setInterval(nextHint, 3000);
   };
 
-  input.addEventListener("focus", stop);
-  input.addEventListener("input", stop);
-  input.addEventListener("blur", resume);
+  safeOn(input, "focus", stop);
+  safeOn(input, "input", stop);
+  safeOn(input, "blur", resume);
 }
 
-/* === TOGGLE PASSWORD === */
+/* =====================================================
+   FEATURE: TOGGLE PASSWORD
+===================================================== */
 function initTogglePassword() {
-  document.querySelectorAll(".toggle-eye").forEach((icon) => {
-    icon.addEventListener("click", () => {
+  $qsa(".toggle-eye").forEach((icon) => {
+    safeOn(icon, "click", () => {
       const input = icon.previousElementSibling;
       if (!input) return;
 
@@ -99,204 +104,154 @@ function initTogglePassword() {
   });
 }
 
-/* === LOGOUT MODAL === */
+/* =====================================================
+   FEATURE: LOGOUT MODAL
+===================================================== */
 function initLogoutModal() {
-  const logoutLogo = document.getElementById("logoutLogo");
-  const logoutModal = document.getElementById("logoutModal");
-  const logoutBox = document.getElementById("logoutBox");
-  const cancelLogout = document.getElementById("cancelLogout");
-  const confirmLogout = document.getElementById("confirmLogout");
+  const logoutLogo = $id("logoutLogo");
+  const logoutModal = $id("logoutModal");
+  const logoutBox = $id("logoutBox");
+  const cancel = $id("cancelLogout");
+  const confirm = $id("confirmLogout");
 
   if (!logoutLogo || !logoutModal || !logoutBox) return;
 
-  logoutLogo.addEventListener("click", () => {
+  safeOn(logoutLogo, "click", () => {
     logoutModal.classList.add("active");
     setTimeout(() => logoutBox.classList.add("show-modal"), 20);
   });
 
-  cancelLogout?.addEventListener("click", () => {
+  safeOn(cancel, "click", () => {
     logoutBox.classList.remove("show-modal");
     logoutBox.classList.add("hide-modal");
-
     setTimeout(() => {
       logoutModal.classList.remove("active");
       logoutBox.classList.remove("hide-modal");
     }, 250);
   });
 
-  confirmLogout?.addEventListener("click", () => {
-    window.location.href = "logout.php";
+  safeOn(confirm, "click", () => (window.location.href = "logout.php"));
+
+  safeOn(logoutModal, "click", (e) => {
+    if (e.target === logoutModal) cancel?.click();
   });
-
-  logoutModal.addEventListener("click", (e) => {
-    if (e.target === logoutModal) cancelLogout?.click();
-  });
-}
-
-// function initLatestActivity() {
-//   const box = document.getElementById("latestActivity");
-//   if (!box) return;
-
-//   fetch("api/get_latest_activity.php")
-//     .then((r) => r.text())
-//     .then((html) => (box.innerHTML = html));
-// }
-
-function initBerandaCarousel() {
-  const carousel = document.getElementById("carousel");
-  if (!carousel) return;
-
-  const items = Array.from(carousel.querySelectorAll(".carousel-item"));
-  const dots = Array.from(document.querySelectorAll(".dot"));
-  if (!items.length) return;
-
-  let currentIndex = 0;
-  let autoTimer = null;
-
-  /* ===============================
-     HELPER
-  ============================== */
-  const setActiveDot = (index) => {
-    dots.forEach((d) => d.classList.remove("active"));
-    dots[index]?.classList.add("active");
-  };
-
-  const scrollToItem = (index) => {
-    const target = items[index];
-    if (!target) return;
-
-    const left = target.offsetLeft - (carousel.clientWidth - target.clientWidth) / 2;
-
-    carousel.scrollTo({
-      left,
-      behavior: "smooth",
-    });
-  };
-
-  const goTo = (index) => {
-    currentIndex = (index + items.length) % items.length;
-    scrollToItem(currentIndex);
-    setActiveDot(currentIndex);
-  };
-
-  /* ===============================
-     AUTO SLIDE
-  ============================== */
-  const startAuto = () => {
-    if (autoTimer || items.length <= 1) return;
-    autoTimer = setInterval(() => {
-      goTo(currentIndex + 1);
-    }, 4000);
-  };
-
-  const stopAuto = () => {
-    clearInterval(autoTimer);
-    autoTimer = null;
-  };
-
-  /* ===============================
-     OBSERVER (AMAN, TIDAK NARIK KE ATAS)
-  ============================== */
-  if ("IntersectionObserver" in window) {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) startAuto();
-          else stopAuto();
-        });
-      },
-      { threshold: 0.4 }
-    );
-    observer.observe(carousel);
-  } else {
-    startAuto();
-  }
-
-  /* ===============================
-     DOT CLICK
-  ============================== */
-  dots.forEach((dot, i) => {
-    dot.addEventListener("click", () => {
-      goTo(i);
-      stopAuto();
-      startAuto();
-    });
-  });
-
-  /* ===============================
-     UPDATE DOT SAAT SWIPE MANUAL
-  ============================== */
-  let scrollTimeout;
-  carousel.addEventListener("scroll", () => {
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      const center = carousel.scrollLeft + carousel.clientWidth / 2;
-      let nearest = 0;
-      let min = Infinity;
-
-      items.forEach((item, i) => {
-        const dist = Math.abs(item.offsetLeft + item.clientWidth / 2 - center);
-        if (dist < min) {
-          min = dist;
-          nearest = i;
-        }
-      });
-
-      currentIndex = nearest;
-      setActiveDot(currentIndex);
-    }, 80);
-  });
-
-  /* ===============================
-     INIT
-  ============================== */
-  setActiveDot(0);
 }
 
 /* =====================================================
-   LATEST ACTIVITY — AUTO REFRESH + FADE ANIMATION
+   FEATURE: BERANDA CAROUSEL
+===================================================== */
+function initBerandaCarousel() {
+  const carousel = $id("carousel");
+  if (!carousel) return;
+
+  const items = $qsa(".carousel-item", carousel);
+  const dots = $qsa(".dot");
+  if (!items.length) return;
+
+  let current = 0;
+  let timer = null;
+
+  const setDot = (i) => {
+    dots.forEach((d) => d.classList.remove("active"));
+    dots[i]?.classList.add("active");
+  };
+
+  const goTo = (i) => {
+    current = (i + items.length) % items.length;
+    carousel.scrollTo({
+      left: items[current].offsetLeft - (carousel.clientWidth - items[current].clientWidth) / 2,
+      behavior: "smooth",
+    });
+    setDot(current);
+  };
+
+  const start = () => {
+    if (timer) return;
+    timer = setInterval(() => goTo(current + 1), 4000);
+  };
+
+  const stop = () => {
+    clearInterval(timer);
+    timer = null;
+  };
+
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(([e]) => (e.isIntersecting ? start() : stop()), { threshold: 0.4 }).observe(carousel);
+  } else start();
+
+  dots.forEach((d, i) =>
+    safeOn(d, "click", () => {
+      goTo(i);
+      stop();
+      start();
+    })
+  );
+
+  setDot(0);
+}
+
+/* =====================================================
+   FEATURE: LATEST ACTIVITY
 ===================================================== */
 function initLatestActivity() {
-  const containerId = "latestActivity";
-  const url = "api/get_latest_activity.php";
-  const interval = 15000;
-
-  const container = document.getElementById(containerId);
+  const container = $id("latestActivity");
   if (!container) return;
 
-  // pastikan state awal
-  container.classList.add("show");
-
-  async function refreshLatestActivity() {
+  const url = "api/get_latest_activity.php";
+  setInterval(async () => {
     try {
-      // FADE OUT
       container.classList.remove("show");
-      container.classList.add("fade-refresh");
-
-      // tunggu animasi fade out
       await new Promise((r) => setTimeout(r, 250));
 
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) return;
 
-      const html = await res.text();
-      container.innerHTML = html;
-
-      // FADE IN
-      requestAnimationFrame(() => {
-        container.classList.add("show");
-      });
-    } catch (err) {
-      console.error("Gagal refresh aktivitas terbaru:", err);
+      container.innerHTML = await res.text();
+      container.classList.add("show");
+    } catch (e) {
+      console.error(e);
     }
-  }
+  }, 15000);
+}
 
-  // refresh berkala
-  setInterval(refreshLatestActivity, interval);
+function initPetugasDropdown({ inputId = "petugasInput", dropdownId = "petugasDropdown", itemSelector = ".petugas-item", dataAttr = "nama" } = {}) {
+  const input = document.getElementById(inputId);
+  const dropdown = document.getElementById(dropdownId);
+  if (!input || !dropdown) return;
+
+  const items = dropdown.querySelectorAll(itemSelector);
+
+  const filter = (keyword) => {
+    let visible = false;
+    items.forEach((item) => {
+      const nama = (item.dataset[dataAttr] || item.textContent).toLowerCase();
+      const match = nama.includes(keyword);
+      item.style.display = match ? "block" : "none";
+      if (match) visible = true;
+    });
+    dropdown.classList.toggle("hidden", !visible);
+  };
+
+  input.addEventListener("input", () => filter(input.value.toLowerCase().trim()));
+
+  input.addEventListener("focus", () => filter(""));
+
+  items.forEach((item) =>
+    item.addEventListener("click", () => {
+      input.value = item.textContent.trim();
+      dropdown.classList.add("hidden");
+    })
+  );
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".relative")) {
+      dropdown.classList.add("hidden");
+    }
+  });
 }
 
 /* =====================================================
-   INIT — ONE ENTRY POINT
+   ENTRY POINT — ONE PLACE ONLY
 ===================================================== */
 onReady(() => {
   initNavActive();
@@ -306,4 +261,5 @@ onReady(() => {
   initLogoutModal();
   initLatestActivity();
   initBerandaCarousel();
+  initPetugasDropdown();
 });
