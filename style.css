@@ -525,6 +525,34 @@ back-btn:hover {
   transform: scale(1.05);
 }
 
+.title.checklist-page {
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+  font-size: 1.3rem;
+  margin: 10px 0 8px 0; /* Atur margin atas/bawah sesuai kebutuhan */
+}
+
+.subtitle.checklist-page {
+  font-weight: 500;
+  opacity: 0.85;
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: 6px;
+  margin-bottom: 0; /* ❌ Tidak ada jarak ke bawah */
+}
+
+.register-container.checklist-page {
+  margin-top: -1rem;
+}
+
 /* =====================================================
    HEADER — iOS Clean
 ===================================================== */
@@ -1417,4 +1445,29 @@ header {
 .fade-refresh.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+.fade-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 9998;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fade-bg.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  border-radius: 18px 18px 0 0;
+  z-index: 9999; /* ⬅ HARUS LEBIH TINGGI DARI NAVBAR */
+  transform: translateY(100%);
 }

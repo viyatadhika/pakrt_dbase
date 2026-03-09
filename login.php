@@ -4,15 +4,21 @@ if (isset($_SESSION['user'])) {
     header("Location: beranda.php");
     exit;
 }
+
 $title = "Login | WARGA RT Super App";
 include 'config.php';
 include 'header.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nip = $_POST['username'];
+    $nip = trim($_POST['username']);
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE nip = ?");
+    $stmt = $conn->prepare("
+        SELECT id, nip, nama, role, password
+        FROM users
+        WHERE nip = ?
+        LIMIT 1
+    ");
     $stmt->bind_param("s", $nip);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -21,10 +27,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $result->fetch_assoc();
 
         if (password_verify($password, $user['password'])) {
+
+            // === SIMPAN SESSION LENGKAP ===
             $_SESSION['user'] = [
-                'nip' => $user['nip'],
-                'nama' => $user['nama']
+                'id'   => (int)$user['id'],
+                'nip'  => $user['nip'],
+                'nama' => $user['nama'],
+                'role' => $user['role'] // admin | pimpinan | petugas | security | ob | teknisi
             ];
+
             header("Location: beranda.php");
             exit;
         } else {

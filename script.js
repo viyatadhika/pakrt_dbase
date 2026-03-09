@@ -251,6 +251,91 @@ function initPetugasDropdown({ inputId = "petugasInput", dropdownId = "petugasDr
 }
 
 /* =====================================================
+   FEATURE: BOTTOM SHEET (REUSABLE)
+===================================================== */
+function initBottomSheet({ openBtnId, sheetId, fadeBgId, closeBtnId, contentId }) {
+  const openBtn = $id(openBtnId);
+  const sheet = $id(sheetId);
+  const fadeBg = $id(fadeBgId);
+  const closeBtn = $id(closeBtnId);
+  const content = $id(contentId);
+
+  // kalau salah satu elemen tidak ada → aman skip
+  if (!openBtn || !sheet || !fadeBg || !closeBtn || !content) return;
+
+  const openSheet = () => {
+    sheet.style.transition = "none";
+    sheet.style.transform = "translateY(100%)";
+
+    requestAnimationFrame(() => {
+      sheet.classList.add("show");
+      fadeBg.classList.add("show");
+      sheet.style.transition = "transform 0.35s ease";
+      sheet.style.transform = "translateY(0)";
+    });
+  };
+
+  const closeSheet = () => {
+    sheet.style.transition = "transform 0.35s ease";
+    sheet.style.transform = "translateY(100%)";
+    fadeBg.classList.remove("show");
+
+    setTimeout(() => {
+      sheet.classList.remove("show");
+      sheet.style.transform = "translateY(100%)";
+    }, 400);
+  };
+
+  /* ================= CLICK ================= */
+  safeOn(openBtn, "click", openSheet);
+  safeOn(closeBtn, "click", closeSheet);
+  safeOn(fadeBg, "click", closeSheet);
+
+  /* ================= SWIPE DOWN ================= */
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+  let canClose = false;
+
+  content.addEventListener("touchstart", (e) => {
+    if (content.scrollTop <= 0) {
+      canClose = true;
+      startY = e.touches[0].clientY;
+      isDragging = true;
+      sheet.style.transition = "none";
+    } else {
+      canClose = false;
+    }
+  });
+
+  content.addEventListener("touchmove", (e) => {
+    if (!isDragging || !canClose) return;
+
+    currentY = e.touches[0].clientY;
+    const deltaY = currentY - startY;
+
+    if (deltaY > 0) {
+      e.preventDefault();
+      sheet.style.transform = `translateY(${deltaY}px)`;
+    }
+  });
+
+  content.addEventListener("touchend", () => {
+    if (!isDragging) return;
+    isDragging = false;
+
+    const deltaY = currentY - startY;
+    sheet.style.transition = "transform 0.35s ease";
+
+    if (canClose && deltaY > 100) {
+      closeSheet();
+    } else {
+      sheet.style.transform = "translateY(0)";
+    }
+  });
+}
+
+/* =====================================================
    ENTRY POINT — ONE PLACE ONLY
 ===================================================== */
 onReady(() => {
@@ -262,4 +347,11 @@ onReady(() => {
   initLatestActivity();
   initBerandaCarousel();
   initPetugasDropdown();
+  initBottomSheet({
+    openBtnId: "openUploadLaporanKerusakan",
+    sheetId: "sheetLaporanKerusakan",
+    fadeBgId: "fadeBgLaporanKerusakan",
+    closeBtnId: "closeSheetLaporanKerusakan",
+    contentId: "sheetLaporanKerusakanContent",
+  });
 });

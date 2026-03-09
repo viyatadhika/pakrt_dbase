@@ -56,8 +56,8 @@ $namaDepan = explode(' ', trim($namaLengkap))[0];
 
             <!-- Laporan Kerusakan -->
             <a
-                href="https://docs.google.com/spreadsheets/d/1H3wMRJaw5R241OE0cgzMWumyR2oeGvVf0HzHBsu8Omg/edit"
-                target="_blank"
+                id="openUploadLaporanKerusakan"
+                href="javascript:void(0)"
                 class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:bg-red-50 transition-all">
                 <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
                     <i class="fa-solid fa-triangle-exclamation text-red-600 text-lg"></i>
@@ -129,4 +129,30 @@ $namaDepan = explode(' ', trim($namaLengkap))[0];
 
 
 <?php include 'nav_monitoring.php'; ?>
+<!-- BG untuk Sheet Laporan Kerusakan -->
+<div id="fadeBgLaporanKerusakan" class="fade-bg"></div>
+
+<!-- SHEET UPLOAD PRESENSI PPPK -->
+<div id="sheetLaporanKerusakan" class="sheet">
+    <div class="sheet-handle"></div>
+    <button id="closeSheetLaporanKerusakan" class="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-xl">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <div id="sheetLaporanKerusakanContent" class="p-4 pb-8 pt-4">
+        <h2 class="text-base font-semibold mb-4 text-center">Laporan Kerusakan</h2>
+        <div class="space-y-3">
+            <a href="laporan_kerusakan.php"
+                class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-emerald-50 transition">
+                <i class="fa-solid fa-bug text-red-600 text-xl"></i>
+                <span class="text-sm font-medium">Daftar Laporan Kerusakan</span>
+            </a>
+            <a href="laporan_kerusakan_tambah.php"
+                class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-sky-50 transition">
+                <i class="fa-solid fa-plus text-sky-600 text-xl"></i>
+                <span class="text-sm font-medium">Tambah Laporan Kerusakan</span>
+            </a>
+        </div>
+    </div>
+</div>
 <?php include 'footer.php'; ?>

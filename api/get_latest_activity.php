@@ -1,19 +1,25 @@
 <?php
 require __DIR__ . "/../config.php";
 
-
 /* ===============================
    HELPER: PRETTY FORM NAME
 ================================ */
 function prettyForm($raw)
 {
     $map = [
-        'piketob'          => 'Piket OB',
-        'piket_ob'         => 'Piket OB',
-        'piket ob'         => 'Piket OB',
-        'plotingjaga'      => 'Ploting Jaga',
-        'general_cleaning' => 'General Cleaning',
-        'ptsp'             => 'PTSP',
+        'piketob'            => 'Piket OB',
+        'piket_ob'           => 'Piket OB',
+        'piket ob'           => 'Piket OB',
+        'plotingjaga'        => 'Ploting Jaga',
+        'general_cleaning'   => 'General Cleaning',
+        'ptsp'               => 'PTSP',
+        'petugas_gedung'     => 'Petugas Gedung',
+        'petugas_gudang'     => 'Petugas Gudang',
+        'bmn'                => 'BMN',
+        'poliklinik'         => 'Poliklinik',
+        'driver'             => 'Driver',
+        'teknisi'            => 'Teknisi',
+        'admin_sekretariat'  => 'Admin Sekretariat',
     ];
 
     $key = strtolower(trim($raw));
@@ -21,21 +27,36 @@ function prettyForm($raw)
 }
 
 /* ===============================
-   QUERY
+   QUERY (FINAL – FIX ID → NAMA)
 ================================ */
 $sql = "
-    SELECT *
-    FROM checklist_forms
-    ORDER BY tanggal DESC, id DESC
-    LIMIT 3
+SELECT
+    cf.*,
+
+    /* Nama Area Kerja (Petugas Gedung pakai master) */
+    COALESCE(mtl.nama, cf.area_kerja) AS area_kerja_nama,
+
+    /* Nama Gedung (Petugas Gedung pakai master) */
+    COALESCE(ml.nama_lokasi, cf.area_gedung) AS area_gedung_nama
+
+FROM checklist_forms cf
+
+LEFT JOIN master_tipe_lokasi mtl
+       ON cf.form_type = 'petugas_gedung'
+      AND cf.area_kerja = mtl.id
+
+LEFT JOIN master_lokasi ml
+       ON cf.form_type = 'petugas_gedung'
+      AND cf.area_gedung = ml.id
+
+ORDER BY cf.tanggal DESC, cf.id DESC
+LIMIT 3
 ";
 
 $result = $conn->query($sql);
+?>
 
-/* ===============================
-   OUTPUT
-================================ */
-if ($result && $result->num_rows > 0): ?>
+<?php if ($result && $result->num_rows > 0): ?>
 
     <!-- ================= AKTIVITAS TERBARU ================= -->
     <section class="latest-section">
@@ -50,36 +71,53 @@ if ($result && $result->num_rows > 0): ?>
             <?php while ($row = $result->fetch_assoc()): ?>
 
                 <?php
-                /* ===============================
-       DATA PREP
-    =============================== */
+                /* ================= DATA PREP ================= */
 
                 // Tanggal
-                $tanggal = date('d M Y', strtotime($row['tanggal']));
+                $tanggal   = date('d M Y', strtotime($row['tanggal']));
                 $detailUrl = 'detail.php?id=' . (int)$row['id'];
 
-                // Lokasi
+                // Lokasi (SUDAH FIX ID → NAMA)
                 $lokasiParts = [];
-                foreach (['area_kerja', 'area_gedung', 'lantai', 'rumah', 'pos_jaga'] as $k) {
-                    if (!empty($row[$k])) $lokasiParts[] = $row[$k];
+
+                if (!empty($row['area_kerja_nama'])) {
+                    $lokasiParts[] = $row['area_kerja_nama'];
                 }
+
+                if (!empty($row['area_gedung_nama'])) {
+                    $lokasiParts[] = $row['area_gedung_nama'];
+                }
+
+                if (!empty($row['lantai'])) {
+                    $lokasiParts[] = $row['lantai'];
+                }
+
+                if (!empty($row['rumah'])) {
+                    $lokasiParts[] = $row['rumah'];
+                }
+
+                if (!empty($row['pos_jaga'])) {
+                    $lokasiParts[] = $row['pos_jaga'];
+                }
+
                 $lokasi = $lokasiParts ? implode(' • ', $lokasiParts) : '-';
 
-                // Jenis Form (badge)
+                // Jenis Form (Badge)
                 $displayForm = prettyForm($row['form_type']);
                 ?>
 
                 <a href="<?= htmlspecialchars($detailUrl); ?>" class="latest-card">
 
-                    <!-- BADGE (Jenis Form) -->
+                    <!-- BADGE -->
                     <span class="latest-badge">
                         <?= htmlspecialchars($displayForm); ?>
                     </span>
 
-                    <!-- TANGGAL (judul utama) -->
+                    <!-- TANGGAL -->
                     <p class="latest-title">
                         <?= htmlspecialchars($tanggal); ?>
                     </p>
+
                     <div class="latest-icon bg-blue">
                         <i class="fa-solid fa-clock"></i>
                     </div>
@@ -97,7 +135,6 @@ if ($result && $result->num_rows > 0): ?>
                 </a>
 
             <?php endwhile; ?>
-
 
         </div>
     </section>
