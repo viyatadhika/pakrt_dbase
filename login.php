@@ -10,7 +10,7 @@ include 'config.php';
 include 'header.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nip = trim($_POST['username']);
+    $nip      = trim($_POST['username']);
     $password = $_POST['password'];
 
     $stmt = $conn->prepare("
@@ -28,16 +28,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (password_verify($password, $user['password'])) {
 
-            // === SIMPAN SESSION LENGKAP ===
-            $_SESSION['user'] = [
-                'id'   => (int)$user['id'],
-                'nip'  => $user['nip'],
-                'nama' => $user['nama'],
-                'role' => $user['role'] // admin | pimpinan | petugas | security | ob | teknisi
-            ];
+            // ✅ Hanya role ini yang boleh login di aplikasi pimpinan
+            $allowedRoles = ['admin', 'pimpinan', 'supervisor', 'koordinator'];
 
-            header("Location: beranda.php");
-            exit;
+            if (!in_array(strtolower($user['role']), $allowedRoles)) {
+                $error = "Akun Anda tidak memiliki akses ke aplikasi ini.";
+            } else {
+                $_SESSION['user'] = [
+                    'id'   => (int)$user['id'],
+                    'nip'  => $user['nip'],
+                    'nama' => $user['nama'],
+                    'role' => $user['role']
+                ];
+                header("Location: beranda.php");
+                exit;
+            }
         } else {
             $error = "Kata sandi salah.";
         }
@@ -54,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <?php if (!empty($error)) : ?>
-        <div class="text-red-600 text-sm mb-3"><?= $error; ?></div>
+        <div class="text-red-600 text-sm mb-3"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
     <form method="POST" class="space-y-4">
@@ -74,10 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <button type="submit" class="btn-primary">Masuk</button>
-
-        <a href="daftar_akun.php" class="block text-center btn-outline mt-3">
-            Daftar Akun Baru
-        </a>
     </form>
 </div>
 
