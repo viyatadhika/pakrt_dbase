@@ -393,4 +393,261 @@ if ($qAreaChart) {
         </div>
     </div>
 
+    <!-- ========================================
+     POPUP NOTIFIKASI (SKP + PKP) — PEEK CAROUSEL
+======================================== -->
+
+    <div id="popupNotif" class="fixed inset-0 flex items-end justify-center z-[65] hidden"
+        style="background:rgba(0,0,0,0.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);">
+
+        <div class="w-full relative" style="border-radius:24px 24px 0 0; max-width:480px; padding-bottom:1rem;
+    background:rgba(255,255,255,0.15); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+    border:.5px solid rgba(255,255,255,0.3);">
+
+            <!-- Handle -->
+            <div style="display:flex; justify-content:center; padding:10px 0 4px;">
+                <div style="width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,0.5);"></div>
+            </div>
+
+            <!-- Close -->
+            <button id="closeNotif" style="position:absolute; top:10px; right:14px; width:30px; height:30px;
+      border-radius:50%; background:rgba(255,255,255,0.25); border:none; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; color:white; font-size:13px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Label counter -->
+            <p id="notifLabel" style="text-align:center; font-size:11px; color:rgba(255,255,255,0.7); margin:0 0 8px;"></p>
+
+            <!-- Track -->
+            <div style="overflow:hidden; padding:0 16px;">
+                <div id="notifTrack" style="display:flex; gap:12px; transition:transform .35s cubic-bezier(.4,0,.2,1); cursor:grab; user-select:none;">
+                    <!-- Cards diisi JS -->
+                </div>
+            </div>
+
+            <!-- Dots -->
+            <div id="notifDots" style="display:flex; justify-content:center; gap:6px; padding-top:12px;"></div>
+
+        </div>
+    </div>
+
+    <script>
+        (function() {
+
+            /* ── DEFINISI NOTIFIKASI ── */
+            const now = new Date();
+            const y = now.getFullYear(),
+                m = now.getMonth(),
+                d = now.getDate();
+            const items = [];
+
+            /* SKP — otomatis mengikuti tahun berjalan */
+            const bln = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+            const blnPanjang = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+            const skpPeriodes = [
+                // Triwulan I: muncul 25-31 Maret, batas 5 April tahun yg sama
+                {
+                    label: 'Triwulan I',
+                    periode: `1 Jan ${y} s/d 31 Mar ${y}`,
+                    batas: `5 April ${y}`,
+                    aktif: m === 2 && d >= 25,
+                },
+                // Triwulan II: muncul 24-30 Juni, batas 5 Juli tahun yg sama
+                {
+                    label: 'Triwulan II',
+                    periode: `1 Apr ${y} s/d 30 Jun ${y}`,
+                    batas: `5 Juli ${y}`,
+                    aktif: m === 5 && d >= 24,
+                },
+                // Triwulan III: muncul 24-30 September, batas 21 Oktober tahun yg sama
+                {
+                    label: 'Triwulan III',
+                    periode: `1 Jul ${y} s/d 30 Sep ${y}`,
+                    batas: `5 Oktober ${y}`,
+                    aktif: m === 8 && d >= 24,
+                },
+                // Triwulan IV: muncul 25-31 Desember, batas 5 Januari tahun berikutnya
+                {
+                    label: 'Triwulan IV',
+                    periode: `1 Okt ${y} s/d 31 Des ${y}`,
+                    batas: `5 Januari ${y+1}`,
+                    aktif: m === 11 && d >= 25,
+                },
+                // Tahunan: muncul seluruh Januari, batas 31 Januari tahun yg sama
+                // (periode mengacu tahun lalu karena pengisian Januari untuk tahun sebelumnya)
+                {
+                    label: 'Tahunan',
+                    periode: `1 Jan ${y-1} s/d 31 Des ${y-1}`,
+                    batas: `31 Januari ${y}`,
+                    aktif: m === 0,
+                },
+            ];
+
+            skpPeriodes.forEach(p => {
+                if (!p.aktif) return;
+                items.push({
+                    icon: 'fa-star',
+                    title: 'Pengisian SKP!',
+                    sub: 'Penilaian Kinerja Pegawai',
+                    grad: 'linear-gradient(135deg,#10b981,#0d9488)',
+                    accent: '#059669',
+                    body: `
+        <div style="background:#f0fdf4;border-radius:10px;padding:.6rem .8rem;margin-bottom:.75rem;border:.5px solid #bbf7d0;">
+          <p style="font-size:10px;color:#6b7280;margin:0 0 2px;text-transform:uppercase;letter-spacing:.04em;">Periode</p>
+          <p style="font-size:13px;font-weight:500;color:#065f46;margin:0 0 1px;">${p.label}</p>
+          <p style="font-size:11px;color:#374151;margin:0;">${p.periode}</p>
+        </div>
+        <div style="background:#fef2f2;border:.5px solid #fecaca;border-radius:10px;padding:.45rem;text-align:center;margin-bottom:.85rem;">
+          <p style="font-size:12px;font-weight:500;color:#dc2626;margin:0;">⏰ Batas: ${p.batas}</p>
+        </div>`
+                });
+            });
+
+            /* PKP — 7 hari terakhir bulan */
+            const lastDay = new Date(y, m + 1, 0).getDate();
+            if (d > lastDay - 7) {
+                items.push({
+                    icon: 'fa-clipboard-check',
+                    title: 'Tugas Mendesak!',
+                    sub: 'Pengingat PKP Bulanan',
+                    grad: 'linear-gradient(135deg,#6366f1,#4f46e5)',
+                    accent: '#4f46e5',
+                    body: `
+        <div style="background:#eef2ff;border-radius:10px;padding:.6rem .8rem;margin-bottom:.75rem;border:.5px solid #c7d2fe;">
+          <p style="font-size:10px;color:#6b7280;margin:0 0 2px;text-transform:uppercase;letter-spacing:.04em;">Info</p>
+          <p style="font-size:13px;font-weight:500;color:#3730a3;margin:0;">PKP Bulan Ini</p>
+        </div>
+        <div style="background:#fef2f2;border:.5px solid #fecaca;border-radius:10px;padding:.45rem;text-align:center;margin-bottom:.85rem;">
+          <p style="font-size:12px;font-weight:500;color:#dc2626;margin:0;">⏰ Batas: Tanggal 4 setiap bulan</p>
+        </div>`
+                });
+            }
+
+            if (!items.length) return;
+
+            const key = `notifShown_${y}-${m+1}-${d}`;
+            if (localStorage.getItem(key)) return;
+
+            /* ── BUILD CARDS ── */
+            const track = document.getElementById('notifTrack');
+            const dotsEl = document.getElementById('notifDots');
+            const label = document.getElementById('notifLabel');
+            const total = items.length;
+
+            items.forEach((n, i) => {
+                const card = document.createElement('div');
+                card.style.cssText = `
+      min-width:calc(100% - 28px); flex-shrink:0; border-radius:18px; overflow:hidden;
+      background:#ffffff; box-shadow:0 8px 32px rgba(0,0,0,0.18);`;
+                card.innerHTML = `
+      <div style="background:${n.grad}; padding:1.4rem 1.25rem .9rem; text-align:center;">
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);
+          display:flex;align-items:center;justify-content:center;margin:0 auto .6rem;">
+          <i class="fa-solid ${n.icon} text-white" style="font-size:20px;"></i>
+        </div>
+        <p style="color:white;font-size:15px;font-weight:600;margin:0 0 2px;">${n.title}</p>
+        <p style="color:rgba(255,255,255,.8);font-size:11px;margin:0;">${n.sub}</p>
+      </div>
+      <div style="padding:.9rem 1rem 1rem; background:#ffffff;">
+        ${n.body}
+        <button class="btn-tutup" style="width:100%;padding:.6rem;background:${n.accent};color:white;
+          border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;
+          transition:opacity .15s;" onmousedown="this.style.opacity='.8'" onmouseup="this.style.opacity='1'">
+          Mengerti & Lanjutkan
+        </button>
+      </div>`;
+                track.appendChild(card);
+
+                const dot = document.createElement('div');
+                dot.dataset.i = i;
+                dot.style.cssText = `height:5px;border-radius:3px;transition:all .3s;cursor:pointer;
+      background:${i===0 ? n.accent : 'rgba(255,255,255,0.4)'};
+      width:${i===0 ? '20px' : '6px'};`;
+                dotsEl.appendChild(dot);
+            });
+
+            const dots = [...dotsEl.children];
+            let cur = 0;
+
+            function goTo(i) {
+                cur = Math.max(0, Math.min(i, total - 1));
+                const cardW = track.children[0].offsetWidth + 12;
+                track.style.transform = `translateX(-${cur * cardW}px)`;
+                dots.forEach((dot, idx) => {
+                    dot.style.width = idx === cur ? '20px' : '6px';
+                    dot.style.background = idx === cur ? items[cur].accent : 'rgba(255,255,255,0.4)';
+                });
+                label.textContent = `${cur + 1} / ${total} pengingat`;
+            }
+
+            goTo(0);
+            dots.forEach(dot => dot.addEventListener('click', () => goTo(+dot.dataset.i)));
+
+            /* Swipe touch */
+            let sx = 0;
+            track.addEventListener('touchstart', e => {
+                sx = e.touches[0].clientX;
+            }, {
+                passive: true
+            });
+            track.addEventListener('touchend', e => {
+                const dx = e.changedTouches[0].clientX - sx;
+                if (dx < -30) goTo(cur + 1);
+                if (dx > 30) goTo(cur - 1);
+            });
+
+            /* Drag mouse */
+            let mx = 0,
+                drag = false;
+            track.addEventListener('mousedown', e => {
+                mx = e.clientX;
+                drag = true;
+                track.style.cursor = 'grabbing';
+            });
+            track.addEventListener('mouseup', e => {
+                if (!drag) return;
+                drag = false;
+                track.style.cursor = 'grab';
+                const dx = e.clientX - mx;
+                if (dx < -30) goTo(cur + 1);
+                if (dx > 30) goTo(cur - 1);
+            });
+            track.addEventListener('mouseleave', () => {
+                drag = false;
+                track.style.cursor = 'grab';
+            });
+
+            /* ── TUTUP ── */
+            function tutup() {
+                const modal = document.getElementById('popupNotif');
+                modal.style.transition = 'opacity .25s ease';
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.style.opacity = '';
+                    localStorage.setItem(key, 'true');
+                }, 250);
+            }
+
+            document.getElementById('closeNotif').addEventListener('click', tutup);
+            document.querySelectorAll('.btn-tutup').forEach(b => b.addEventListener('click', tutup));
+            document.getElementById('popupNotif').addEventListener('click', e => {
+                if (e.target === document.getElementById('popupNotif')) tutup();
+            });
+
+            /* ── TAMPILKAN ── */
+            const modal = document.getElementById('popupNotif');
+            modal.classList.remove('hidden');
+            modal.style.opacity = '0';
+            requestAnimationFrame(() => {
+                modal.style.transition = 'opacity .3s ease';
+                modal.style.opacity = '1';
+            });
+
+        })();
+    </script>
+    <!-- === END POPUP NOTIFIKASI === -->
+
     <?php include 'footer.php'; ?>
