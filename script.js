@@ -184,7 +184,7 @@ function initBerandaCarousel() {
       goTo(i);
       stop();
       start();
-    })
+    }),
   );
 
   setDot(0);
@@ -240,7 +240,7 @@ function initPetugasDropdown({ inputId = "petugasInput", dropdownId = "petugasDr
     item.addEventListener("click", () => {
       input.value = item.textContent.trim();
       dropdown.classList.add("hidden");
-    })
+    }),
   );
 
   document.addEventListener("click", (e) => {
@@ -347,11 +347,31 @@ onReady(() => {
   initLatestActivity();
   initBerandaCarousel();
   initPetugasDropdown();
+
+  // Sheet: Laporan Kerusakan
   initBottomSheet({
     openBtnId: "openUploadLaporanKerusakan",
     sheetId: "sheetLaporanKerusakan",
     fadeBgId: "fadeBgLaporanKerusakan",
     closeBtnId: "closeSheetLaporanKerusakan",
     contentId: "sheetLaporanKerusakanContent",
+  });
+
+  // Sheet: Gudang
+  initBottomSheet({
+    openBtnId: "openUploadGudang",
+    sheetId: "sheetGudang",
+    fadeBgId: "fadeBgGudang",
+    closeBtnId: "closeSheetGudang",
+    contentId: "sheetGudangContent",
+  });
+
+  // Sheet: Cekin
+  initBottomSheet({
+    openBtnId: "openUploadCekin",
+    sheetId: "sheetCekin",
+    fadeBgId: "fadeBgCekin",
+    closeBtnId: "closeSheetCekin",
+    contentId: "sheetCekinContent",
   });
 });

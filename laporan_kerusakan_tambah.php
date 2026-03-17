@@ -37,15 +37,15 @@ $namaLengkap = $_SESSION['user']['nama'] ?? '';
 <!-- ================= STICKY HEADER ================= -->
 <div id="stickyHeader" class="seamless-header">
     <div class="flex items-center gap-1 mb-2">
-        <a href="lainnya.php" class="back-btn p-2 bg-white shadow-sm border border-sky-100 hover:bg-sky-50 transition">
-            <i class="fa-solid fa-arrow-left text-sky-600 text-lg"></i>
+        <a href="javascript:window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 transition">
+            <i class="fa-solid fa-arrow-left"></i>
         </a>
 
         <div class="flex-1">
-            <h2 class="font-bold text-xl md:text-2xl text-sky-600">
+            <h2 class="title checklist-page font-bold text-xl md:text-2xl text-sky-600 leading-tight">
                 Laporan Kerusakan
             </h2>
-            <p class="text-xs md:text-sm text-gray-500">
+            <p class="subtitle checklist-page text-xs md:text-sm text-gray-500 mt-0.5">
                 Pelaporan fasilitas rusak
             </p>
         </div>
@@ -70,20 +70,10 @@ $namaLengkap = $_SESSION['user']['nama'] ?? '';
                     Informasi Kerusakan
                 </h3>
 
-                <!-- TANGGAL -->
+                <!-- Tanggal -->
                 <div class="date-field fade-up">
                     <i class="fa-solid fa-calendar-days date-icon"></i>
-
-                    <span class="date-placeholder" id="tanggalLabel">
-                        Pilih Tanggal
-                    </span>
-
-                    <input
-                        type="date"
-                        name="tanggal"
-                        id="tanggal"
-                        class="date-input"
-                        required />
+                    <input type="date" name="tanggal" id="tanggal" class="date-input" required>
                 </div>
 
                 <!-- ================= LOKASI (CASCADING FINAL) ================= -->

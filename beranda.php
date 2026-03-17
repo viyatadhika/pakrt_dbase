@@ -319,7 +319,7 @@ if ($qAreaChart) {
     <!-- BG untuk Sheet Laporan Kerusakan -->
     <div id="fadeBgLaporanKerusakan" class="fade-bg"></div>
 
-    <!-- SHEET UPLOAD LAPORAN KERUSAKAN -->
+    <!-- SHEET UPLOAD PRESENSI PPPK -->
     <div id="sheetLaporanKerusakan" class="sheet">
         <div class="sheet-handle"></div>
         <button id="closeSheetLaporanKerusakan" class="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-xl">
@@ -327,17 +327,254 @@ if ($qAreaChart) {
         </button>
 
         <div id="sheetLaporanKerusakanContent" class="p-4 pb-8 pt-4">
-            <h2 class="text-base font-semibold mb-4 text-center">Laporan Kerusakan</h2>
+            <div class="text-center mb-5">
+                <h2 class="text-lg font-bold text-sky-600">Laporan Kerusakan</h2>
+                <p class="text-xs text-gray-500 mt-1">Laporkan fasilitas yang rusak</p>
+            </div>
+
             <div class="space-y-3">
+
                 <a href="laporan_kerusakan.php"
-                    class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-emerald-50 transition">
-                    <i class="fa-solid fa-bug text-red-600 text-xl"></i>
-                    <span class="text-sm font-medium">Daftar Laporan Kerusakan</span>
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:bg-red-50 transition-all">
+
+                    <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                        <i class="fa-solid fa-list-check text-red-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold">Daftar Laporan</p>
+                        <p class="text-xs text-gray-500">Lihat laporan masuk</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
                 </a>
+
                 <a href="laporan_kerusakan_tambah.php"
-                    class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-sky-50 transition">
-                    <i class="fa-solid fa-plus text-sky-600 text-xl"></i>
-                    <span class="text-sm font-medium">Tambah Laporan Kerusakan</span>
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:bg-sky-50 transition-all">
+
+                    <div class="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center">
+                        <i class="fa-solid fa-plus text-sky-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold">Tambah Laporan</p>
+                        <p class="text-xs text-gray-500">Laporkan kerusakan baru</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="fadeBgGudang" class="fade-bg"></div>
+
+
+    <div id="sheetGudang" class="sheet">
+        <div class="sheet-handle"></div>
+        <button id="closeSheetGudang" class="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-xl">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div id="sheetGudangContent" class="p-4 pb-8 pt-4">
+            <!-- HEADER -->
+            <div class="text-center mb-5">
+                <h2 class="text-lg font-bold text-sky-600">Manajemen Gudang</h2>
+                <p class="text-xs text-gray-500 mt-1">Manajemen stok &amp; laporan gudang</p>
+            </div>
+
+            <!-- MENU LIST -->
+            <div class="space-y-3">
+
+                <!-- Stok Barang -->
+                <a href="stok_barang.php"
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:bg-emerald-50 transition-all">
+
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+                        <i class="fa-solid fa-boxes-stacked text-emerald-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-800">Stok Barang</p>
+                        <p class="text-xs text-gray-500">Lihat &amp; kelola stok barang</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                </a>
+
+                <!-- Barang Masuk -->
+                <a href="barang_masuk.php"
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:bg-sky-50 transition-all">
+
+                    <div class="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-down-wide-short text-sky-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-800">Barang Masuk</p>
+                        <p class="text-xs text-gray-500">Input barang masuk gudang</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                </a>
+
+                <!-- Barang Keluar -->
+                <a href="barang_keluar.php"
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:bg-rose-50 transition-all">
+
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-up-wide-short text-rose-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-800">Barang Keluar</p>
+                        <p class="text-xs text-gray-500">Input barang keluar gudang</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                </a>
+
+                <!-- Stok Opname -->
+                <a href="stok_opname.php"
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:bg-indigo-50 transition-all">
+
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
+                        <i class="fa-solid fa-clipboard-check text-indigo-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-800">Stok Opname</p>
+                        <p class="text-xs text-gray-500">Cek fisik stok barang</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                </a>
+
+                <a href="koreksi_stok.php"
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:bg-amber-50 transition-all">
+
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                        <i class="fa-solid fa-file-lines text-amber-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-800">Penyesuaian Stok Barang</p>
+                        <p class="text-xs text-gray-500">Catatan koreksi stok barang</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                </a>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- BG untuk Sheet Laporan Kerusakan -->
+    <div id="fadeBgLaporanKerusakan" class="fade-bg"></div>
+
+    <!-- SHEET UPLOAD PRESENSI PPPK -->
+    <div id="sheetLaporanKerusakan" class="sheet">
+        <div class="sheet-handle"></div>
+        <button id="closeSheetLaporanKerusakan" class="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-xl">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div id="sheetLaporanKerusakanContent" class="p-4 pb-8 pt-4">
+            <div class="text-center mb-5">
+                <h2 class="text-lg font-bold text-sky-600">Laporan Kerusakan</h2>
+                <p class="text-xs text-gray-500 mt-1">Laporkan fasilitas yang rusak</p>
+            </div>
+
+            <div class="space-y-3">
+
+                <a href="laporan_kerusakan.php"
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:bg-red-50 transition-all">
+
+                    <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                        <i class="fa-solid fa-list-check text-red-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold">Daftar Laporan</p>
+                        <p class="text-xs text-gray-500">Lihat laporan masuk</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                </a>
+
+                <a href="laporan_kerusakan_tambah.php"
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:bg-sky-50 transition-all">
+
+                    <div class="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center">
+                        <i class="fa-solid fa-plus text-sky-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold">Tambah Laporan</p>
+                        <p class="text-xs text-gray-500">Laporkan kerusakan baru</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- FADE BG -->
+    <div id="fadeBgCekin" class="fade-bg"></div>
+
+    <!-- SHEET -->
+    <div id="sheetCekin" class="sheet">
+        <div class="sheet-handle"></div>
+
+        <!-- Close Button -->
+        <button id="closeSheetCekin"
+            class="absolute top-3 right-4 w-9 h-9 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition flex items-center justify-center">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div id="sheetCekinContent" class="p-5 pb-8 pt-4">
+
+            <!-- HEADER -->
+            <div class="text-center mb-5">
+                <h2 class="text-lg font-extrabold text-sky-600">Cekin Peserta &amp; Pengajar</h2>
+                <p class="text-xs text-gray-500 mt-1">Monitoring check-in peserta</p>
+            </div>
+
+            <!-- MENU LIST -->
+            <div class="space-y-3">
+
+                <!-- Input Peserta/Pengajar -->
+                <a href="input_data_peserta_pengajar.php"
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:bg-emerald-50 transition-all active:scale-[0.98]">
+
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-user-plus text-emerald-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-gray-800 truncate">Input Peserta &amp; Pengajar</p>
+                        <p class="text-xs text-gray-500 truncate">Tambah data peserta / pengajar</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+                </a>
+
+                <!-- Cekin Peserta -->
+                <a href="cekin_cekout.php"
+                    class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:bg-sky-50 transition-all active:scale-[0.98]">
+
+                    <div class="w-12 h-12 rounded-2xl bg-sky-100 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-right-to-bracket text-sky-600 text-xl"></i>
+                    </div>
+
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-gray-800 truncate">Cekin dan Cekout</p>
+                        <p class="text-xs text-gray-500 truncate">Peserta dan Pengajar</p>
+                    </div>
+
+                    <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
                 </a>
             </div>
         </div>

@@ -7,6 +7,13 @@ if (!isset($_SESSION['user'])) {
 }
 
 $user = $_SESSION['user'];
+
+// ✅ Proteksi server-side: hanya admin, petugas, teknisi
+$allowedRoles = ['admin', 'petugas', 'teknisi'];
+if (!in_array(strtolower($user['role'] ?? ''), $allowedRoles)) {
+    die("Anda tidak memiliki akses untuk melakukan aksi ini.");
+}
+
 $userId   = (int)$user['id'];
 $userNama = $user['nama'];
 
@@ -64,18 +71,11 @@ try {
         move_uploaded_file($tmp, $fullPath);
 
         $stmtFoto = $conn->prepare("
-    INSERT INTO laporan_kerusakan_fotos
-    (laporan_id, jenis, foto_path, uploaded_by_user_id, uploaded_at)
-    VALUES (?, 'selesai', ?, ?, NOW())
-");
-
-        $stmtFoto->bind_param(
-            "isi",
-            $laporanId,
-            $dbPath,
-            $userId
-        );
-
+            INSERT INTO laporan_kerusakan_fotos
+            (laporan_id, jenis, foto_path, uploaded_by_user_id, uploaded_at)
+            VALUES (?, 'selesai', ?, ?, NOW())
+        ");
+        $stmtFoto->bind_param("isi", $laporanId, $dbPath, $userId);
         $stmtFoto->execute();
     }
 

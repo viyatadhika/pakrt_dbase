@@ -77,6 +77,15 @@ $cntOpsDiLuar  = (int)$conn->query("SELECT COUNT(*) FROM kendaraan_operasional_l
 include 'header.php';
 ?>
 <style>
+    .sticky-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        background: #ffffff;
+    }
+
     .page-container {
         width: 100%;
         padding: 0 16px;
@@ -88,14 +97,6 @@ include 'header.php';
         }
     }
 
-    .header-container {
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        background: #fff;
-    }
-
-    /* Main tab */
     .main-tab-btn {
         flex: 1;
         padding: 10px 8px;
@@ -123,7 +124,6 @@ include 'header.php';
         color: #fff;
     }
 
-    /* Sub tab */
     .sub-tab-wrap {
         display: flex;
         gap: 8px;
@@ -333,12 +333,12 @@ include 'header.php';
     @keyframes slideUp {
         from {
             transform: translateY(60px);
-            opacity: 0;
+            opacity: 0
         }
 
         to {
             transform: translateY(0);
-            opacity: 1;
+            opacity: 1
         }
     }
 
@@ -385,25 +385,27 @@ include 'header.php';
     }
 </style>
 
-<!-- ===== STICKY HEADER ===== -->
-<div class="header-container">
-    <header class="px-4 py-4 flex items-center justify-between bg-white">
-        <div class="flex items-center gap-4">
-            <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 transition">
-                <i class="fa-solid fa-arrow-left"></i>
-            </button>
-            <div>
-                <h1 class="text-lg font-extrabold text-sky-600 leading-tight">Pencatatan Kendaraan</h1>
-                <p class="text-[11px] text-gray-500 font-medium">Tamu &amp; Operasional</p>
-            </div>
-        </div>
-        <button onclick="openDownloadModal()" class="w-10 h-10 flex items-center justify-center text-sky-600 hover:bg-sky-50 rounded-full transition">
-            <i class="fa-solid fa-download text-lg"></i>
+<!-- Header — sama dengan timetable & arsip surat -->
+<header class="sticky-header px-5 py-4 relative">
+    <div class="flex items-center gap-3 min-w-0">
+        <button onclick="window.history.back()"
+            class="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 transition">
+            <i class="fa-solid fa-arrow-left text-sm"></i>
         </button>
-    </header>
+        <div class="min-w-0">
+            <h1 class="text-[17px] font-extrabold text-sky-600 leading-tight truncate">Pencatatan Kendaraan</h1>
+            <p class="text-[12px] text-gray-400 font-medium leading-tight">Tamu &amp; Operasional</p>
+        </div>
+    </div>
+    <button onclick="openDownloadModal()"
+        class="absolute top-5 right-4 w-11 h-11 flex items-center justify-center text-sky-600 hover:bg-sky-50 rounded-full transition text-lg">
+        <i class="fa-solid fa-download text-lg"></i>
+    </button>
+</header>
 
-    <!-- Search -->
-    <div class="px-4 pb-2 bg-white">
+<!-- Search + Tabs (fixed di bawah header) -->
+<div data-fixed-bar style="position:fixed; top:73px; left:0; right:0; z-index:48; background:#fff;">
+    <div class="px-4 pt-3 pb-2">
         <div class="relative group">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <i class="fa-solid fa-magnifying-glass text-gray-400 group-focus-within:text-sky-500 transition-colors"></i>
@@ -412,39 +414,34 @@ include 'header.php';
                 class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-sky-300 outline-none transition-all">
         </div>
     </div>
-
     <!-- 2 Main Tab -->
-    <div class="px-4 pt-1 pb-2">
+    <div class="px-4 pb-2">
         <div class="flex gap-1 bg-slate-100 p-1 rounded-full w-full">
             <button id="mainTabTamu" class="main-tab-btn active-sky" onclick="switchMainTab('tamu')">
-                <i class="fa-solid fa-car text-[11px]"></i>
-                Tamu / Pengunjung
+                <i class="fa-solid fa-car text-[11px]"></i> Tamu / Pengunjung
             </button>
             <button id="mainTabOps" class="main-tab-btn" onclick="switchMainTab('ops')">
-                <i class="fa-solid fa-truck-fast text-[11px]"></i>
-                Operasional
-                <span id="cntOpsMain" class="cnt-badge bg-amber-100 text-amber-700"><?= $cntOpsDiLuar > 0 ? $cntOpsDiLuar : '' ?></span>
+                <i class="fa-solid fa-truck-fast text-[11px]"></i> Operasional
+                <span id="cntOpsMain" class="cnt-badge bg-amber-100 text-amber-700"></span>
             </button>
         </div>
     </div>
-
     <!-- Sub-tab Tamu -->
     <div id="subTabTamu" class="sub-tab-wrap">
         <button id="stTamuMasuk" class="sub-tab-btn sub-sky-active" onclick="switchSubTab('tamu','masuk')">
             <i class="fa-solid fa-arrow-right-to-bracket"></i> Di Dalam
-            <span id="cntTamuMasuk" class="cnt-badge bg-sky-100 text-sky-700"><?= $cntTamuMasuk ?></span>
+            <span id="cntTamuMasuk" class="cnt-badge bg-sky-100 text-sky-700"></span>
         </button>
         <button id="stTamuKeluar" class="sub-tab-btn sub-sky-inactive" onclick="switchSubTab('tamu','keluar')">
             <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Keluar
-            <span id="cntTamuKeluar" class="cnt-badge bg-slate-100 text-slate-500"><?= $cntTamuKeluar ?></span>
+            <span id="cntTamuKeluar" class="cnt-badge bg-slate-100 text-slate-500"></span>
         </button>
     </div>
-
     <!-- Sub-tab Operasional -->
     <div id="subTabOps" class="sub-tab-wrap hidden">
         <button id="stOpsDiLuar" class="sub-tab-btn sub-amber-active" onclick="switchSubTab('ops','keluar')">
             <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
-            <span id="cntOpsDiLuar" class="cnt-badge bg-amber-100 text-amber-700"><?= $cntOpsDiLuar ?></span>
+            <span id="cntOpsDiLuar" class="cnt-badge bg-amber-100 text-amber-700"></span>
         </button>
         <button id="stOpsKembali" class="sub-tab-btn sub-amber-inactive" onclick="switchSubTab('ops','kembali')">
             <i class="fa-solid fa-arrow-right-to-bracket"></i> Sudah Kembali
@@ -452,6 +449,34 @@ include 'header.php';
         </button>
     </div>
 </div>
+
+<script>
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            var h1 = document.querySelector('header.sticky-header')?.offsetHeight || 73;
+            var h2 = document.querySelector('[data-fixed-bar]')?.offsetHeight || 150;
+            var total = h1 + h2 + 12;
+
+            var alert = document.getElementById('alertBox');
+            var list = document.getElementById('listContainer');
+            if (alert) alert.style.marginTop = total + 'px';
+            if (list) list.style.marginTop = total + 'px';
+
+            // Update juga saat tab switch
+            ['switchMainTab', 'switchSubTab'].forEach(fn => {
+                var orig = window[fn];
+                if (orig) window[fn] = function() {
+                    orig.apply(this, arguments);
+                    setTimeout(function() {
+                        var h2new = document.querySelector('[data-fixed-bar]')?.offsetHeight || 150;
+                        var t = h1 + h2new + 12;
+                        if (list) list.style.marginTop = t + 'px';
+                    }, 50);
+                };
+            });
+        }, 150);
+    });
+</script>
 
 <!-- ===== ALERT ===== -->
 <?php if ($pesan): ?>

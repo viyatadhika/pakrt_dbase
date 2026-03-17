@@ -9,7 +9,7 @@ if (!isset($_SESSION['user'])) {
 }
 
 $user = $_SESSION['user'];
-$canUpdate = ($user['role'] === 'petugas');
+$canUpdate = ($user['role'] === 'petugas' || $user['role'] === 'teknisi' || $user['role'] === 'admin');
 
 /* ================= VALIDASI ID ================= */
 $id = (int)($_GET['id'] ?? 0);
@@ -196,7 +196,7 @@ include 'header.php';
 <div class="seamless-header">
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-            <a href="laporan_kerusakan.php" class="back-btn p-2 bg-white border rounded-xl">
+            <a href="javascript:window.history.back()" class="w-10 h-10 flex items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 transition">
                 <i class="fa-solid fa-arrow-left text-sky-600"></i>
             </a>
             <h2 class="font-bold text-lg text-sky-600">Detail Kerusakan</h2>
