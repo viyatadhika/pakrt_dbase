@@ -1516,3 +1516,82 @@ header.sticky-header {
   -webkit-backdrop-filter: blur(12px) !important;
   display: block !important;
 }
+
+/* WRAPPER */
+.date-field {
+  position: relative;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* DATE INPUT */
+.date-input {
+  width: 100%;
+  height: 52px;
+  padding: 0 48px 0 44px;
+  box-sizing: border-box;
+
+  font-size: 0.95rem;
+  color: #334155;
+  background-color: #f9fafb;
+
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Warna placeholder saat belum dipilih */
+.date-input:not([value])::-webkit-datetime-edit,
+.date-input[value=""]::-webkit-datetime-edit {
+  color: #94a3b8;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+  background-color: #fff;
+  color: #1e293b;
+}
+
+/* Ikon kiri */
+.date-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #0284c7;
+  font-size: 1rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Native calendar icon */
+.date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+/* Sembunyikan teks dd/mm/yyyy saat belum dipilih */
+.date-input.empty::-webkit-datetime-edit {
+  color: transparent;
+}
+
+/* Tampilkan "Pilih Tanggal" via after pada wrapper */
+.date-field::after {
+  content: "Pilih Tanggal";
+  position: absolute;
+  left: 44px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.95rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+/* Sembunyikan pseudo ketika sudah ada value */
+.date-field.has-value::after {
+  display: none;
+}

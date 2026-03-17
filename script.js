@@ -375,3 +375,27 @@ onReady(() => {
     contentId: "sheetCekinContent",
   });
 });
+
+// Bungkus dalam DOMContentLoaded atau cek null dulu
+document.addEventListener("DOMContentLoaded", function () {
+  const tanggal = document.getElementById("tanggal");
+
+  // Cek dulu apakah elemen ada
+  if (!tanggal) return;
+
+  const dateField = tanggal.closest(".date-field");
+  if (!dateField) return;
+
+  // Set class empty saat load
+  tanggal.classList.add("empty");
+
+  tanggal.addEventListener("change", function () {
+    if (this.value) {
+      this.classList.remove("empty");
+      dateField.classList.add("has-value");
+    } else {
+      this.classList.add("empty");
+      dateField.classList.remove("has-value");
+    }
+  });
+});
