@@ -162,7 +162,7 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
 </style>
 
 <!-- Header -->
-<header class="sticky-header px-5 py-4 relative">
+<header class="sticky-header px-5 pt-4 pb-0 relative">
     <div class="flex items-center justify-between gap-3">
 
         <!-- Kiri: Tombol back + Judul -->
