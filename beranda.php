@@ -388,7 +388,7 @@ if ($qAreaChart) {
                 <p class="text-xs text-gray-500 mt-1">Monitoring check-in peserta</p>
             </div>
             <div class="space-y-3">
-                <a href="input_data_peserta_pengajar.php"
+                <a href="peserta_penginapan.php"
                     class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:bg-emerald-50 transition-all">
                     <div class="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center shrink-0">
                         <i class="fa-solid fa-user-plus text-emerald-600 text-xl"></i>
