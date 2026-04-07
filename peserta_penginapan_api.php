@@ -1,257 +1,385 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+
+date_default_timezone_set('Asia/Jakarta');
+
+session_start();
 require_once 'config.php';
 
-if (isset($conn) && $conn instanceof mysqli) {
-    $db = $conn;
-} elseif (isset($koneksi) && $koneksi instanceof mysqli) {
-    $db = $koneksi;
-} else {
+$db = $conn ?? $koneksi ?? null;
+if (!($db instanceof mysqli)) {
     echo json_encode([
         'status' => false,
-        'message' => 'Koneksi database tidak ditemukan dari config.php'
+        'message' => 'Koneksi database tidak ditemukan'
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
-
 $db->set_charset('utf8mb4');
 
-function jsonResponse($status, $message, $data = null)
+function ok($msg, $data = null, $extra = [])
 {
+    echo json_encode(array_merge([
+        'status' => true,
+        'message' => $msg,
+        'data' => $data
+    ], $extra), JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+function err($msg, $data = null, $code = 200)
+{
+    http_response_code($code);
     echo json_encode([
-        'status' => $status,
-        'message' => $message,
+        'status' => false,
+        'message' => $msg,
         'data' => $data
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-function cleanText($value)
+function clean($v)
 {
-    return trim((string)$value);
+    return trim((string)($v ?? ''));
 }
 
-function nullable($value)
+function nullable($v)
 {
-    $value = trim((string)$value);
-    return $value === '' ? null : $value;
+    $v = trim((string)($v ?? ''));
+    return $v === '' ? null : $v;
 }
 
-function upperText($value)
+function upper($v)
 {
-    $value = trim((string)$value);
-    return $value === '' ? '' : mb_strtoupper($value, 'UTF-8');
+    $v = trim((string)($v ?? ''));
+    return $v === '' ? null : mb_strtoupper($v, 'UTF-8');
 }
 
-function titleCaseSafe($value)
+function tc($v)
 {
-    $value = trim((string)$value);
-    if ($value === '') return '';
-    return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
+    $v = trim((string)($v ?? ''));
+    return $v === '' ? null : mb_convert_case($v, MB_CASE_TITLE, 'UTF-8');
 }
 
 $action = $_GET['action'] ?? '';
 
+/* ── LIST ALL ───────────────────────────────────────── */
 if ($action === 'list') {
     $sql = "SELECT 
-                p.id,
-                p.agenda_id,
-                p.nama,
-                p.instansi,
-                p.nip,
-                p.no_hp,
-                p.peran,
-                p.jenis_kelamin,
-                p.gedung,
-                p.lantai,
-                p.kamar,
-                p.bed,
-                p.checkin_date,
-                p.checkin_time,
-                p.checkout_date,
-                p.checkout_time,
-                p.status_inap,
-                p.kondisi,
-                p.catatan,
-                p.created_at,
-                p.updated_at,
-                a.judul,
-                a.start_date,
-                a.end_date,
+                p.*, 
+                a.judul, 
+                a.start_date, 
+                a.end_date, 
                 a.kategori
             FROM peserta_penginapan p
             LEFT JOIN agenda_kegiatan a ON a.id = p.agenda_id
-            ORDER BY
-                p.gedung ASC,
-                CAST(COALESCE(NULLIF(p.lantai, ''), '0') AS UNSIGNED) ASC,
-                CAST(COALESCE(NULLIF(p.kamar, ''), '0') AS UNSIGNED) ASC,
-                p.nama ASC";
+            ORDER BY 
+                p.gedung,
+                CAST(COALESCE(NULLIF(p.lantai,''),'0') AS UNSIGNED),
+                CAST(COALESCE(NULLIF(p.kamar,''),'0') AS UNSIGNED),
+                p.nama";
 
-    $result = $db->query($sql);
-    if (!$result) {
-        jsonResponse(false, 'Gagal mengambil data: ' . $db->error);
-    }
+    $res = $db->query($sql);
+    if (!$res) err('Gagal query: ' . $db->error);
 
     $rows = [];
-    while ($row = $result->fetch_assoc()) {
-        $rows[] = $row;
-    }
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
 
-    jsonResponse(true, 'Data berhasil diambil', $rows);
+    ok('OK', $rows, [
+        'meta' => [
+            'server_date' => date('Y-m-d'),
+            'server_time' => date('Y-m-d H:i:s'),
+            'timezone' => date_default_timezone_get(),
+            'count' => count($rows)
+        ]
+    ]);
 }
 
+/* ── LIST CEKIN / CEKOUT ───────────────────────────── */
+if ($action === 'list_cekin') {
+    $today = date('Y-m-d');
+
+    $sqlAgenda = "SELECT id, judul, start_date, end_date
+                  FROM agenda_kegiatan
+                  WHERE start_date <= CURDATE()
+                    AND (end_date >= CURDATE() OR end_date IS NULL)
+                  ORDER BY start_date DESC, id DESC";
+
+    $resA = $db->query($sqlAgenda);
+    if (!$resA) err('Gagal query agenda: ' . $db->error);
+
+    $agendas = [];
+    while ($a = $resA->fetch_assoc()) $agendas[] = $a;
+
+    $isFallback = false;
+
+    if (empty($agendas)) {
+        $isFallback = true;
+
+        $sqlFb = "SELECT id, judul, start_date, end_date
+                  FROM agenda_kegiatan
+                  ORDER BY 
+                    COALESCE(end_date, start_date) DESC,
+                    start_date DESC,
+                    id DESC
+                  LIMIT 3";
+
+        $resFb = $db->query($sqlFb);
+        if (!$resFb) err('Gagal query fallback agenda: ' . $db->error);
+
+        while ($a = $resFb->fetch_assoc()) $agendas[] = $a;
+    }
+
+    $result = [];
+
+    foreach ($agendas as $ag) {
+        $agId = (int)$ag['id'];
+
+        $stmt = $db->prepare("SELECT
+                                id,
+                                agenda_id,
+                                nama,
+                                instansi,
+                                nip,
+                                no_hp,
+                                peran,
+                                jenis_kelamin,
+                                gedung,
+                                lantai,
+                                kamar,
+                                bed,
+                                checkin_date,
+                                checkin_time,
+                                checkout_date,
+                                checkout_time,
+                                status_inap,
+                                kondisi,
+                                catatan,
+                                updated_at
+                              FROM peserta_penginapan
+                              WHERE agenda_id = ?
+                              ORDER BY 
+                                gedung,
+                                CAST(COALESCE(NULLIF(lantai,''),'0') AS UNSIGNED),
+                                CAST(COALESCE(NULLIF(kamar,''),'0') AS UNSIGNED),
+                                nama");
+        if (!$stmt) err('Prepare peserta gagal: ' . $db->error);
+
+        $stmt->bind_param('i', $agId);
+        $stmt->execute();
+        $res2 = $stmt->get_result();
+
+        $peserta = [];
+        while ($p = $res2->fetch_assoc()) $peserta[] = $p;
+
+        $belum = 0;
+        $ci = 0;
+        $co = 0;
+
+        foreach ($peserta as $p) {
+            if ($p['status_inap'] === 'Check-in') $ci++;
+            elseif ($p['status_inap'] === 'Check-out') $co++;
+            else $belum++;
+        }
+
+        $result[] = [
+            'agenda_id' => $agId,
+            'judul' => $ag['judul'],
+            'start_date' => $ag['start_date'],
+            'end_date' => $ag['end_date'],
+            'total' => count($peserta),
+            'belum' => $belum,
+            'hadir' => $ci,
+            'checkout' => $co,
+            'peserta' => $peserta
+        ];
+    }
+
+    ok('OK', [
+        'agendas' => $result,
+        'is_fallback' => $isFallback,
+        'server_date' => $today,
+        'server_time' => date('Y-m-d H:i:s'),
+        'timezone' => date_default_timezone_get()
+    ]);
+}
+
+/* ── GET SINGLE ───────────────────────────────────── */
 if ($action === 'get') {
     $id = (int)($_GET['id'] ?? 0);
-    if ($id <= 0) {
-        jsonResponse(false, 'ID tidak valid');
-    }
+    if ($id <= 0) err('ID tidak valid');
 
-    $stmt = $db->prepare("SELECT * FROM peserta_penginapan WHERE id = ?");
-    if (!$stmt) {
-        jsonResponse(false, 'Gagal prepare detail: ' . $db->error);
-    }
+    $st = $db->prepare("SELECT
+                            p.*,
+                            a.judul,
+                            a.start_date,
+                            a.end_date
+                        FROM peserta_penginapan p
+                        LEFT JOIN agenda_kegiatan a ON a.id = p.agenda_id
+                        WHERE p.id = ?");
+    if (!$st) err('Prepare gagal: ' . $db->error);
 
-    $stmt->bind_param('i', $id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $data = $res->fetch_assoc();
+    $st->bind_param('i', $id);
+    $st->execute();
+    $row = $st->get_result()->fetch_assoc();
 
-    if (!$data) {
-        jsonResponse(false, 'Data tidak ditemukan');
-    }
-
-    jsonResponse(true, 'Detail data berhasil diambil', $data);
+    if (!$row) err('Data tidak ditemukan');
+    ok('OK', $row);
 }
 
+/* ── CHECK DUPLIKAT / KAMAR ───────────────────────── */
+if ($action === 'check') {
+    $nama   = clean($_GET['nama'] ?? '');
+    $nip    = clean($_GET['nip'] ?? '');
+    $kamar  = clean($_GET['kamar'] ?? '');
+    $gedung = clean($_GET['gedung'] ?? '');
+    $ci     = clean($_GET['checkin_date'] ?? '');
+    $co     = clean($_GET['checkout_date'] ?? '');
+    $excl   = (int)($_GET['exclude_id'] ?? 0);
+
+    $result = [
+        'nama_nip' => false,
+        'kamar' => false,
+        'kamar_penghuni' => []
+    ];
+
+    if ($nama && $nip) {
+        $st = $db->prepare("SELECT id FROM peserta_penginapan WHERE nama=? AND nip=? AND id!=?");
+        if (!$st) err('Prepare gagal: ' . $db->error);
+
+        $st->bind_param('ssi', $nama, $nip, $excl);
+        $st->execute();
+        $result['nama_nip'] = (bool)$st->get_result()->fetch_assoc();
+    }
+
+    if ($kamar && $gedung) {
+        $q = "SELECT nama, checkin_date, checkout_date, status_inap
+              FROM peserta_penginapan
+              WHERE kamar=? AND gedung=? AND id!=?";
+        $args = [$kamar, $gedung, $excl];
+        $types = 'ssi';
+
+        if ($ci && $co) {
+            $q .= " AND NOT (checkout_date < ? OR checkin_date > ?)";
+            $args[] = $ci;
+            $args[] = $co;
+            $types .= 'ss';
+        }
+
+        $st = $db->prepare($q);
+        if (!$st) err('Prepare gagal: ' . $db->error);
+
+        $st->bind_param($types, ...$args);
+        $st->execute();
+        $rs = $st->get_result();
+
+        while ($r = $rs->fetch_assoc()) {
+            $result['kamar_penghuni'][] = $r;
+        }
+
+        $result['kamar'] = count($result['kamar_penghuni']) > 0;
+    }
+
+    ok('OK', $result);
+}
+
+/* ── SAVE ─────────────────────────────────────────── */
 if ($action === 'save') {
-    $id            = (int)($_POST['id'] ?? 0);
-    $agenda_id_raw = cleanText($_POST['agenda_id'] ?? '');
-    $agenda_id     = ($agenda_id_raw === '') ? null : (int)$agenda_id_raw;
+    $id        = (int)($_POST['id'] ?? 0);
+    $agenda_id = ($r = clean($_POST['agenda_id'] ?? '')) === '' ? null : (int)$r;
+    $nama      = clean($_POST['nama'] ?? '');
+    $instansi  = tc($_POST['instansi'] ?? '');
+    $nip       = nullable($_POST['nip'] ?? '');
+    $no_hp     = nullable($_POST['no_hp'] ?? '');
+    $peran     = clean($_POST['peran'] ?? 'Peserta');
+    $jk        = nullable($_POST['jenis_kelamin'] ?? '');
+    $gedung    = tc($_POST['gedung'] ?? '') ?? '';
+    $lantai    = nullable($_POST['lantai'] ?? '');
+    $kamar     = nullable(upper($_POST['kamar'] ?? ''));
+    $bed       = nullable(upper($_POST['bed'] ?? ''));
+    $ci_date   = nullable($_POST['checkin_date'] ?? '');
+    $ci_time   = nullable($_POST['checkin_time'] ?? '');
+    $co_date   = nullable($_POST['checkout_date'] ?? '');
+    $co_time   = nullable($_POST['checkout_time'] ?? '');
+    $status    = clean($_POST['status_inap'] ?? 'Belum Check-in');
+    $kondisi   = tc($_POST['kondisi'] ?? '');
+    $catatan   = nullable($_POST['catatan'] ?? '');
+    $force     = (int)($_POST['force_kamar'] ?? 0);
 
-    $nama          = cleanText($_POST['nama'] ?? '');
-    $instansi      = titleCaseSafe($_POST['instansi'] ?? '');
-    $nip           = cleanText($_POST['nip'] ?? '');
-    $no_hp         = cleanText($_POST['no_hp'] ?? '');
-    $peran         = cleanText($_POST['peran'] ?? 'Peserta');
-    $jenis_kelamin = cleanText($_POST['jenis_kelamin'] ?? '');
-    $gedung        = titleCaseSafe($_POST['gedung'] ?? '');
-    $lantai        = cleanText($_POST['lantai'] ?? '');
-    $kamar         = upperText($_POST['kamar'] ?? '');
-    $bed           = upperText($_POST['bed'] ?? '');
-    $checkin_date  = cleanText($_POST['checkin_date'] ?? '');
-    $checkin_time  = cleanText($_POST['checkin_time'] ?? '');
-    $checkout_date = cleanText($_POST['checkout_date'] ?? '');
-    $checkout_time = cleanText($_POST['checkout_time'] ?? '');
-    $status_inap   = cleanText($_POST['status_inap'] ?? 'Belum Check-in');
-    $kondisi       = titleCaseSafe($_POST['kondisi'] ?? '');
-    $catatan       = cleanText($_POST['catatan'] ?? '');
+    if ($nama === '') err('Nama wajib diisi');
 
-    $allowedPeran  = ['Peserta', 'Pengajar', 'Panitia'];
-    $allowedJK     = ['', 'L', 'P'];
-    $allowedStatus = ['Belum Check-in', 'Check-in', 'Check-out'];
-
-    if ($nama === '') {
-        jsonResponse(false, 'Nama wajib diisi');
+    if (!in_array($peran, ['Peserta', 'Pengajar', 'Panitia'], true)) {
+        $peran = 'Peserta';
     }
 
-    if ($gedung === '') {
-        jsonResponse(false, 'Gedung wajib diisi');
+    if (!in_array($status, ['Belum Check-in', 'Check-in', 'Check-out'], true)) {
+        $status = 'Belum Check-in';
     }
 
-    if ($kamar === '') {
-        jsonResponse(false, 'Kamar wajib diisi');
+    if ($nip) {
+        $st = $db->prepare("SELECT id FROM peserta_penginapan WHERE nama=? AND nip=? AND id!=?");
+        if (!$st) err('Prepare gagal: ' . $db->error);
+
+        $st->bind_param('ssi', $nama, $nip, $id);
+        $st->execute();
+
+        if ($st->get_result()->fetch_assoc()) {
+            err('Data dengan nama dan NIP yang sama sudah ada');
+        }
     }
 
-    if (!in_array($peran, $allowedPeran, true)) {
-        jsonResponse(false, 'Peran tidak valid');
-    }
+    if (!$force && $kamar && $gedung) {
+        $q = "SELECT nama, checkin_date, checkout_date
+              FROM peserta_penginapan
+              WHERE kamar=? AND gedung=? AND id!=?";
+        $args = [$kamar, $gedung, $id];
+        $types = 'ssi';
 
-    if (!in_array($jenis_kelamin, $allowedJK, true)) {
-        jsonResponse(false, 'Jenis kelamin tidak valid');
-    }
-
-    if (!in_array($status_inap, $allowedStatus, true)) {
-        jsonResponse(false, 'Status inap tidak valid');
-    }
-
-    if ($checkin_date !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkin_date)) {
-        jsonResponse(false, 'Format tanggal check-in tidak valid');
-    }
-
-    if ($checkout_date !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkout_date)) {
-        jsonResponse(false, 'Format tanggal check-out tidak valid');
-    }
-
-    if ($checkin_time !== '' && !preg_match('/^\d{2}:\d{2}:\d{2}$/', $checkin_time)) {
-        jsonResponse(false, 'Format jam check-in tidak valid');
-    }
-
-    if ($checkout_time !== '' && !preg_match('/^\d{2}:\d{2}:\d{2}$/', $checkout_time)) {
-        jsonResponse(false, 'Format jam check-out tidak valid');
-    }
-
-    if ($checkin_date !== '' && $checkout_date !== '' && $checkout_date < $checkin_date) {
-        jsonResponse(false, 'Tanggal check-out tidak boleh lebih kecil dari check-in');
-    }
-
-    if ($agenda_id !== null && $agenda_id > 0) {
-        $cekAgenda = $db->prepare("SELECT id FROM agenda_kegiatan WHERE id = ? LIMIT 1");
-        if (!$cekAgenda) {
-            jsonResponse(false, 'Gagal prepare cek agenda: ' . $db->error);
+        if ($ci_date && $co_date) {
+            $q .= " AND NOT (checkout_date < ? OR checkin_date > ?)";
+            $args[] = $ci_date;
+            $args[] = $co_date;
+            $types .= 'ss';
         }
 
-        $cekAgenda->bind_param('i', $agenda_id);
-        $cekAgenda->execute();
-        $agendaRes = $cekAgenda->get_result();
+        $st = $db->prepare($q);
+        if (!$st) err('Prepare gagal: ' . $db->error);
 
-        if (!$agendaRes->fetch_assoc()) {
-            jsonResponse(false, 'Agenda tidak ditemukan');
+        $st->bind_param($types, ...$args);
+        $st->execute();
+
+        $penghuni = [];
+        $rs = $st->get_result();
+        while ($r = $rs->fetch_assoc()) $penghuni[] = $r;
+
+        if (count($penghuni) > 0) {
+            err('KAMAR_BENTROK', ['penghuni' => $penghuni]);
         }
-    } else {
-        $agenda_id = null;
     }
 
-    $checkin_date  = nullable($checkin_date);
-    $checkin_time  = nullable($checkin_time);
-    $checkout_date = nullable($checkout_date);
-    $checkout_time = nullable($checkout_time);
-    $jenis_kelamin = nullable($jenis_kelamin);
-    $instansi      = nullable($instansi);
-    $nip           = nullable($nip);
-    $no_hp         = nullable($no_hp);
-    $lantai        = nullable($lantai);
-    $bed           = nullable($bed);
-    $kondisi       = nullable($kondisi);
-    $catatan       = nullable($catatan);
+    if ($agenda_id !== null) {
+        $ca = $db->prepare("SELECT id FROM agenda_kegiatan WHERE id=? LIMIT 1");
+        if (!$ca) err('Prepare gagal: ' . $db->error);
+
+        $ca->bind_param('i', $agenda_id);
+        $ca->execute();
+
+        if (!$ca->get_result()->fetch_assoc()) {
+            $agenda_id = null;
+        }
+    }
 
     if ($id > 0) {
-        $sql = "UPDATE peserta_penginapan SET
-                    agenda_id = ?,
-                    nama = ?,
-                    instansi = ?,
-                    nip = ?,
-                    no_hp = ?,
-                    peran = ?,
-                    jenis_kelamin = ?,
-                    gedung = ?,
-                    lantai = ?,
-                    kamar = ?,
-                    bed = ?,
-                    checkin_date = ?,
-                    checkin_time = ?,
-                    checkout_date = ?,
-                    checkout_time = ?,
-                    status_inap = ?,
-                    kondisi = ?,
-                    catatan = ?
-                WHERE id = ?";
+        $st = $db->prepare("UPDATE peserta_penginapan SET
+            agenda_id=?, nama=?, instansi=?, nip=?, no_hp=?, peran=?, jenis_kelamin=?,
+            gedung=?, lantai=?, kamar=?, bed=?,
+            checkin_date=?, checkin_time=?, checkout_date=?, checkout_time=?,
+            status_inap=?, kondisi=?, catatan=?
+            WHERE id=?");
+        if (!$st) err('Prepare gagal: ' . $db->error);
 
-        $stmt = $db->prepare($sql);
-        if (!$stmt) {
-            jsonResponse(false, 'Gagal prepare update: ' . $db->error);
-        }
-
-        $stmt->bind_param(
+        $st->bind_param(
             'isssssssssssssssssi',
             $agenda_id,
             $nama,
@@ -259,39 +387,29 @@ if ($action === 'save') {
             $nip,
             $no_hp,
             $peran,
-            $jenis_kelamin,
+            $jk,
             $gedung,
             $lantai,
             $kamar,
             $bed,
-            $checkin_date,
-            $checkin_time,
-            $checkout_date,
-            $checkout_time,
-            $status_inap,
+            $ci_date,
+            $ci_time,
+            $co_date,
+            $co_time,
+            $status,
             $kondisi,
             $catatan,
             $id
         );
-
-        if ($stmt->execute()) {
-            jsonResponse(true, 'Data berhasil diperbarui');
-        } else {
-            jsonResponse(false, 'Gagal memperbarui data: ' . $stmt->error);
-        }
     } else {
-        $sql = "INSERT INTO peserta_penginapan (
-                    agenda_id, nama, instansi, nip, no_hp, peran, jenis_kelamin,
-                    gedung, lantai, kamar, bed, checkin_date, checkin_time,
-                    checkout_date, checkout_time, status_inap, kondisi, catatan
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $st = $db->prepare("INSERT INTO peserta_penginapan
+            (agenda_id, nama, instansi, nip, no_hp, peran, jenis_kelamin, gedung, lantai,
+             kamar, bed, checkin_date, checkin_time, checkout_date, checkout_time,
+             status_inap, kondisi, catatan)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        if (!$st) err('Prepare gagal: ' . $db->error);
 
-        $stmt = $db->prepare($sql);
-        if (!$stmt) {
-            jsonResponse(false, 'Gagal prepare insert: ' . $db->error);
-        }
-
-        $stmt->bind_param(
+        $st->bind_param(
             'isssssssssssssssss',
             $agenda_id,
             $nama,
@@ -299,46 +417,149 @@ if ($action === 'save') {
             $nip,
             $no_hp,
             $peran,
-            $jenis_kelamin,
+            $jk,
             $gedung,
             $lantai,
             $kamar,
             $bed,
-            $checkin_date,
-            $checkin_time,
-            $checkout_date,
-            $checkout_time,
-            $status_inap,
+            $ci_date,
+            $ci_time,
+            $co_date,
+            $co_time,
+            $status,
             $kondisi,
             $catatan
         );
-
-        if ($stmt->execute()) {
-            jsonResponse(true, 'Data berhasil disimpan');
-        } else {
-            jsonResponse(false, 'Gagal menyimpan data: ' . $stmt->error);
-        }
     }
+
+    if (!$st->execute()) {
+        err('Gagal: ' . $st->error);
+    }
+
+    ok($id > 0 ? 'Data diperbarui' : 'Data disimpan');
 }
 
+/* ── BATCH SAVE ──────────────────────────────────── */
+if ($action === 'batch_save') {
+    $body = json_decode(file_get_contents('php://input'), true);
+    $rows = isset($body['rows']) ? $body['rows'] : [];
+
+    if (empty($rows)) err('Tidak ada data');
+
+    $ph = [];
+    $vals = [];
+    $types = '';
+    $skip = 0;
+
+    foreach ($rows as $r) {
+        $nama = clean(isset($r['nama']) ? $r['nama'] : '');
+        if ($nama === '') {
+            $skip++;
+            continue;
+        }
+
+        $agenda_id = ($v = clean(isset($r['agenda_id']) ? $r['agenda_id'] : '')) === '' ? null : (int)$v;
+        $instansi = tc(isset($r['instansi']) ? $r['instansi'] : '');
+        $nip = nullable(isset($r['nip']) ? $r['nip'] : '');
+        $no_hp = nullable(isset($r['no_hp']) ? $r['no_hp'] : '');
+        $peran = clean(isset($r['peran']) ? $r['peran'] : 'Peserta');
+        $jk = nullable(isset($r['jenis_kelamin']) ? $r['jenis_kelamin'] : '');
+        $gedung = tc(isset($r['gedung']) ? $r['gedung'] : '') ?? '';
+        $lantai = nullable(isset($r['lantai']) ? $r['lantai'] : '');
+        $kamar = nullable(upper(isset($r['kamar']) ? $r['kamar'] : ''));
+        $bed = nullable(upper(isset($r['bed']) ? $r['bed'] : ''));
+        $ci_date = nullable(isset($r['checkin_date']) ? $r['checkin_date'] : '');
+        $ci_time = nullable(isset($r['checkin_time']) ? $r['checkin_time'] : '');
+        $co_date = nullable(isset($r['checkout_date']) ? $r['checkout_date'] : '');
+        $co_time = nullable(isset($r['checkout_time']) ? $r['checkout_time'] : '');
+        $status = clean(isset($r['status_inap']) ? $r['status_inap'] : 'Belum Check-in');
+        $kondisi = tc(isset($r['kondisi']) ? $r['kondisi'] : '');
+        $catatan = nullable(isset($r['catatan']) ? $r['catatan'] : '');
+
+        if (!in_array($peran, ['Peserta', 'Pengajar', 'Panitia'], true)) $peran = 'Peserta';
+        if (!in_array($status, ['Belum Check-in', 'Check-in', 'Check-out'], true)) $status = 'Belum Check-in';
+
+        $ph[] = '(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        array_push(
+            $vals,
+            $agenda_id,
+            $nama,
+            $instansi,
+            $nip,
+            $no_hp,
+            $peran,
+            $jk,
+            $gedung,
+            $lantai,
+            $kamar,
+            $bed,
+            $ci_date,
+            $ci_time,
+            $co_date,
+            $co_time,
+            $status,
+            $kondisi,
+            $catatan
+        );
+        $types .= 'isssssssssssssssss';
+    }
+
+    if (empty($ph)) err('Semua baris tidak valid');
+
+    $sql = "INSERT INTO peserta_penginapan
+        (agenda_id,nama,instansi,nip,no_hp,peran,jenis_kelamin,gedung,lantai,
+         kamar,bed,checkin_date,checkin_time,checkout_date,checkout_time,
+         status_inap,kondisi,catatan)
+        VALUES " . implode(',', $ph);
+
+    $st = $db->prepare($sql);
+    if (!$st) err('Prepare batch gagal: ' . $db->error);
+
+    $st->bind_param($types, ...$vals);
+
+    if (!$st->execute()) {
+        err('Batch gagal: ' . $st->error);
+    }
+
+    ok(count($ph) . ' data disimpan' . ($skip ? " ($skip dilewati)" : ''));
+}
+
+/* ── DELETE ──────────────────────────────────────── */
 if ($action === 'delete') {
     $id = (int)($_POST['id'] ?? 0);
-    if ($id <= 0) {
-        jsonResponse(false, 'ID tidak valid');
-    }
+    if ($id <= 0) err('ID tidak valid');
 
-    $stmt = $db->prepare("DELETE FROM peserta_penginapan WHERE id = ?");
-    if (!$stmt) {
-        jsonResponse(false, 'Gagal prepare delete: ' . $db->error);
-    }
+    $st = $db->prepare("DELETE FROM peserta_penginapan WHERE id=?");
+    if (!$st) err('Prepare gagal: ' . $db->error);
 
-    $stmt->bind_param('i', $id);
+    $st->bind_param('i', $id);
 
-    if ($stmt->execute()) {
-        jsonResponse(true, 'Data berhasil dihapus');
-    } else {
-        jsonResponse(false, 'Gagal menghapus data: ' . $stmt->error);
-    }
+    if (!$st->execute()) err('Gagal: ' . $st->error);
+    ok('Data dihapus');
 }
 
-jsonResponse(false, 'Action tidak dikenali');
+/* ── DELETE BATCH ────────────────────────────────── */
+if ($action === 'delete_batch') {
+    $body = json_decode(file_get_contents('php://input'), true);
+    $raw_ids = isset($body['ids']) ? $body['ids'] : [];
+
+    $ids = [];
+    foreach ($raw_ids as $v) {
+        $v = (int)$v;
+        if ($v > 0) $ids[] = $v;
+    }
+
+    if (empty($ids)) err('Tidak ada ID');
+
+    $ph = implode(',', array_fill(0, count($ids), '?'));
+    $st = $db->prepare("DELETE FROM peserta_penginapan WHERE id IN ($ph)");
+    if (!$st) err('Prepare gagal: ' . $db->error);
+
+    $types = str_repeat('i', count($ids));
+    $st->bind_param($types, ...array_values($ids));
+
+    if (!$st->execute()) err('Gagal: ' . $st->error);
+    ok(count($ids) . ' data dihapus');
+}
+
+err('Action tidak dikenali');

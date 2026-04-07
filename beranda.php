@@ -406,7 +406,7 @@ if ($qAreaChart) {
                     </div>
                     <div class="flex-1">
                         <p class="text-sm font-bold text-gray-800">Cekin dan Cekout</p>
-                        <p class="text-xs text-gray-500">Peserta dan Pengajar</p>
+                        <p class="text-xs text-gray-500">Monitoring kehadiran peserta</p>
                     </div>
                     <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
                 </a>
