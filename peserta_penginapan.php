@@ -13,7 +13,12 @@ $db = $conn ?? $koneksi ?? null;
 if (!($db instanceof mysqli)) die('Koneksi database tidak ditemukan.');
 $db->set_charset('utf8mb4');
 
-$isAdmin = strtolower(isset($_SESSION['user']['role']) ? $_SESSION['user']['role'] : '') === 'admin';
+/* FIX AKSES:
+   sebelumnya hanya role === 'admin'
+   sekarang lebih fleksibel supaya edit/tambah manual tidak macet
+*/
+$role = strtolower(trim($_SESSION['user']['role'] ?? ''));
+$isAdmin = in_array($role, ['admin', 'administrator', 'superadmin', 'petugas', 'operator'], true);
 
 $agendaList = [];
 $q = $db->query("SELECT id,judul,start_date,end_date FROM agenda_kegiatan ORDER BY start_date DESC,id DESC");
@@ -47,7 +52,6 @@ $agendaMapSafe = array_map(function ($a) {
         overflow-y: auto !important;
     }
 
-    /* ── Sticky header ── */
     .sticky-header {
         position: fixed;
         left: 0;
@@ -61,10 +65,8 @@ $agendaMapSafe = array_map(function ($a) {
 
     .header-offset {
         padding-top: 145px;
-        /* fallback, di-update JS */
     }
 
-    /* ── Badge (desktop table only) ── */
     .badge {
         display: inline-flex !important;
         align-items: center !important;
@@ -114,7 +116,6 @@ $agendaMapSafe = array_map(function ($a) {
         border: 1px solid #cbd5e1 !important;
     }
 
-    /* ── Desktop table ── */
     .tbl-wrap {
         overflow-x: auto;
     }
@@ -166,7 +167,6 @@ $agendaMapSafe = array_map(function ($a) {
         max-width: 180px;
     }
 
-    /* ── Modal ── */
     .mf {
         width: 100%;
         margin-top: 3px;
@@ -202,7 +202,6 @@ $agendaMapSafe = array_map(function ($a) {
         border-radius: 99px;
     }
 
-    /* ── Preview ── */
     .pi {
         width: 100%;
         padding: 6px 9px;
@@ -234,7 +233,6 @@ $agendaMapSafe = array_map(function ($a) {
         border-radius: 99px;
     }
 
-    /* ── Warn box ── */
     .warn-box {
         background: #fffbeb;
         border: 1px solid #fde68a;
@@ -242,7 +240,6 @@ $agendaMapSafe = array_map(function ($a) {
         padding: 14px;
     }
 
-    /* ── Grid form ── */
     @media(min-width:480px) {
         .pg2 {
             display: grid;
@@ -257,7 +254,6 @@ $agendaMapSafe = array_map(function ($a) {
         }
     }
 
-    /* ── Anim ── */
     @keyframes fadeUp {
         from {
             opacity: 0;
@@ -275,7 +271,6 @@ $agendaMapSafe = array_map(function ($a) {
     }
 </style>
 
-<!-- ══ HEADER ═══════════════════════════════════════ -->
 <header class="sticky-header px-5 py-4">
     <div class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
@@ -302,7 +297,6 @@ $agendaMapSafe = array_map(function ($a) {
     </div>
 </header>
 
-<!-- ══ MODAL FORM ════════════════════════════════════ -->
 <div id="formModal" class="fixed inset-0 bg-black/50 z-[999] hidden">
     <div class="absolute inset-0" onclick="closeModal()"></div>
     <div class="relative w-full h-full flex items-end justify-center p-3">
@@ -427,7 +421,6 @@ $agendaMapSafe = array_map(function ($a) {
     </div>
 </div>
 
-<!-- ══ MODAL PREVIEW IMPORT ══════════════════════════ -->
 <div id="previewModal" class="fixed inset-0 bg-black/50 z-[1000] hidden">
     <div class="absolute inset-0" onclick="closePreview()"></div>
     <div class="relative w-full h-full flex items-end justify-center p-3">
@@ -478,19 +471,14 @@ $agendaMapSafe = array_map(function ($a) {
     </div>
 </div>
 
-<!-- ══ MAIN ══════════════════════════════════════════ -->
 <main class="header-offset px-4 py-5">
-
-    <!-- Filter bar -->
     <div class="bg-white rounded-2xl border border-gray-200 shadow-md px-4 py-4 mb-4">
-        <!-- Search -->
         <div class="relative mb-2">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-sky-400 text-xs pointer-events-none"></i>
             <input type="text" id="qSearch" onkeyup="filterData()"
                 placeholder="Cari nama, kamar, NIP, instansi, kegiatan..."
                 class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:bg-white focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition">
         </div>
-        <!-- Status filter -->
         <div class="flex gap-2">
             <select id="filterStatus" onchange="filterData()"
                 class="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-gray-600 outline-none focus:ring-2 focus:ring-sky-100">
@@ -502,7 +490,6 @@ $agendaMapSafe = array_map(function ($a) {
         </div>
     </div>
 
-    <!-- Count + selection -->
     <div class="flex items-center justify-between mb-2 px-1">
         <span id="dataCount" class="text-[11px] font-semibold text-sky-500">0 data</span>
         <div id="selectionInfo" class="hidden text-[11px] font-bold text-sky-700">
@@ -510,7 +497,6 @@ $agendaMapSafe = array_map(function ($a) {
         </div>
     </div>
 
-    <!-- Desktop table -->
     <div class="hidden md:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-4">
         <div class="tbl-wrap">
             <table class="dt">
@@ -538,13 +524,11 @@ $agendaMapSafe = array_map(function ($a) {
         </div>
     </div>
 
-    <!-- Mobile cards -->
     <div class="block md:hidden space-y-2 pb-28" id="mobileCards">
         <div class="py-16 text-center text-slate-300 text-sm">Memuat data...</div>
     </div>
 </main>
 
-<!-- FAB mobile -->
 <?php if ($isAdmin): ?>
     <button onclick="openModalTambah()"
         class="fixed bottom-6 right-6 w-12 h-12 bg-sky-600 text-white rounded-full shadow-xl shadow-sky-200 flex items-center justify-center z-40 active:scale-90 hover:bg-sky-700 transition-all">
@@ -586,7 +570,6 @@ $agendaMapSafe = array_map(function ($a) {
     const bCls = p => p === 'Pengajar' ? 'badge-indigo' : p === 'Panitia' ? 'badge-amber' : 'badge-sky';
     const sCls = s => s === 'Check-in' ? 'badge-emerald' : s === 'Check-out' ? 'badge-gray' : 'badge-rose';
 
-    /* ── Load ─────────────────────────────────────────── */
     async function loadData() {
         abortCtrl.abort();
         abortCtrl = new AbortController();
@@ -611,7 +594,7 @@ $agendaMapSafe = array_map(function ($a) {
         const st = $('filterStatus').value;
         renderAll(localData.filter(d => {
             const mq = !q || [d.nama, d.kamar, d.nip, d.instansi, d.judul, d.gedung].some(v => String(v || '').toLowerCase().includes(q));
-            const ms = !st || (d.status_inap || '') === st;
+            const ms = !st || ((d.status_inap || '') === st);
             return mq && ms;
         }));
     }
@@ -623,7 +606,6 @@ $agendaMapSafe = array_map(function ($a) {
         updateSelectionBar();
     }
 
-    /* ── Desktop table ─────────────────────────────────── */
     function renderTable(data) {
         const colspan = IS_ADMIN ? 11 : 10;
         if (!data.length) {
@@ -653,7 +635,6 @@ $agendaMapSafe = array_map(function ($a) {
         }).join('');
     }
 
-    /* ── Mobile cards ──────────────────────────────────── */
     function bStyle(p) {
         if (p === 'Pengajar') return 'background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe';
         if (p === 'Panitia') return 'background:#fffbeb;color:#b45309;border:1px solid #fde68a';
@@ -686,7 +667,6 @@ $agendaMapSafe = array_map(function ($a) {
          transition:border-color .15s,background .15s;
          font-family:'Plus Jakarta Sans',sans-serif">
 
-  <!-- Baris 1: checkbox + nama + aksi -->
   <div style="display:flex;align-items:center;gap:8px;padding:10px 12px 6px">
     <input type="checkbox" class="card-check" data-id="${d.id}" ${sel?'checked':''}
       onclick="event.stopPropagation()"
@@ -706,14 +686,12 @@ $agendaMapSafe = array_map(function ($a) {
     </div>`:''}
   </div>
 
-  <!-- Baris 2: badge peran + status + kondisi -->
   <div style="display:flex;flex-wrap:wrap;gap:4px;padding:0 12px 8px 36px">
     <span style="${badgeStyle};${bStyle(d.peran)}">${esc(d.peran||'Peserta')}</span>
     <span style="${badgeStyle};${sStyle(d.status_inap)}">${esc(d.status_inap||'Belum Check-in')}</span>
     ${d.kondisi?`<span style="${badgeStyle};background:#fff1f2;color:#be123c;border:1px solid #fecdd3">${esc(d.kondisi)}</span>`:''}
   </div>
 
-  <!-- Baris 3: room box + info -->
   <div onclick="${IS_ADMIN?`openModalDetail(${+d.id})`:'void(0)'}"
     style="display:flex;align-items:center;gap:10px;padding:8px 12px 12px;
            border-top:1px solid #f0f9ff;cursor:${IS_ADMIN?'pointer':'default'}">
@@ -735,7 +713,6 @@ $agendaMapSafe = array_map(function ($a) {
         }).join('');
     }
 
-    /* ── Selection ─────────────────────────────────────── */
     function toggleSelect(id, checked) {
         if (checked) selectedIds.add(String(id));
         else selectedIds.delete(String(id));
@@ -788,7 +765,6 @@ $agendaMapSafe = array_map(function ($a) {
         }
     }
 
-    /* ── Modal form ────────────────────────────────────── */
     const FMAP = {
         fAgenda: 'agenda_id',
         fNama: 'nama',
@@ -865,6 +841,7 @@ $agendaMapSafe = array_map(function ($a) {
             if (el) el.value = d[key] || '';
         });
         $('fId').value = d.id;
+
         if (directEdit && IS_ADMIN) {
             $('modalTitle').innerText = 'Ubah Peserta';
             toggleInputs(false);
@@ -880,8 +857,9 @@ $agendaMapSafe = array_map(function ($a) {
             toggleInputs(true);
             if (IS_ADMIN) $('btnEditTrigger')?.classList.remove('hidden');
             $('btnHapus')?.classList.add('hidden');
-            $('btnSubmit')?.classList.add('hidden');
+            if (IS_ADMIN) $('btnSubmit')?.classList.add('hidden');
         }
+
         $('formModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
@@ -901,7 +879,11 @@ $agendaMapSafe = array_map(function ($a) {
 
     async function handleSave(e) {
         e.preventDefault();
-        if (!IS_ADMIN) return;
+        if (!IS_ADMIN) {
+            showToast('Akun Anda tidak memiliki akses simpan');
+            return;
+        }
+
         const id = $('fId').value;
         const nama = $('fNama').value.trim();
         if (!nama) {
@@ -924,8 +906,8 @@ $agendaMapSafe = array_map(function ($a) {
                         checkout_date: $('fCO').value,
                         exclude_id: id || 0
                     });
-                    const r = await fetch(apiUrl + '?' + p),
-                        j = await r.json();
+                    const r = await fetch(apiUrl + '?' + p);
+                    const j = await r.json();
                     if (j.status && j.data.kamar) {
                         const pen = j.data.kamar_penghuni || [];
                         $('kamarPenghuni').innerHTML = pen.map(p =>
@@ -935,9 +917,7 @@ $agendaMapSafe = array_map(function ($a) {
                         showToast('Kamar sudah digunakan, centang untuk tetap simpan', 3500);
                         return;
                     }
-                } catch {
-                    /* lanjut */
-                }
+                } catch {}
             }
         }
 
@@ -949,14 +929,25 @@ $agendaMapSafe = array_map(function ($a) {
         const bs = $('btnSubmit');
         bs.disabled = true;
         bs.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-1"></i>Menyimpan...';
+
         try {
             const r = await fetch(apiUrl + '?action=save', {
                 method: 'POST',
                 body: fd
             });
-            const j = await r.json();
+
+            const text = await r.text();
+            let j = null;
+            try {
+                j = JSON.parse(text);
+            } catch (parseErr) {
+                console.error('RAW SAVE RESPONSE:', text);
+                showToast('Response simpan tidak valid');
+                return;
+            }
+
             if (j.status) {
-                showToast(j.message);
+                showToast(j.message || 'Berhasil disimpan');
                 closeModal();
                 loadData();
             } else if (j.message === 'KAMAR_BENTROK') {
@@ -966,8 +957,11 @@ $agendaMapSafe = array_map(function ($a) {
                 ).join('');
                 $('kamarWarning').classList.remove('hidden');
                 showToast('Kamar sudah digunakan, centang untuk tetap simpan', 3500);
-            } else showToast(j.message || 'Gagal menyimpan');
-        } catch {
+            } else {
+                showToast(j.message || 'Gagal menyimpan');
+            }
+        } catch (err) {
+            console.error(err);
             showToast('Gagal menyimpan');
         } finally {
             bs.disabled = false;
@@ -1014,7 +1008,6 @@ $agendaMapSafe = array_map(function ($a) {
         }
     }
 
-    /* ── Preview ───────────────────────────────────────── */
     const openPreview = () => {
         $('previewModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
@@ -1171,7 +1164,6 @@ $agendaMapSafe = array_map(function ($a) {
         }
     }
 
-    /* ── Import Excel ──────────────────────────────────── */
     function handleExcel(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -1301,7 +1293,6 @@ $agendaMapSafe = array_map(function ($a) {
         reader.readAsArrayBuffer(file);
     }
 
-    /* ── Navigate abort ────────────────────────────────── */
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) abortCtrl.abort();
         else loadData();
@@ -1309,20 +1300,16 @@ $agendaMapSafe = array_map(function ($a) {
     window.addEventListener('beforeunload', () => abortCtrl.abort());
     window.addEventListener('pagehide', () => abortCtrl.abort());
 
-    /* ── Dynamic header offset ──────────────────────────── */
     function fixHeaderOffset() {
-        // Cari semua elemen fixed/sticky yang bukan milik kita
         const stickyHeader = document.querySelector('.sticky-header');
         if (!stickyHeader) return;
 
-        // Hitung total tinggi elemen fixed di atas .sticky-header
         let topOffset = 0;
         document.querySelectorAll('*').forEach(el => {
             if (el === stickyHeader || stickyHeader.contains(el)) return;
             const st = window.getComputedStyle(el);
             if ((st.position === 'fixed' || st.position === 'sticky') && st.display !== 'none') {
                 const rect = el.getBoundingClientRect();
-                // Hanya hitung elemen yang ada di bagian atas (top < 200)
                 if (rect.top >= 0 && rect.top < 200 && rect.height > 0) {
                     const bottom = rect.top + rect.height;
                     if (bottom > topOffset) topOffset = bottom;
@@ -1333,7 +1320,6 @@ $agendaMapSafe = array_map(function ($a) {
         stickyHeader.style.top = topOffset + 'px';
         const headerHeight = topOffset + stickyHeader.offsetHeight;
 
-        // Update semua elemen dengan class header-offset
         document.querySelectorAll('.header-offset').forEach(el => {
             el.style.paddingTop = (headerHeight + 20) + 'px';
         });
@@ -1344,7 +1330,6 @@ $agendaMapSafe = array_map(function ($a) {
         loadData();
     };
     window.addEventListener('resize', fixHeaderOffset);
-    // Jalankan lagi setelah semua resource load
     setTimeout(fixHeaderOffset, 300);
     setTimeout(fixHeaderOffset, 800);
 </script>
