@@ -62,6 +62,36 @@ function tc($v)
     return $v === '' ? null : mb_convert_case($v, MB_CASE_TITLE, 'UTF-8');
 }
 
+function normalize_date_value($v)
+{
+    $v = nullable($v);
+    if ($v === null) return null;
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : null;
+}
+
+function normalize_time_value($v)
+{
+    $v = nullable($v);
+    if ($v === null) return null;
+
+    $v = str_replace('.', ':', $v);
+
+    if (preg_match('/^\d{2}:\d{2}$/', $v)) {
+        $v .= ':00';
+    }
+
+    return preg_match('/^\d{2}:\d{2}:\d{2}$/', $v) ? $v : null;
+}
+
+function bind_params_dynamic($stmt, $types, &$params)
+{
+    $bind = [$types];
+    foreach ($params as $k => $v) {
+        $bind[] = &$params[$k];
+    }
+    return call_user_func_array([$stmt, 'bind_param'], $bind);
+}
+
 $action = $_GET['action'] ?? '';
 
 /* ── LIST ALL ───────────────────────────────────────── */
@@ -234,8 +264,8 @@ if ($action === 'check') {
     $nip    = clean($_GET['nip'] ?? '');
     $kamar  = clean($_GET['kamar'] ?? '');
     $gedung = clean($_GET['gedung'] ?? '');
-    $ci     = clean($_GET['checkin_date'] ?? '');
-    $co     = clean($_GET['checkout_date'] ?? '');
+    $ci     = normalize_date_value($_GET['checkin_date'] ?? '');
+    $co     = normalize_date_value($_GET['checkout_date'] ?? '');
     $excl   = (int)($_GET['exclude_id'] ?? 0);
 
     $result = [
@@ -270,7 +300,7 @@ if ($action === 'check') {
         $st = $db->prepare($q);
         if (!$st) err('Prepare gagal: ' . $db->error);
 
-        $st->bind_param($types, ...$args);
+        bind_params_dynamic($st, $types, $args);
         $st->execute();
         $rs = $st->get_result();
 
@@ -298,10 +328,10 @@ if ($action === 'save') {
     $lantai    = nullable($_POST['lantai'] ?? '');
     $kamar     = nullable(upper($_POST['kamar'] ?? ''));
     $bed       = nullable(upper($_POST['bed'] ?? ''));
-    $ci_date   = nullable($_POST['checkin_date'] ?? '');
-    $ci_time   = nullable($_POST['checkin_time'] ?? '');
-    $co_date   = nullable($_POST['checkout_date'] ?? '');
-    $co_time   = nullable($_POST['checkout_time'] ?? '');
+    $ci_date   = normalize_date_value($_POST['checkin_date'] ?? '');
+    $ci_time   = normalize_time_value($_POST['checkin_time'] ?? '');
+    $co_date   = normalize_date_value($_POST['checkout_date'] ?? '');
+    $co_time   = normalize_time_value($_POST['checkout_time'] ?? '');
     $status    = clean($_POST['status_inap'] ?? 'Belum Check-in');
     $kondisi   = tc($_POST['kondisi'] ?? '');
     $catatan   = nullable($_POST['catatan'] ?? '');
@@ -315,6 +345,18 @@ if ($action === 'save') {
 
     if (!in_array($status, ['Belum Check-in', 'Check-in', 'Check-out'], true)) {
         $status = 'Belum Check-in';
+    }
+
+    /* AUTO FILL TANGGAL CHECK-IN / CHECK-OUT */
+    $today = date('Y-m-d');
+
+    if ($status === 'Check-in') {
+        if (!$ci_date) $ci_date = $today;
+    }
+
+    if ($status === 'Check-out') {
+        if (!$ci_date) $ci_date = $today;
+        if (!$co_date) $co_date = $today;
     }
 
     if ($nip) {
@@ -346,7 +388,7 @@ if ($action === 'save') {
         $st = $db->prepare($q);
         if (!$st) err('Prepare gagal: ' . $db->error);
 
-        $st->bind_param($types, ...$args);
+        bind_params_dynamic($st, $types, $args);
         $st->execute();
 
         $penghuni = [];
@@ -468,10 +510,10 @@ if ($action === 'batch_save') {
         $lantai = nullable(isset($r['lantai']) ? $r['lantai'] : '');
         $kamar = nullable(upper(isset($r['kamar']) ? $r['kamar'] : ''));
         $bed = nullable(upper(isset($r['bed']) ? $r['bed'] : ''));
-        $ci_date = nullable(isset($r['checkin_date']) ? $r['checkin_date'] : '');
-        $ci_time = nullable(isset($r['checkin_time']) ? $r['checkin_time'] : '');
-        $co_date = nullable(isset($r['checkout_date']) ? $r['checkout_date'] : '');
-        $co_time = nullable(isset($r['checkout_time']) ? $r['checkout_time'] : '');
+        $ci_date = normalize_date_value(isset($r['checkin_date']) ? $r['checkin_date'] : '');
+        $ci_time = normalize_time_value(isset($r['checkin_time']) ? $r['checkin_time'] : '');
+        $co_date = normalize_date_value(isset($r['checkout_date']) ? $r['checkout_date'] : '');
+        $co_time = normalize_time_value(isset($r['checkout_time']) ? $r['checkout_time'] : '');
         $status = clean(isset($r['status_inap']) ? $r['status_inap'] : 'Belum Check-in');
         $kondisi = tc(isset($r['kondisi']) ? $r['kondisi'] : '');
         $catatan = nullable(isset($r['catatan']) ? $r['catatan'] : '');
@@ -515,7 +557,7 @@ if ($action === 'batch_save') {
     $st = $db->prepare($sql);
     if (!$st) err('Prepare batch gagal: ' . $db->error);
 
-    $st->bind_param($types, ...$vals);
+    bind_params_dynamic($st, $types, $vals);
 
     if (!$st->execute()) {
         err('Batch gagal: ' . $st->error);
@@ -556,7 +598,7 @@ if ($action === 'delete_batch') {
     if (!$st) err('Prepare gagal: ' . $db->error);
 
     $types = str_repeat('i', count($ids));
-    $st->bind_param($types, ...array_values($ids));
+    bind_params_dynamic($st, $types, $ids);
 
     if (!$st->execute()) err('Gagal: ' . $st->error);
     ok(count($ids) . ' data dihapus');

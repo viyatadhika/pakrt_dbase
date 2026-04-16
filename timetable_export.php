@@ -12,7 +12,7 @@ $from = $_GET['from'] ?? date('Y-01-01');
 $to   = $_GET['to']   ?? date('Y-12-31');
 
 /* =========================
-   AMBIL DATA
+   AMBIL DATA AGENDA
 ========================= */
 $sql = "
 SELECT *
@@ -45,6 +45,22 @@ function getMonths($from, $to)
 }
 
 /* =========================
+   HELPER REKAP
+========================= */
+function parseItemCount($text)
+{
+    $text = trim((string)$text);
+    if ($text === '') return 0;
+
+    $parts = preg_split('/\s*,\s*|\s*\/\s*|\s*;\s*|\s*\n+\s*/', $text);
+    $parts = array_filter(array_map('trim', $parts), function ($v) {
+        return $v !== '';
+    });
+
+    return count($parts);
+}
+
+/* =========================
    PDF CLASS
 ========================= */
 class PDF extends FPDF
@@ -67,7 +83,6 @@ class PDF extends FPDF
         $this->Cell(0, 8, 'Halaman ' . $this->PageNo(), 0, 0, 'C');
     }
 
-    /* Hitung jumlah baris MultiCell */
     function NbLines($w, $txt)
     {
         $cw = &$this->CurrentFont['cw'];
@@ -89,7 +104,7 @@ class PDF extends FPDF
                 continue;
             }
             if ($c == ' ') $sep = $i;
-            $l += $cw[$c];
+            $l += $cw[$c] ?? 0;
             if ($l > $wmax) {
                 if ($sep == -1) {
                     if ($i == $j) $i++;
@@ -122,8 +137,6 @@ $months = getMonths($from, $to);
 ========================= */
 foreach ($months as $m) {
 
-    $pdf->AddPage();
-
     $bulanAwal  = $m->format('Y-m-01');
     $bulanAkhir = $m->format('Y-m-t');
 
@@ -141,6 +154,61 @@ foreach ($months as $m) {
         11 => 'NOVEMBER',
         12 => 'DESEMBER'
     ];
+
+    $bulanData = [];
+    foreach ($data as $r) {
+        if ($r['end_date'] < $bulanAwal || $r['start_date'] > $bulanAkhir) continue;
+        $bulanData[] = $r;
+    }
+
+    /* =========================
+       REKAP DARI AGENDA
+    ========================= */
+    $totalPesertaAgenda = 0;
+    $totalPemakaianKelas = 0;
+
+    foreach ($bulanData as $r) {
+        $totalPesertaAgenda += (int)($r['peserta'] ?? 0);
+
+        $kelasText = trim((string)($r['kelas'] ?? ''));
+        $kelasCount = parseItemCount($kelasText);
+        $totalPemakaianKelas += $kelasCount;
+    }
+
+    /* =========================
+       REKAP KAMAR TERPAKAI
+       DIAMBIL DARI peserta_penginapan
+       BERDASARKAN agenda_id YANG MASUK BULAN INI
+    ========================= */
+    $jumlahKamarTerpakai = 0;
+    $agendaIdsBulan = [];
+
+    foreach ($bulanData as $ag) {
+        $agendaIdsBulan[] = (int)$ag['id'];
+    }
+
+    if (!empty($agendaIdsBulan)) {
+        $idList = implode(',', $agendaIdsBulan);
+
+        $sqlOcc = "
+            SELECT COUNT(DISTINCT CONCAT(
+                TRIM(COALESCE(gedung, '')),
+                '|',
+                TRIM(COALESCE(kamar, ''))
+            )) AS jumlah_kamar_terpakai
+            FROM peserta_penginapan
+            WHERE agenda_id IN ($idList)
+              AND TRIM(COALESCE(gedung, '')) <> ''
+              AND TRIM(COALESCE(kamar, '')) <> ''
+        ";
+
+        $qOcc = $conn->query($sqlOcc);
+        if ($qOcc && $occ = $qOcc->fetch_assoc()) {
+            $jumlahKamarTerpakai = (int)($occ['jumlah_kamar_terpakai'] ?? 0);
+        }
+    }
+
+    $pdf->AddPage();
 
     $pdf->SetFont('Arial', 'B', 9);
     $pdf->Cell(0, 6, $namaBulan[(int)$m->format('m')] . ' ' . $m->format('Y'), 0, 1);
@@ -192,10 +260,7 @@ foreach ($months as $m) {
     $pdf->SetFont('Arial', '', 7);
     $no = 1;
 
-    foreach ($data as $r) {
-
-        if ($r['end_date'] < $bulanAwal || $r['start_date'] > $bulanAkhir) continue;
-
+    foreach ($bulanData as $r) {
         $lineH = 5;
 
         $hNama = $pdf->NbLines($wNama, $r['judul']) * $lineH;
@@ -207,7 +272,6 @@ foreach ($months as $m) {
         $y = $pdf->GetY();
         $x = $pdf->GetX();
 
-        /* BORDER */
         $pdf->Rect($x, $y, $wNo, $rowH);
         $pdf->Rect($x + $wNo, $y, $wNama, $rowH);
         $pdf->Rect($x + $wNo + $wNama, $y, $wPeny, $rowH);
@@ -226,7 +290,6 @@ foreach ($months as $m) {
         $xx += $wKl;
         $pdf->Rect($xx, $y, $wMk, $rowH);
 
-        /* ISI */
         $pdf->SetXY($x, $y + ($rowH - $lineH) / 2);
         $pdf->Cell($wNo, $lineH, $no++, 0, 0, 'C');
 
@@ -239,8 +302,6 @@ foreach ($months as $m) {
         $xx = $x + $wNo + $wNama + $wPeny;
 
         foreach ($dates as $d) {
-
-            // === ISI WARNA DULU (JIKA ADA AGENDA) ===
             if ($d >= $r['start_date'] && $d <= $r['end_date']) {
 
                 if ($r['kategori'] == 'Menpim') {
@@ -253,18 +314,13 @@ foreach ($months as $m) {
                     $pdf->SetFillColor(255, 133, 27);
                 }
 
-                // ISI WARNA (tanpa border)
                 $pdf->Rect($xx, $y, $wDay, $rowH, 'F');
             }
 
-            // === BORDER DIGAMBAR SETELAH WARNA ===
             $pdf->Rect($xx, $y, $wDay, $rowH);
-
             $xx += $wDay;
         }
 
-
-        $pdf->SetXY($xx - $wDay - count($dates) * $wDay, $y + ($rowH - $lineH) / 2);
         $pdf->SetXY($x + $pageW - $wMk - $wKl - $wAs - $wPes, $y + ($rowH - $lineH) / 2);
         $pdf->Cell($wPes, $lineH, (int)$r['peserta'], 0, 0, 'C');
 
@@ -279,6 +335,39 @@ foreach ($months as $m) {
 
         $pdf->SetY($y + $rowH);
     }
+
+    if (empty($bulanData)) {
+        $pdf->SetFont('Arial', 'I', 8);
+        $pdf->Cell(0, 8, 'Tidak ada agenda pada bulan ini.', 1, 1, 'C');
+    }
+
+    $pdf->Ln(4);
+
+    /* =========================
+       TABEL REKAP OKUPANSI
+    ========================= */
+    $pdf->SetFont('Arial', 'B', 8);
+    $pdf->Cell(0, 6, 'REKAP OKUPANSI', 0, 1);
+
+    $pdf->SetFont('Arial', 'B', 7);
+    $pdf->SetFillColor(220, 220, 220);
+
+    $wLabel = 100;
+    $wVal   = 55;
+
+    $pdf->Cell($wLabel, 6, 'Keterangan', 1, 0, 'C', true);
+    $pdf->Cell($wVal, 6, 'Jumlah', 1, 1, 'C', true);
+
+    $pdf->SetFont('Arial', '', 7);
+
+    $pdf->Cell($wLabel, 6, 'Total Peserta Agenda', 1, 0);
+    $pdf->Cell($wVal, 6, $totalPesertaAgenda . ' orang', 1, 1, 'C');
+
+    $pdf->Cell($wLabel, 6, 'Pemakaian Kelas', 1, 0);
+    $pdf->Cell($wVal, 6, $totalPemakaianKelas . ' kelas', 1, 1, 'C');
+
+    $pdf->Cell($wLabel, 6, 'Kamar Terpakai', 1, 0);
+    $pdf->Cell($wVal, 6, $jumlahKamarTerpakai . ' kamar', 1, 1, 'C');
 }
 
 /* =========================

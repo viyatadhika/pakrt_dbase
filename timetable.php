@@ -48,7 +48,6 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Fix: pastikan fixed header tidak terblokir transform/overflow parent */
     html,
     body {
         overflow-x: hidden;
@@ -136,6 +135,32 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
         box-shadow: 0 0 0 2px var(--sky-blue);
     }
 
+    /* ===== CARD SELESAI ===== */
+    .card-selesai {
+        opacity: 0.52;
+        filter: grayscale(45%);
+        transition: opacity 0.2s ease, filter 0.2s ease;
+    }
+
+    .card-selesai:hover {
+        opacity: 0.75;
+        filter: grayscale(20%);
+    }
+
+    .badge-selesai {
+        background-color: #e2e8f0;
+        color: #94a3b8;
+        font-size: 8px;
+        font-weight: 900;
+        padding: 2px 7px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        line-height: 1.6;
+    }
+
+    /* ======================== */
+
     @media (min-width: 768px) {
         .desktop-grid {
             display: grid;
@@ -164,8 +189,6 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
 <!-- Header -->
 <header class="sticky-header px-5 pt-4 pb-0 relative">
     <div class="flex items-center justify-between gap-3">
-
-        <!-- Kiri: Tombol back + Judul -->
         <div class="flex items-center gap-3 min-w-0">
             <button onclick="window.history.back()"
                 class="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 transition">
@@ -176,13 +199,10 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
                 <p class="text-[12px] text-gray-400 font-medium leading-tight">Lihat jadwal kegiatan terbaru</p>
             </div>
         </div>
-
-        <!-- Kanan: Tombol download -->
         <button onclick="openExportModal()"
             class="absolute top-5 right-4 w-11 h-11 flex items-center justify-center text-sky-600 hover:bg-sky-50 rounded-full transition text-lg">
             <i class="fa-solid fa-download text-lg"></i>
         </button>
-
     </div>
 </header>
 
@@ -228,6 +248,10 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
                     <div class="flex items-center gap-2 p-2 rounded-xl bg-red-50 border border-red-100 col-span-2">
                         <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
                         <span class="text-[9px] font-black text-red-600">Jadwal Tumpang Tindih</span>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-100 col-span-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+                        <span class="text-[9px] font-bold text-slate-400">Kegiatan Sudah Selesai</span>
                     </div>
                 </div>
             </div>
@@ -393,6 +417,10 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
     const btnHapus = IS_ADMIN ? document.getElementById('btnHapus') : null;
     const btnEditTrigger = IS_ADMIN ? document.getElementById('btnEditTrigger') : null;
 
+    function getTodayStr() {
+        return new Date().toISOString().split('T')[0];
+    }
+
     function formatDateID(dateStr) {
         const d = new Date(dateStr);
         return new Intl.DateTimeFormat('id-ID', {
@@ -406,28 +434,36 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
         const container = document.getElementById('calendar-days');
         const monthLabel = document.getElementById('calendar-month');
         container.innerHTML = '';
+
         const year = viewDate.getFullYear();
         const month = viewDate.getMonth();
         monthLabel.innerText = new Intl.DateTimeFormat('id-ID', {
             month: 'long',
             year: 'numeric'
         }).format(viewDate);
+
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const todayStr = getTodayStr();
+
         for (let i = 0; i < firstDay; i++) container.innerHTML += `<div></div>`;
+
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const events = agendaData.filter(ev => dateStr >= ev.start && dateStr <= ev.end);
+            const isToday = dateStr === todayStr;
             let stateClass = '';
             if (events.length === 1) stateClass = `cat-${events[0].pny.toLowerCase()}`;
             else if (events.length > 1) stateClass = 'cat-clash';
-            container.innerHTML += `<div onclick="filterByDate('${dateStr}')" class="calendar-day ${stateClass}">${d}</div>`;
+            container.innerHTML += `<div onclick="filterByDate('${dateStr}')" class="calendar-day ${stateClass} ${isToday ? 'is-today' : ''}">${d}</div>`;
         }
+
         const currentEvents = agendaData.filter(ev => {
             const start = new Date(ev.start);
             const end = new Date(ev.end);
             return (start.getMonth() === month || end.getMonth() === month) && start.getFullYear() === year;
         });
+
         const title = document.getElementById('view-title');
         if (title) title.innerText = "Daftar Agenda";
         const badge = document.getElementById('badge-count');
@@ -484,12 +520,16 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
         const listContainer = document.getElementById('list-items');
         const badge = document.getElementById('badge-count');
         if (badge) badge.innerText = `${data.length} Agenda`;
+
         if (!data || data.length === 0) {
             listContainer.innerHTML = `<div class="text-center py-10 bg-white rounded-[2.5rem] border border-slate-50 text-slate-300 text-[10px] font-bold uppercase tracking-widest">Tidak ada agenda pada tanggal ini</div>`;
             return;
         }
+
+        const todayStr = getTodayStr();
         const sorted = [...data].sort((a, b) => a.start.localeCompare(b.start));
         const groups = groupBentrok(sorted);
+
         const colorMap = {
             'Menpim': 'bg-yellow-400',
             'Teknis': 'bg-green-500',
@@ -497,6 +537,7 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
             'Pustrajak': 'bg-orange-500'
         };
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
+
         listContainer.innerHTML = groups.map(group => {
             const isBentrok = group.length > 1;
             return `
@@ -504,19 +545,30 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
                     ${isBentrok ? `<div class="flex items-center gap-2 px-2"><span class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span><span class="text-[9px] font-black text-red-500 uppercase tracking-widest">Jadwal Tumpang Tindih (${group.length} Agenda)</span></div>` : ''}
                     <div class="space-y-3 ${isBentrok ? 'p-3 bg-red-50/30 rounded-[2.5rem] border border-red-100/50' : ''}">
                         ${group.map(item => {
-                            const d = new Date(item.start);
-                            const day = String(d.getDate()).padStart(2, '0');
-                            const mon = monthNames[d.getMonth()];
+                            const isSelesai  = item.end < todayStr;
+                            const d          = new Date(item.start);
+                            const day        = String(d.getDate()).padStart(2, '0');
+                            const mon        = monthNames[d.getMonth()];
+                            const dotColor   = isSelesai ? 'bg-slate-300' : (colorMap[item.pny] || 'bg-slate-200');
+                            const badgeSelesai = isSelesai
+                                ? `<span class="badge-selesai">Selesai</span>`
+                                : '';
+                            const badgeKategori = `<span class="text-[9px] font-black uppercase px-2 py-1 rounded-lg ${colorMap[item.pny]} bg-opacity-10 flex-shrink-0" style="color: ${getHexColor(item.pny)}">${item.pny}</span>`;
+
                             return `
-                                <div onclick="openModalDetail(${item.id})" class="bg-white border border-slate-50 p-5 rounded-[2.2rem] shadow-sm flex items-start space-x-4 cursor-pointer">
-                                    <div class="w-14 h-14 ${colorMap[item.pny] || 'bg-slate-200'} rounded-[1.2rem] flex flex-col items-center justify-center text-white font-black">
+                                <div onclick="openModalDetail(${item.id})"
+                                     class="bg-white border border-slate-50 p-5 rounded-[2.2rem] shadow-sm flex items-start space-x-4 cursor-pointer ${isSelesai ? 'card-selesai' : ''}">
+                                    <div class="w-14 h-14 ${dotColor} rounded-[1.2rem] flex flex-col items-center justify-center text-white font-black flex-shrink-0">
                                         <span class="text-[12px] leading-none mb-0.5">${day}</span>
                                         <span class="text-[8px] uppercase opacity-80">${mon}</span>
                                     </div>
                                     <div class="flex-1 overflow-hidden">
                                         <div class="flex justify-between items-start mb-0.5">
                                             <h4 class="text-[13px] font-extrabold text-slate-800 leading-snug pr-2 truncate">${item.judul}</h4>
-                                            <span class="text-[9px] font-black uppercase px-2 py-1 rounded-lg ${colorMap[item.pny]} bg-opacity-10 flex-shrink-0" style="color: ${getHexColor(item.pny)}">${item.pny}</span>
+                                            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                                                ${badgeSelesai}
+                                                ${badgeKategori}
+                                            </div>
                                         </div>
                                         <div class="flex items-center gap-1.5 mb-2.5">
                                             <i class="fa-regular fa-calendar-check text-sky text-[9px]"></i>
@@ -600,8 +652,7 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
     }
 
     function toggleInputs(disabled) {
-        const ids = ['f-judul', 'f-start', 'f-end', 'f-asrama', 'f-pny', 'f-peserta', 'f-kelas', 'f-makan'];
-        ids.forEach(id => {
+        ['f-judul', 'f-start', 'f-end', 'f-asrama', 'f-pny', 'f-peserta', 'f-kelas', 'f-makan'].forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
             el.disabled = disabled;
@@ -612,7 +663,7 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
     function resetForm() {
         document.getElementById('agenda-form').reset();
         document.getElementById('edit-id').value = '';
-        const today = new Date().toISOString().split('T')[0];
+        const today = getTodayStr();
         document.getElementById('f-start').value = today;
         document.getElementById('f-end').value = today;
     }
@@ -734,7 +785,6 @@ $isAdmin = strtolower($_SESSION['user']['role'] ?? '') === 'admin';
         }
     }
 
-    // Override loadAgenda dengan versi yang bisa di-abort
     window.loadAgenda = loadAgendaSafe;
 
     document.addEventListener('visibilitychange', () => {

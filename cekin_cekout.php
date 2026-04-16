@@ -151,6 +151,13 @@ include 'config.php';
         transition: width .5s ease;
     }
 
+    .prog-bar-out {
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, #94a3b8, #64748b);
+        transition: width .5s ease;
+    }
+
     .kegiatan-body {
         border-top: 1px solid #f0f9ff;
     }
@@ -675,8 +682,12 @@ include 'config.php';
             const hadir = allPeserta.filter(p => normSt(p.status_inap) === 'IN').length;
             const co = allPeserta.filter(p => normSt(p.status_inap) === 'OUT').length;
             const total = allPeserta.length;
+
             const pct = total ? Math.round((hadir / total) * 100) : 0;
+            const pctCheckout = total ? Math.round((co / total) * 100) : 0;
+
             const pctColor = pct >= 80 ? '#047857' : pct >= 50 ? '#0ea5e9' : '#be123c';
+            const pctCheckoutColor = pctCheckout >= 80 ? '#475569' : pctCheckout >= 50 ? '#64748b' : '#94a3b8';
 
             return `
 <div class="kegiatan-wrap au" data-agenda-id="${ag.agenda_id}" style="animation-delay:${agIdx * .05}s">
@@ -698,10 +709,20 @@ include 'config.php';
       <div class="stat-box stat-out"><span class="stat-num">${co}</span><span class="stat-lbl">Check-out</span></div>
     </div>
 
-    <div class="prog-track"><div class="prog-bar" style="width:${pct}%"></div></div>
+    <div class="prog-track">
+      <div class="prog-bar" style="width:${pct}%"></div>
+    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
       <span style="font-size:10px;color:#94a3b8;font-weight:600">Kehadiran</span>
       <span style="font-size:10px;font-weight:900;color:${pctColor}">${pct}%</span>
+    </div>
+
+    <div class="prog-track" style="margin-top:8px">
+      <div class="prog-bar-out" style="width:${pctCheckout}%"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+      <span style="font-size:10px;color:#94a3b8;font-weight:600">Check-out</span>
+      <span style="font-size:10px;font-weight:900;color:${pctCheckoutColor}">${pctCheckout}%</span>
     </div>
 
     <div style="display:flex;align-items:center;justify-content:center;gap:6px;
