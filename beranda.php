@@ -608,6 +608,7 @@ if ($qAreaChart) {
         <?php
         $menuCepat = [
             ["timetable.php", "fa-calendar-days", "Timetable", "sky", "", ""],
+            ["peminjaman_ruang_rapat.php", "fa-list-alt", "Ruang Rapat", "sky", "", ""],
             ["javascript:void(0)", "fa-right-to-bracket", "Cekin", "purple", "openUploadCekin", ""],
             ["javascript:void(0)", "fa-triangle-exclamation", "Kerusakan", "red", "openUploadLaporanKerusakan", ""],
             ["javascript:void(0)", "fa-warehouse", "Gudang", "emerald", "openUploadGudang", ""],
@@ -806,16 +807,6 @@ if ($qAreaChart) {
                     <div class="flex-1">
                         <p class="text-sm font-bold text-gray-800">Cekin dan Cekout</p>
                         <p class="text-xs text-gray-500">Monitoring kehadiran peserta</p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
-                </a>
-                <a href="peminjaman_ruang_rapat.php" class="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:bg-sky-50 transition-all">
-                    <div class="w-12 h-12 rounded-2xl bg-sky-100 flex items-center justify-center shrink-0">
-                        <i class="fa-solid fa-right-to-bracket text-sky-600 text-xl"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-bold text-gray-800">Peminjaman Ruang Rapat</p>
-                        <p class="text-xs text-gray-500">Monitoring peminjaman ruang rapat</p>
                     </div>
                     <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
                 </a>
