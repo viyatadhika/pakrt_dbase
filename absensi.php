@@ -320,6 +320,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         -webkit-font-smoothing: antialiased
     }
 
+    /* ── HEADER ── */
     .sticky-hdr {
         position: fixed;
         top: 0;
@@ -336,7 +337,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         align-items: center;
         justify-content: space-between;
         gap: 10px;
-        padding: 11px 14px 9px
+        padding: 10px 14px
     }
 
     .hdr-titles {
@@ -387,6 +388,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         background: var(--blue-lt)
     }
 
+    /* Bulk bar */
     .bulk-bar {
         display: none;
         align-items: center;
@@ -394,7 +396,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         gap: 10px;
         padding: 7px 14px;
         background: var(--blue-lt);
-        border-bottom: .5px solid var(--blue-bd);
+        border-top: .5px solid var(--blue-bd);
         font-size: 13px;
         font-weight: 700;
         color: var(--blue)
@@ -428,15 +430,12 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         color: var(--blue)
     }
 
-    .hdr-offset {
-        padding-top: 128px
-    }
-
+    /* Day tabs inside header */
     .day-tabs {
         display: flex;
-        gap: 8px;
+        gap: 6px;
         overflow-x: auto;
-        padding: 4px 14px 10px;
+        padding: 0 14px 10px;
         scrollbar-width: none
     }
 
@@ -446,7 +445,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
 
     .day-tab {
         text-decoration: none;
-        padding: 8px 12px;
+        padding: 6px 12px;
         border-radius: 999px;
         font-size: 12px;
         font-weight: 700;
@@ -462,6 +461,20 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         border-color: var(--blue-bd)
     }
 
+    /* Offset classes — calculated by JS based on actual header height */
+    .hdr-offset-single {
+        padding-top: 58px
+    }
+
+    .hdr-offset-multi {
+        padding-top: 96px
+    }
+
+    /* ── CONTENT ── */
+    .page-body {
+        padding: 18px 0 100px
+    }
+
     .section-card {
         margin: 0 14px 10px;
         background: var(--white);
@@ -474,7 +487,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         display: flex;
         align-items: center;
         gap: 9px;
-        padding: 13px 14px;
+        padding: 11px 14px;
         border-bottom: .5px solid var(--border)
     }
 
@@ -503,7 +516,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
     }
 
     .section-body {
-        padding: 14px
+        padding: 13px 14px
     }
 
     .grid-2 {
@@ -522,7 +535,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         display: flex;
         align-items: flex-start;
         gap: 9px;
-        margin-bottom: 10px
+        margin-bottom: 9px
     }
 
     .info-row:last-child {
@@ -556,12 +569,13 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         margin-top: 1px
     }
 
+    /* Toolbar (search + count) */
     .toolbar {
         display: flex;
         align-items: center;
         gap: 7px;
         padding: 0 14px;
-        margin-bottom: 7px
+        margin-bottom: 6px
     }
 
     .search-wrap {
@@ -604,6 +618,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         margin-bottom: 6px
     }
 
+    /* Table */
     .tbl-card {
         margin: 0 14px 10px;
         background: var(--white);
@@ -625,7 +640,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
 
     table.dt th {
         background: var(--bg);
-        padding: 10px 11px;
+        padding: 9px 11px;
         text-align: left;
         font-weight: 700;
         font-size: 12px;
@@ -635,7 +650,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
     }
 
     table.dt td {
-        padding: 11px 11px;
+        padding: 10px 11px;
         border-bottom: .5px solid var(--border);
         vertical-align: middle
     }
@@ -754,6 +769,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         color: var(--red)
     }
 
+    /* Mobile cards */
     .mobile-list {
         padding: 0 14px 100px
     }
@@ -775,7 +791,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         display: flex;
         align-items: center;
         gap: 9px;
-        padding: 12px 13px 9px
+        padding: 11px 13px 8px
     }
 
     .m-num {
@@ -826,7 +842,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         display: flex;
         align-items: center;
         gap: 9px;
-        padding: 9px 13px 12px;
+        padding: 8px 13px 11px;
         border-top: .5px solid var(--border);
         cursor: pointer
     }
@@ -853,6 +869,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         width: 10px
     }
 
+    /* FAB */
     .fab {
         position: fixed;
         bottom: 18px;
@@ -872,6 +889,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         box-shadow: 0 4px 16px rgba(24, 95, 165, .35)
     }
 
+    /* Modal */
     .modal-ov {
         position: fixed;
         inset: 0;
@@ -1030,6 +1048,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         padding: 6px
     }
 
+    /* Toast */
     .toast {
         position: fixed;
         bottom: 26px;
@@ -1100,10 +1119,6 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         .tbl-card {
             display: block
         }
-
-        .hdr-offset {
-            padding-top: 128px
-        }
     }
 
     @media(max-width:767px) {
@@ -1113,10 +1128,6 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
 
         .mobile-list {
             display: block
-        }
-
-        .hdr-offset {
-            padding-top: 128px
         }
     }
 
@@ -1134,7 +1145,8 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
             box-shadow: none !important
         }
 
-        .hdr-offset {
+        .hdr-offset-single,
+        .hdr-offset-multi {
             padding-top: 0 !important
         }
     }
@@ -1155,6 +1167,18 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
             </button>
         </div>
     </div>
+
+    <?php if (count($days) > 1): ?>
+        <div class="day-tabs">
+            <?php foreach ($days as $d): ?>
+                <a href="absensi.php?id=<?= (int)$bookingId ?>&pin=<?= urlencode($pin) ?>&tanggal=<?= urlencode($d['tanggal']) ?>"
+                    class="day-tab <?= $selectedDate === $d['tanggal'] ? 'active' : '' ?>">
+                    <?= h($d['label']) ?>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
     <div class="bulk-bar" id="bulkBar">
         <span id="bulkCount">0 dipilih</span>
         <div style="display:flex;gap:6px">
@@ -1166,207 +1190,206 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
     </div>
 </header>
 
-<main class="hdr-offset">
+<main class="<?= count($days) > 1 ? 'hdr-offset-multi' : 'hdr-offset-single' ?>">
+    <div class="page-body">
 
-    <?php if (count($days) > 1): ?>
-        <div class="day-tabs no-print">
-            <?php foreach ($days as $d): ?>
-                <a href="absensi.php?id=<?= (int)$bookingId ?>&pin=<?= urlencode($pin) ?>&tanggal=<?= urlencode($d['tanggal']) ?>"
-                    class="day-tab <?= $selectedDate === $d['tanggal'] ? 'active' : '' ?>">
-                    <?= h($d['label']) ?>
-                </a>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-
-    <div class="section-card">
-        <div class="section-head">
-            <div class="section-icon"><i class="fa-solid fa-calendar-check"></i></div>
-            <div>
-                <div class="section-title">Informasi Rapat</div>
-                <div class="section-sub">Detail kegiatan yang sedang didokumentasikan</div>
-            </div>
-        </div>
-        <div class="section-body">
-            <div class="grid-2">
+        <!-- Informasi Rapat -->
+        <div class="section-card">
+            <div class="section-head">
+                <div class="section-icon"><i class="fa-solid fa-calendar-check"></i></div>
                 <div>
-                    <div class="info-row">
-                        <div class="info-ico"><i class="fa-solid fa-file-lines"></i></div>
-                        <div>
-                            <div class="info-lbl">Nama Kegiatan</div>
-                            <div class="info-val"><?= h($booking['nama']) ?></div>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-ico"><i class="fa-solid fa-user"></i></div>
-                        <div>
-                            <div class="info-lbl">Peminjam / Bidang</div>
-                            <div class="info-val"><?= h($booking['peminjam'] ?? '-') ?></div>
-                        </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-ico"><i class="fa-solid fa-location-dot"></i></div>
-                        <div>
-                            <div class="info-lbl">Lokasi</div>
-                            <div class="info-val"><?= h($lokasi) ?></div>
-                        </div>
-                    </div>
+                    <div class="section-title">Informasi Rapat</div>
+                    <div class="section-sub">Detail kegiatan yang sedang didokumentasikan</div>
                 </div>
-                <div>
-                    <div class="info-row">
-                        <div class="info-ico"><i class="fa-solid fa-calendar"></i></div>
-                        <div>
-                            <div class="info-lbl">Tanggal Kegiatan</div>
-                            <div class="info-val">
-                                <?= h(fmtDate($booking['start_date'])) ?>
-                                <?php if ($booking['start_date'] !== $booking['end_date']): ?>
-                                    — <?= h(fmtDate($booking['end_date'])) ?>
-                                <?php endif; ?>
+            </div>
+            <div class="section-body">
+                <div class="grid-2">
+                    <div>
+                        <div class="info-row">
+                            <div class="info-ico"><i class="fa-solid fa-file-lines"></i></div>
+                            <div>
+                                <div class="info-lbl">Nama Kegiatan</div>
+                                <div class="info-val"><?= h($booking['nama']) ?></div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-ico"><i class="fa-solid fa-user"></i></div>
+                            <div>
+                                <div class="info-lbl">Peminjam / Bidang</div>
+                                <div class="info-val"><?= h($booking['peminjam'] ?? '-') ?></div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-ico"><i class="fa-solid fa-location-dot"></i></div>
+                            <div>
+                                <div class="info-lbl">Lokasi</div>
+                                <div class="info-val"><?= h($lokasi) ?></div>
                             </div>
                         </div>
                     </div>
-                    <div class="info-row">
-                        <div class="info-ico"><i class="fa-solid fa-clock"></i></div>
-                        <div>
-                            <div class="info-lbl">Waktu</div>
-                            <div class="info-val"><?= h(fmtTime($booking['jam_start'])) ?> – <?= h(fmtTime($booking['jam_end'])) ?> WIB</div>
+                    <div>
+                        <div class="info-row">
+                            <div class="info-ico"><i class="fa-solid fa-calendar"></i></div>
+                            <div>
+                                <div class="info-lbl">Tanggal Kegiatan</div>
+                                <div class="info-val">
+                                    <?= h(fmtDate($booking['start_date'])) ?>
+                                    <?php if ($booking['start_date'] !== $booking['end_date']): ?>
+                                        — <?= h(fmtDate($booking['end_date'])) ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-ico"><i class="fa-solid fa-calendar-day"></i></div>
-                        <div>
-                            <div class="info-lbl">Sesi Monitoring</div>
-                            <div class="info-val"><?= h($sesiLabel) ?></div>
+                        <div class="info-row">
+                            <div class="info-ico"><i class="fa-solid fa-clock"></i></div>
+                            <div>
+                                <div class="info-lbl">Waktu</div>
+                                <div class="info-val"><?= h(fmtTime($booking['jam_start'])) ?> – <?= h(fmtTime($booking['jam_end'])) ?> WIB</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-ico"><i class="fa-solid fa-users"></i></div>
-                        <div>
-                            <div class="info-lbl">Total Hadir</div>
-                            <div class="info-val"><span id="infoTotalHadir"><?= count($rows) ?></span> peserta</div>
+                        <div class="info-row">
+                            <div class="info-ico"><i class="fa-solid fa-calendar-day"></i></div>
+                            <div>
+                                <div class="info-lbl">Sesi Monitoring</div>
+                                <div class="info-val"><?= h($sesiLabel) ?></div>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-ico"><i class="fa-solid fa-users"></i></div>
+                            <div>
+                                <div class="info-lbl">Total Hadir</div>
+                                <div class="info-val"><span id="infoTotalHadir"><?= count($rows) ?></span> peserta</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="toolbar no-print">
-        <div class="search-wrap">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="qSearch" oninput="filterData()" placeholder="Cari nama, instansi, unit/jabatan...">
+        <!-- Search + count -->
+        <div class="toolbar no-print">
+            <div class="search-wrap">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="qSearch" oninput="filterData()" placeholder="Cari nama, instansi, unit/jabatan...">
+            </div>
         </div>
-    </div>
 
-    <div class="count-lbl no-print">
-        <span id="dataCount"><?= count($rows) ?> peserta hadir • <?= h($sesiLabel) ?></span>
-    </div>
+        <div class="count-lbl no-print">
+            <span id="dataCount"><?= count($rows) ?> peserta hadir • <?= h($sesiLabel) ?></span>
+        </div>
 
-    <div class="tbl-card">
-        <div class="tbl-wrap">
-            <table class="dt">
-                <thead>
-                    <tr>
-                        <th class="cb-col no-print"><input type="checkbox" id="cbAll" onchange="toggleAll(this)"></th>
-                        <th style="width:32px">No</th>
-                        <th style="min-width:120px"><?= $isMultiDay ? 'Day' : 'Tanggal' ?></th>
-                        <th style="min-width:160px">Nama Peserta</th>
-                        <th style="min-width:130px">Unit / Jabatan</th>
-                        <th style="min-width:130px">Instansi</th>
-                        <th style="width:110px">Waktu Hadir</th>
-                        <th style="width:70px">TTD</th>
-                        <th style="width:60px" class="no-print">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <?php if (!$rows): ?>
+        <!-- Desktop table -->
+        <div class="tbl-card">
+            <div class="tbl-wrap">
+                <table class="dt">
+                    <thead>
                         <tr>
-                            <td colspan="9">
-                                <div class="empty-st"><i class="fa-solid fa-inbox"></i>Belum ada data absensi untuk sesi ini</div>
-                            </td>
+                            <th class="cb-col no-print"><input type="checkbox" id="cbAll" onchange="toggleAll(this)"></th>
+                            <th style="width:32px">No</th>
+                            <th style="min-width:120px"><?= $isMultiDay ? 'Day' : 'Tanggal' ?></th>
+                            <th style="min-width:160px">Nama Peserta</th>
+                            <th style="min-width:130px">Unit / Jabatan</th>
+                            <th style="min-width:130px">Instansi</th>
+                            <th style="width:110px">Waktu Hadir</th>
+                            <th style="width:70px">TTD</th>
+                            <th style="width:60px" class="no-print">Aksi</th>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($rows as $i => $row): ?>
-                            <?php $rowLabel = $isMultiDay ? ('Day ' . (int)($row['day_ke'] ?? $selectedDay)) : fmtDate($row['tanggal_hadir'] ?? $selectedDate); ?>
-                            <tr data-id="<?= $row['id'] ?>">
-                                <td class="cb-col no-print"><input type="checkbox" class="row-cb" value="<?= $row['id'] ?>" onchange="onCheckChange()"></td>
-                                <td style="text-align:center;font-size:12px;color:var(--muted)"><?= $i + 1 ?></td>
-                                <td><span class="badge badge-blue"><?= h($rowLabel) ?></span></td>
-                                <td>
-                                    <div style="display:flex;align-items:center;gap:8px">
-                                        <div class="avatar"><?= mb_strtoupper(mb_substr(preg_replace('/[^a-zA-Z\s]/', '', $row['nama_peserta']), 0, 2)) ?></div>
-                                        <span style="font-weight:700;font-size:14px"><?= h($row['nama_peserta']) ?></span>
-                                    </div>
-                                </td>
-                                <td style="font-size:13px;color:var(--muted)"><?= h($row['unit_jabatan'] ?: '-') ?></td>
-                                <td style="font-size:13px;color:var(--muted)"><?= h($row['instansi'] ?: '-') ?></td>
-                                <td>
-                                    <span class="badge badge-green">
-                                        <i class="fa-solid fa-clock" style="font-size:9px;margin-right:4px;opacity:.8"></i>
-                                        <?= fmtTime($row['waktu_hadir'] ?? '') ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php if (!empty($row['tanda_tangan'])): ?>
-                                        <div class="ttd-box signed" onclick="openDetail(<?= $row['id'] ?>)" title="Klik untuk perbesar">
-                                            <img src="<?= h($row['tanda_tangan']) ?>" alt="TTD">
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="ttd-box ttd-none"><i class="fa-solid fa-signature" style="font-size:14px;color:var(--muted)"></i></div>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="no-print">
-                                    <button type="button" class="act-btn" onclick="openDetail(<?= $row['id'] ?>)"><i class="fa-solid fa-eye"></i></button>
-                                    <button type="button" class="act-btn del" onclick="confirmDelete(<?= $row['id'] ?>)"><i class="fa-solid fa-trash-can"></i></button>
+                    </thead>
+                    <tbody id="tableBody">
+                        <?php if (!$rows): ?>
+                            <tr>
+                                <td colspan="9">
+                                    <div class="empty-st"><i class="fa-solid fa-inbox"></i>Belum ada data absensi untuk sesi ini</div>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                        <?php else: ?>
+                            <?php foreach ($rows as $i => $row): ?>
+                                <?php $rowLabel = $isMultiDay ? ('Day ' . (int)($row['day_ke'] ?? $selectedDay)) : fmtDate($row['tanggal_hadir'] ?? $selectedDate); ?>
+                                <tr data-id="<?= $row['id'] ?>">
+                                    <td class="cb-col no-print"><input type="checkbox" class="row-cb" value="<?= $row['id'] ?>" onchange="onCheckChange()"></td>
+                                    <td style="text-align:center;font-size:12px;color:var(--muted)"><?= $i + 1 ?></td>
+                                    <td><span class="badge badge-blue"><?= h($rowLabel) ?></span></td>
+                                    <td>
+                                        <div style="display:flex;align-items:center;gap:8px">
+                                            <div class="avatar"><?= mb_strtoupper(mb_substr(preg_replace('/[^a-zA-Z\s]/', '', $row['nama_peserta']), 0, 2)) ?></div>
+                                            <span style="font-weight:700;font-size:14px"><?= h($row['nama_peserta']) ?></span>
+                                        </div>
+                                    </td>
+                                    <td style="font-size:13px;color:var(--muted)"><?= h($row['unit_jabatan'] ?: '-') ?></td>
+                                    <td style="font-size:13px;color:var(--muted)"><?= h($row['instansi'] ?: '-') ?></td>
+                                    <td>
+                                        <span class="badge badge-green">
+                                            <i class="fa-solid fa-clock" style="font-size:9px;margin-right:4px;opacity:.8"></i>
+                                            <?= fmtTime($row['waktu_hadir'] ?? '') ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($row['tanda_tangan'])): ?>
+                                            <div class="ttd-box signed" onclick="openDetail(<?= $row['id'] ?>)" title="Klik untuk perbesar">
+                                                <img src="<?= h($row['tanda_tangan']) ?>" alt="TTD">
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="ttd-box ttd-none"><i class="fa-solid fa-signature" style="font-size:14px;color:var(--muted)"></i></div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="no-print">
+                                        <button type="button" class="act-btn" onclick="openDetail(<?= $row['id'] ?>)"><i class="fa-solid fa-eye"></i></button>
+                                        <button type="button" class="act-btn del" onclick="confirmDelete(<?= $row['id'] ?>)"><i class="fa-solid fa-trash-can"></i></button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <div class="mobile-list" id="mobileCards">
-        <?php if (!$rows): ?>
-            <div class="empty-st"><i class="fa-solid fa-inbox"></i>Belum ada data absensi untuk sesi ini</div>
-        <?php else: ?>
-            <?php foreach ($rows as $i => $row): ?>
-                <?php $rowLabel = $isMultiDay ? ('Day ' . (int)($row['day_ke'] ?? $selectedDay)) : fmtDate($row['tanggal_hadir'] ?? $selectedDate); ?>
-                <div class="m-card au" style="animation-delay:<?= $i * 0.03 ?>s" data-id="<?= $row['id'] ?>">
-                    <div class="m-card-top">
-                        <input type="checkbox" class="row-cb-m no-print" value="<?= $row['id'] ?>" style="display:none;margin-right:2px;flex-shrink:0" onchange="onCheckChange()">
-                        <div class="m-num"><span>No</span><span><?= $i + 1 ?></span></div>
-                        <div style="flex:1;min-width:0">
-                            <div class="m-name"><?= h($row['nama_peserta']) ?></div>
-                            <div class="m-unit"><?= h($row['unit_jabatan'] ?: '-') ?></div>
+        <!-- Mobile cards -->
+        <div class="mobile-list" id="mobileCards">
+            <?php if (!$rows): ?>
+                <div class="empty-st"><i class="fa-solid fa-inbox"></i>Belum ada data absensi untuk sesi ini</div>
+            <?php else: ?>
+                <?php foreach ($rows as $i => $row): ?>
+                    <?php $rowLabel = $isMultiDay ? ('Day ' . (int)($row['day_ke'] ?? $selectedDay)) : fmtDate($row['tanggal_hadir'] ?? $selectedDate); ?>
+                    <div class="m-card au" style="animation-delay:<?= $i * 0.03 ?>s" data-id="<?= $row['id'] ?>">
+                        <div class="m-card-top">
+                            <input type="checkbox" class="row-cb-m no-print" value="<?= $row['id'] ?>"
+                                style="display:none;margin-right:2px;flex-shrink:0" onchange="onCheckChange()">
+                            <div class="m-num"><span>No</span><span><?= $i + 1 ?></span></div>
+                            <div style="flex:1;min-width:0">
+                                <div class="m-name"><?= h($row['nama_peserta']) ?></div>
+                                <div class="m-unit"><?= h($row['unit_jabatan'] ?: '-') ?></div>
+                            </div>
+                            <span class="badge badge-blue" style="flex-shrink:0"><?= h($rowLabel) ?></span>
                         </div>
-                        <span class="badge badge-blue" style="flex-shrink:0"><?= h($rowLabel) ?></span>
+                        <div class="m-card-bot" onclick="openDetail(<?= $row['id'] ?>)">
+                            <div class="m-ttd <?= !empty($row['tanda_tangan']) ? 'signed' : '' ?>">
+                                <?php if (!empty($row['tanda_tangan'])): ?>
+                                    <img src="<?= h($row['tanda_tangan']) ?>" alt="TTD">
+                                <?php else: ?>
+                                    <i class="fa-solid fa-signature" style="font-size:16px;color:var(--muted);opacity:.3"></i>
+                                <?php endif; ?>
+                            </div>
+                            <div style="flex:1;min-width:0">
+                                <div class="m-meta"><i class="fa-solid fa-building"></i><span><?= h($row['instansi'] ?: '-') ?></span></div>
+                                <div class="m-meta"><i class="fa-solid fa-clock"></i><span>Hadir: <?= fmtTime($row['waktu_hadir'] ?? '') ?></span></div>
+                            </div>
+                            <button type="button" class="act-btn del no-print"
+                                onclick="event.stopPropagation();confirmDelete(<?= $row['id'] ?>)">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="m-card-bot" onclick="openDetail(<?= $row['id'] ?>)">
-                        <div class="m-ttd <?= !empty($row['tanda_tangan']) ? 'signed' : '' ?>">
-                            <?php if (!empty($row['tanda_tangan'])): ?>
-                                <img src="<?= h($row['tanda_tangan']) ?>" alt="TTD">
-                            <?php else: ?>
-                                <i class="fa-solid fa-signature" style="font-size:16px;color:var(--muted);opacity:.3"></i>
-                            <?php endif; ?>
-                        </div>
-                        <div style="flex:1;min-width:0">
-                            <div class="m-meta"><i class="fa-solid fa-building"></i><span><?= h($row['instansi'] ?: '-') ?></span></div>
-                            <div class="m-meta"><i class="fa-solid fa-clock"></i><span>Hadir: <?= fmtTime($row['waktu_hadir'] ?? '') ?></span></div>
-                        </div>
-                        <button type="button" class="act-btn del no-print" onclick="event.stopPropagation();confirmDelete(<?= $row['id'] ?>)">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+    </div><!-- .page-body -->
 </main>
 
 <button type="button" class="fab no-print" onclick="openAdd()"><i class="fa-solid fa-plus"></i></button>
 
+<!-- Detail Modal -->
 <div id="detailModal" class="modal-ov hidden">
     <div style="position:absolute;inset:0" onclick="closeDetail()"></div>
     <div class="modal-box">
@@ -1381,6 +1404,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
     </div>
 </div>
 
+<!-- Add Modal -->
 <div id="addModal" class="modal-ov hidden">
     <div style="position:absolute;inset:0" onclick="closeAdd()"></div>
     <div class="modal-box">
@@ -1432,21 +1456,15 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
 
     function esc(v) {
         return String(v ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function initials(n) {
         return (n || '')
-            .replace(/[^a-zA-Z\s]/g, '')
-            .trim()
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(w => w[0].toUpperCase())
-            .join('');
+            .replace(/[^a-zA-Z\s]/g, '').trim()
+            .split(/\s+/).filter(Boolean).slice(0, 2)
+            .map(w => w[0].toUpperCase()).join('');
     }
 
     function fmtT(s) {
@@ -1458,7 +1476,8 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
     function rowSesiLabel(r) {
         return IS_MULTI_DAY ?
             'Day ' + parseInt(r.day_ke || SELECTED_DAY) :
-            new Date((r.tanggal_hadir || SELECTED_DATE) + 'T00:00:00').toLocaleDateString('id-ID', {
+            new Date((r.tanggal_hadir || SELECTED_DATE) + 'T00:00:00')
+            .toLocaleDateString('id-ID', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric'
@@ -1472,9 +1491,19 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         setTimeout(() => t.classList.remove('show'), dur);
     }
 
+    /* Adjust main padding-top dynamically based on actual header height */
+    function syncOffset() {
+        const hdr = document.querySelector('.sticky-hdr');
+        const main = document.querySelector('main');
+        if (hdr && main) main.style.paddingTop = hdr.offsetHeight + 'px';
+    }
+
+    window.addEventListener('load', syncOffset);
+    window.addEventListener('resize', syncOffset);
+
     function updateStats(data) {
-        const infoTotal = $id('infoTotalHadir');
-        if (infoTotal) infoTotal.textContent = data.length;
+        const el = $id('infoTotalHadir');
+        if (el) el.textContent = data.length;
         $id('dataCount').textContent = data.length + ' peserta hadir • ' + SESI_LABEL;
     }
 
@@ -1495,15 +1524,15 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         }
         $id('tableBody').innerHTML = data.map((r, i) => `
             <tr data-id="${r.id}">
-                <td class="cb-col no-print"><input type="checkbox" class="row-cb" value="${r.id}" ${selectedIds.has(r.id) ? 'checked' : ''} onchange="onCheckChange()"></td>
-                <td style="text-align:center;font-size:12px;color:var(--muted)">${i + 1}</td>
+                <td class="cb-col no-print"><input type="checkbox" class="row-cb" value="${r.id}" ${selectedIds.has(r.id)?'checked':''} onchange="onCheckChange()"></td>
+                <td style="text-align:center;font-size:12px;color:var(--muted)">${i+1}</td>
                 <td><span class="badge badge-blue">${esc(rowSesiLabel(r))}</span></td>
                 <td><div style="display:flex;align-items:center;gap:8px">
                     <div class="avatar">${esc(initials(r.nama_peserta))}</div>
                     <span style="font-weight:700;font-size:14px">${esc(r.nama_peserta)}</span>
                 </div></td>
-                <td style="font-size:13px;color:var(--muted)">${esc(r.unit_jabatan || '-')}</td>
-                <td style="font-size:13px;color:var(--muted)">${esc(r.instansi || '-')}</td>
+                <td style="font-size:13px;color:var(--muted)">${esc(r.unit_jabatan||'-')}</td>
+                <td style="font-size:13px;color:var(--muted)">${esc(r.instansi||'-')}</td>
                 <td><span class="badge badge-green"><i class="fa-solid fa-clock" style="font-size:9px;margin-right:4px;opacity:.8"></i>${esc(fmtT(r.waktu_hadir))}</span></td>
                 <td>${r.tanda_tangan
                     ? `<div class="ttd-box signed" onclick="openDetail(${r.id})"><img src="${esc(r.tanda_tangan)}" alt="TTD"></div>`
@@ -1519,29 +1548,34 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
 
     function renderCards(data) {
         const wrap = $id('mobileCards');
+        const inSelect = selectedIds.size > 0;
+
         if (!data.length) {
             wrap.innerHTML = `<div class="empty-st"><i class="fa-solid fa-inbox"></i>Data tidak ditemukan</div>`;
             return;
         }
-        const inSelect = selectedIds.size > 0;
+
         wrap.innerHTML = data.map((r, i) => `
-            <div class="m-card au ${selectedIds.has(r.id) ? 'selected' : ''}" style="animation-delay:${i * 0.03}s" data-id="${r.id}">
+            <div class="m-card au ${selectedIds.has(r.id)?'selected':''}" style="animation-delay:${i*0.03}s" data-id="${r.id}">
                 <div class="m-card-top">
-                    <input type="checkbox" class="row-cb-m no-print" value="${r.id}" ${selectedIds.has(r.id) ? 'checked' : ''}
-                        style="display:${inSelect ? 'inline-block' : 'none'};margin-right:2px;flex-shrink:0" onchange="onCheckChange()">
-                    <div class="m-num"><span>No</span><span>${i + 1}</span></div>
+                    <input type="checkbox" class="row-cb-m no-print" value="${r.id}"
+                        ${selectedIds.has(r.id)?'checked':''}
+                        style="display:${inSelect?'inline-block':'none'};margin-right:2px;flex-shrink:0" onchange="onCheckChange()">
+                    <div class="m-num"><span>No</span><span>${i+1}</span></div>
                     <div style="flex:1;min-width:0">
                         <div class="m-name">${esc(r.nama_peserta)}</div>
-                        <div class="m-unit">${esc(r.unit_jabatan || '-')}</div>
+                        <div class="m-unit">${esc(r.unit_jabatan||'-')}</div>
                     </div>
                     <span class="badge badge-blue" style="flex-shrink:0">${esc(rowSesiLabel(r))}</span>
                 </div>
                 <div class="m-card-bot" onclick="openDetail(${r.id})">
-                    <div class="m-ttd ${r.tanda_tangan ? 'signed' : ''}">
-                        ${r.tanda_tangan ? `<img src="${esc(r.tanda_tangan)}" alt="TTD">` : `<i class="fa-solid fa-signature" style="font-size:16px;color:var(--muted);opacity:.3"></i>`}
+                    <div class="m-ttd ${r.tanda_tangan?'signed':''}">
+                        ${r.tanda_tangan
+                            ? `<img src="${esc(r.tanda_tangan)}" alt="TTD">`
+                            : `<i class="fa-solid fa-signature" style="font-size:16px;color:var(--muted);opacity:.3"></i>`}
                     </div>
                     <div style="flex:1;min-width:0">
-                        <div class="m-meta"><i class="fa-solid fa-building"></i><span>${esc(r.instansi || '-')}</span></div>
+                        <div class="m-meta"><i class="fa-solid fa-building"></i><span>${esc(r.instansi||'-')}</span></div>
                         <div class="m-meta"><i class="fa-solid fa-clock"></i><span>Hadir: ${esc(fmtT(r.waktu_hadir))}</span></div>
                     </div>
                     <button type="button" class="act-btn del no-print" onclick="event.stopPropagation();confirmDelete(${r.id})">
@@ -1573,6 +1607,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
             if (cb.checked) selectedIds.add(parseInt(cb.value));
         });
         updateBulkBar();
+        syncOffset();
     }
 
     function toggleAll(cbAll) {
@@ -1581,6 +1616,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         else selectedIds.clear();
         updateBulkBar();
         filterData();
+        syncOffset();
     }
 
     function toggleSelect(id) {
@@ -1588,6 +1624,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         else selectedIds.add(id);
         updateBulkBar();
         filterData();
+        syncOffset();
     }
 
     function clearSelection() {
@@ -1597,6 +1634,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         if (ca) ca.checked = false;
         updateBulkBar();
         filterData();
+        syncOffset();
     }
 
     function updateBulkBar() {
@@ -1607,6 +1645,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         } else {
             bar.classList.remove('show');
         }
+        syncOffset();
     }
 
     function openDetail(id) {
@@ -1619,24 +1658,18 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
                     <div class="dt-val">${esc(r.nama_peserta)}</div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-                    <div><div class="dt-lbl">Unit / Jabatan</div><div class="dt-val" style="font-size:13px">${esc(r.unit_jabatan || '-')}</div></div>
-                    <div><div class="dt-lbl">Instansi</div><div class="dt-val" style="font-size:13px">${esc(r.instansi || '-')}</div></div>
+                    <div><div class="dt-lbl">Unit / Jabatan</div><div class="dt-val" style="font-size:13px">${esc(r.unit_jabatan||'-')}</div></div>
+                    <div><div class="dt-lbl">Instansi</div><div class="dt-val" style="font-size:13px">${esc(r.instansi||'-')}</div></div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                    <div>
-                        <div class="dt-lbl">Tanggal Sesi</div>
-                        <div class="dt-val" style="font-size:13px">${esc(r.tanggal_hadir || SELECTED_DATE)}</div>
-                    </div>
-                    <div>
-                        <div class="dt-lbl">${IS_MULTI_DAY ? 'Day' : 'Tanggal'}</div>
-                        <div class="dt-val" style="font-size:13px">${esc(rowSesiLabel(r))}</div>
-                    </div>
+                    <div><div class="dt-lbl">Tanggal Sesi</div><div class="dt-val" style="font-size:13px">${esc(r.tanggal_hadir||SELECTED_DATE)}</div></div>
+                    <div><div class="dt-lbl">${IS_MULTI_DAY?'Day':'Tanggal'}</div><div class="dt-val" style="font-size:13px">${esc(rowSesiLabel(r))}</div></div>
                 </div>
                 <div style="margin-top:10px">
                     <div class="dt-lbl">Waktu Hadir</div>
                     <span class="badge badge-green" style="margin-top:3px">
                         <i class="fa-solid fa-clock" style="font-size:9px;margin-right:4px;opacity:.8"></i>
-                        ${esc(r.waktu_hadir || '-')}
+                        ${esc(r.waktu_hadir||'-')}
                     </span>
                 </div>
             </div>
@@ -1699,9 +1732,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
                 showToast('✓ Absensi ditambahkan ke sesi ini');
                 closeAdd();
                 await refreshData();
-            } else {
-                showToast(j.message || 'Gagal menyimpan');
-            }
+            } else showToast(j.message || 'Gagal menyimpan');
         } catch (e) {
             showToast('Error: ' + e.message);
         }
@@ -1724,9 +1755,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
                 allRows = allRows.filter(r => String(r.id) !== String(id));
                 filterData();
                 showToast('✓ Data dihapus');
-            } else {
-                showToast(j.message || 'Gagal menghapus');
-            }
+            } else showToast(j.message || 'Gagal menghapus');
         } catch (e) {
             showToast('Error: ' + e.message);
         }
@@ -1752,9 +1781,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
                 updateBulkBar();
                 filterData();
                 showToast('✓ ' + j.deleted + ' data dihapus');
-            } else {
-                showToast(j.message || 'Gagal menghapus');
-            }
+            } else showToast(j.message || 'Gagal menghapus');
         } catch (e) {
             showToast('Error: ' + e.message);
         }
@@ -1771,9 +1798,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
                     allRows = j.rows;
                     filterData();
                     showToast('✓ Data diperbarui');
-                } else {
-                    location.reload();
-                }
+                } else location.reload();
             }
         } catch {
             location.reload();
@@ -1793,4 +1818,5 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
     renderTable(allRows);
     renderCards(allRows);
     updateStats(allRows);
+    syncOffset();
 </script>
