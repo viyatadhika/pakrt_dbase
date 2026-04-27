@@ -62,7 +62,8 @@ $lokasi = $booking['jenis_lokasi'] === 'external'
 
 $today         = date('Y-m-d');
 $isBeforeStart = $today < $booking['start_date'];
-$canAttend     = !$isBeforeStart;
+$isAfterEnd    = $today > $booking['end_date'];
+$canAttend     = !$isBeforeStart && !$isAfterEnd;
 $attendanceDate = $today;
 
 $selectedDay = hitungDayKeMengikutiKegiatan(
@@ -77,7 +78,7 @@ $sesiLabel = formatSesiLabel(
     $selectedDay
 );
 
-// Bersihkan session lama agar tidak memblokir user lain
+// Bersihkan session lama
 $sessionKey = 'absensi_done_' . $bookingId . '_' . $attendanceDate;
 if (isset($_SESSION[$sessionKey])) {
     unset($_SESSION[$sessionKey]);
@@ -90,16 +91,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canAttend) {
     $namaPeserta = trim($_POST['nama_peserta'] ?? '');
     $unitJabatan = trim($_POST['unit_jabatan'] ?? '');
     $instansi    = trim($_POST['instansi'] ?? '');
-    // Trim dan normalisasi whitespace dari signature (iOS kadang sisipkan spasi/newline)
     $signature   = trim(preg_replace('/\s+/', '', $_POST['signature_data'] ?? ''));
 
-    // Validasi: nama wajib, signature wajib dan harus berformat data URI gambar
     if ($namaPeserta === '') {
         $error = 'Nama peserta wajib diisi.';
     } elseif ($signature === '' || strpos($signature, 'data:image/') !== 0) {
         $error = 'Tanda tangan wajib diisi. Pastikan Anda menggambar tanda tangan sebelum menyimpan.';
     } else {
-        // Cek duplikat nama pada sesi yang sama
         $cek = $conn->prepare("
             SELECT id FROM absensi_rapat
             WHERE booking_id = ? AND tanggal_hadir = ?
@@ -569,14 +567,13 @@ include 'header.php';
         background: var(--white)
     }
 
-    /* ── SIGNATURE — fix iOS ── */
+    /* Signature */
     .sig-wrap {
         border: .5px solid var(--border);
         border-radius: var(--radius);
         background: var(--white);
         overflow: hidden;
         position: relative;
-        /* iOS perlu user-select:none agar tidak trigger selection saat draw */
         -webkit-user-select: none;
         user-select: none
     }
@@ -586,7 +583,6 @@ include 'header.php';
         width: 100%;
         height: 200px;
         cursor: crosshair;
-        /* touch-action:none wajib agar touchmove tidak di-scroll oleh browser */
         touch-action: none;
         -webkit-touch-callout: none;
         -webkit-tap-highlight-color: transparent
@@ -767,6 +763,21 @@ include 'header.php';
         animation: popIn .5s cubic-bezier(.34, 1.56, .64, 1) both
     }
 
+    .done-icon-ended {
+        width: 84px;
+        height: 84px;
+        background: var(--bg);
+        border: .5px solid var(--border);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        color: var(--muted);
+        margin-bottom: 22px;
+        animation: popIn .5s cubic-bezier(.34, 1.56, .64, 1) both
+    }
+
     .success-title {
         font-size: 24px;
         font-weight: 800;
@@ -856,6 +867,18 @@ include 'header.php';
         </p>
     </div>
 
+<?php elseif ($isAfterEnd): ?>
+
+    <div class="done-wrap">
+        <div class="done-icon-ended"><i class="fa-solid fa-calendar-check"></i></div>
+        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px;animation:fadeUp .3s .12s ease both">Kegiatan Telah Selesai</h1>
+        <p style="font-size:14px;color:var(--muted);line-height:1.7;max-width:320px;animation:fadeUp .3s .2s ease both">
+            Kegiatan <strong style="color:var(--ink)"><?= h($booking['nama']) ?></strong> telah berakhir pada
+            <strong style="color:var(--ink)"><?= h(formatTanggalID($booking['end_date'])) ?></strong>.
+            Absensi tidak dapat dilakukan lagi.
+        </p>
+    </div>
+
 <?php elseif ($success): ?>
 
     <div class="success-wrap">
@@ -930,7 +953,12 @@ include 'header.php';
                         <div class="info-ico"><i class="fa-solid fa-calendar"></i></div>
                         <div>
                             <div class="info-lbl">Tanggal</div>
-                            <div class="info-val"><?= h(formatTanggalID($booking['start_date'])) ?><?php if ($booking['start_date'] !== $booking['end_date']): ?> – <?= h(formatTanggalID($booking['end_date'])) ?><?php endif; ?></div>
+                            <div class="info-val">
+                                <?= h(formatTanggalID($booking['start_date'])) ?>
+                                <?php if ($booking['start_date'] !== $booking['end_date']): ?>
+                                    – <?= h(formatTanggalID($booking['end_date'])) ?>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                     <div class="info-row">
@@ -963,7 +991,10 @@ include 'header.php';
                     </div>
                 </div>
                 <div class="f-group">
-                    <label class="f-label"><i class="fa-solid fa-user" style="font-size:10px"></i>Nama Lengkap <span class="req">*</span></label>
+                    <label class="f-label">
+                        <i class="fa-solid fa-user" style="font-size:10px"></i>
+                        Nama Lengkap <span class="req">*</span>
+                    </label>
                     <div class="f-wrap">
                         <i class="f-ico fa-solid fa-user"></i>
                         <input type="text" name="nama_peserta" class="f-input" id="inputNama"
@@ -973,7 +1004,10 @@ include 'header.php';
                     </div>
                 </div>
                 <div class="f-group">
-                    <label class="f-label"><i class="fa-solid fa-briefcase" style="font-size:10px"></i>Unit / Jabatan</label>
+                    <label class="f-label">
+                        <i class="fa-solid fa-briefcase" style="font-size:10px"></i>
+                        Unit / Jabatan
+                    </label>
                     <div class="f-wrap">
                         <i class="f-ico fa-solid fa-briefcase"></i>
                         <input type="text" name="unit_jabatan" class="f-input"
@@ -983,7 +1017,10 @@ include 'header.php';
                     </div>
                 </div>
                 <div class="f-group">
-                    <label class="f-label"><i class="fa-solid fa-building" style="font-size:10px"></i>Instansi / Unit Kerja</label>
+                    <label class="f-label">
+                        <i class="fa-solid fa-building" style="font-size:10px"></i>
+                        Instansi / Unit Kerja
+                    </label>
                     <div class="f-wrap">
                         <i class="f-ico fa-solid fa-building"></i>
                         <input type="text" name="instansi" class="f-input"
@@ -1031,7 +1068,7 @@ include 'header.php';
 <?php endif; ?>
 
 <script>
-    /* ── Clock ── */
+    /* Clock */
     function updateClock() {
         const el = document.getElementById('clockTime');
         if (!el) return;
@@ -1040,7 +1077,7 @@ include 'header.php';
     }
     setInterval(updateClock, 10000);
 
-    /* ── Signature Pad ── */
+    /* Signature Pad */
     const canvas = document.getElementById('signature-pad');
     if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -1051,7 +1088,6 @@ include 'header.php';
             lastY = 0;
 
         function setup() {
-            // Gunakan ukuran fisik canvas yang lebih kecil agar iOS tidak OOM
             const ratio = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2);
             const rect = canvas.getBoundingClientRect();
             const w = Math.floor(rect.width);
@@ -1071,7 +1107,6 @@ include 'header.php';
 
         function getPos(e) {
             const r = canvas.getBoundingClientRect();
-            // Gunakan changedTouches untuk iOS (touchend juga butuh ini)
             const src = e.changedTouches ? e.changedTouches[0] : (e.touches ? e.touches[0] : e);
             return {
                 x: src.clientX - r.left,
@@ -1097,7 +1132,6 @@ include 'header.php';
             e.preventDefault();
             if (!drawing) return;
             const p = getPos(e);
-            // Gunakan quadraticCurveTo untuk garis lebih halus di iOS
             ctx.quadraticCurveTo(lastX, lastY, (lastX + p.x) / 2, (lastY + p.y) / 2);
             ctx.stroke();
             ctx.beginPath();
@@ -1109,7 +1143,7 @@ include 'header.php';
         function onEnd(e) {
             if (e) e.preventDefault();
             drawing = false;
-            ctx.beginPath(); // reset path
+            ctx.beginPath();
         }
 
         window.clearPad = () => {
@@ -1118,7 +1152,6 @@ include 'header.php';
             if (ph) ph.style.opacity = '1';
         };
 
-        // Resize: setup ulang (canvas terhapus otomatis saat resize)
         let resizeTimer;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
@@ -1131,13 +1164,10 @@ include 'header.php';
 
         setup();
 
-        // Mouse events
         canvas.addEventListener('mousedown', onStart);
         canvas.addEventListener('mousemove', onMove);
         canvas.addEventListener('mouseup', onEnd);
         canvas.addEventListener('mouseleave', onEnd);
-
-        // Touch events — passive:false WAJIB agar preventDefault() jalan di iOS
         canvas.addEventListener('touchstart', onStart, {
             passive: false
         });
@@ -1151,7 +1181,6 @@ include 'header.php';
             passive: false
         });
 
-        /* ── Form submit ── */
         const form = document.getElementById('formAbsensi');
         if (form) {
             form.addEventListener('submit', function(e) {
@@ -1166,20 +1195,15 @@ include 'header.php';
                     alert('Tanda tangan belum diisi. Silakan tanda tangan terlebih dahulu.');
                     return;
                 }
-
                 try {
-                    // Selalu PNG agar kompatibel dengan FPDF export
                     const dataUrl = canvas.toDataURL('image/png');
-                    if (!dataUrl || dataUrl === 'data:,') {
-                        throw new Error('Canvas kosong');
-                    }
+                    if (!dataUrl || dataUrl === 'data:,') throw new Error('Canvas kosong');
                     document.getElementById('signature_data').value = dataUrl;
                 } catch (err) {
                     e.preventDefault();
                     alert('Gagal memproses tanda tangan. Silakan gambar ulang tanda tangan Anda.');
                     return;
                 }
-
                 const btn = document.getElementById('btnSubmit');
                 if (btn) {
                     btn.disabled = true;

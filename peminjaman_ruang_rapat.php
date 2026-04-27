@@ -178,7 +178,6 @@ if (!defined('BASE_URL')) {
         display: block;
     }
 
-    /* ── PERBAIKAN 2: success-link-box — link bisa diklik ── */
     .success-link-box {
         display: flex;
         align-items: center;
@@ -198,7 +197,6 @@ if (!defined('BASE_URL')) {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        /* Link clickable */
         text-decoration: none;
         display: block;
     }
@@ -207,7 +205,6 @@ if (!defined('BASE_URL')) {
         text-decoration: underline;
     }
 
-    /* ── PERBAIKAN 3: tombol salin — feedback visual ── */
     .success-copy-btn {
         padding: 6px 10px;
         border-radius: 999px;
@@ -362,7 +359,7 @@ if (!defined('BASE_URL')) {
     <i class="fa-solid fa-plus text-lg"></i>
 </button>
 
-<!-- ── Modal Booking ── -->
+<!-- Modal Booking -->
 <div id="bookingModal" class="fixed inset-0 bg-black/50 z-[999] hidden">
     <div class="absolute inset-0" onclick="closeBookingModal()"></div>
     <div class="relative w-full h-full flex items-end justify-center p-4">
@@ -481,7 +478,6 @@ if (!defined('BASE_URL')) {
                     </button>
                     <button type="button" id="btnKirimWA" onclick="kirimUlangWA()"
                         class="w-full py-3 rounded-2xl bg-green-600 text-white font-extrabold text-sm hidden">
-                        <!-- PERBAIKAN 1: pakai SVG WhatsApp inline, tidak bergantung FA brands -->
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                             style="width:16px;height:16px;display:inline;vertical-align:-2px;margin-right:6px">
                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
@@ -507,7 +503,7 @@ if (!defined('BASE_URL')) {
     </div>
 </div>
 
-<!-- ── Modal PIN ── -->
+<!-- Modal PIN -->
 <div id="pinModal" class="fixed inset-0 bg-black/50 z-[1000] hidden">
     <div class="absolute inset-0" onclick="closePinModal()"></div>
     <div class="relative w-full h-full flex items-end justify-center p-4">
@@ -529,12 +525,7 @@ if (!defined('BASE_URL')) {
     </div>
 </div>
 
-<!--
-    ── Modal Success ──
-    PERBAIKAN 2: <span> diganti <a target="_blank"> agar link bisa diklik langsung
-    PERBAIKAN 3: tombol Salin pakai fallback execCommand untuk HTTP lokal
-    PERBAIKAN 1: tombol WA pakai SVG inline bukan fa-brands fa-whatsapp
--->
+<!-- Modal Success -->
 <div id="successModal" class="fixed inset-0 bg-black/50 z-[1000] hidden">
     <div class="absolute inset-0" onclick="closeSuccessModal()"></div>
     <div class="relative w-full h-full flex items-end justify-center p-4">
@@ -544,7 +535,6 @@ if (!defined('BASE_URL')) {
                 <p class="text-[16px] font-extrabold text-green-700" id="success-banner-title">Booking Berhasil!</p>
                 <p class="text-[12px] text-green-600 mt-1" id="success-banner-sub">Link akses dan QR absensi sudah siap</p>
             </div>
-
             <div class="mt-5">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">PIN Booking</p>
                 <div id="success-pin" class="pin-code">1234</div>
@@ -552,9 +542,7 @@ if (!defined('BASE_URL')) {
                     Simpan PIN ini untuk membuka monitoring, notulen, mengubah, atau menghapus booking
                 </p>
             </div>
-
             <div class="mt-5 space-y-3">
-                <!-- Link Halaman Booking -->
                 <div>
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Link Halaman Booking</p>
                     <div class="success-link-box">
@@ -562,7 +550,6 @@ if (!defined('BASE_URL')) {
                         <button type="button" onclick="copyLink('success-link-booking', this)" class="success-copy-btn">Salin</button>
                     </div>
                 </div>
-                <!-- Link Isi Absensi -->
                 <div>
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Link Isi Absensi</p>
                     <div class="success-link-box">
@@ -570,7 +557,6 @@ if (!defined('BASE_URL')) {
                         <button type="button" onclick="copyLink('success-link-abs', this)" class="success-copy-btn">Salin</button>
                     </div>
                 </div>
-                <!-- Link Monitoring -->
                 <div>
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Link Monitoring Absensi</p>
                     <div class="success-link-box">
@@ -578,7 +564,6 @@ if (!defined('BASE_URL')) {
                         <button type="button" onclick="copyLink('success-link-monitor', this)" class="success-copy-btn">Salin</button>
                     </div>
                 </div>
-                <!-- Link Notulen -->
                 <div>
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Link Notulen</p>
                     <div class="success-link-box">
@@ -586,7 +571,6 @@ if (!defined('BASE_URL')) {
                         <button type="button" onclick="copyLink('success-link-not', this)" class="success-copy-btn">Salin</button>
                     </div>
                 </div>
-                <!-- QR Code — tetap pakai <a> supaya bisa diklik buka URL aslinya -->
                 <div>
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">QR Code Absensi</p>
                     <div class="qr-preview-wrap">
@@ -597,8 +581,6 @@ if (!defined('BASE_URL')) {
                     </div>
                 </div>
             </div>
-
-            <!-- PERBAIKAN 1: tombol WA pakai SVG inline -->
             <a id="success-wa-link" href="#" target="_blank"
                 class="w-full mt-5 flex items-center justify-center gap-2 py-3 rounded-2xl bg-green-600 text-white font-extrabold text-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px;flex-shrink:0">
@@ -613,7 +595,7 @@ if (!defined('BASE_URL')) {
     </div>
 </div>
 
-<!-- ── Modal Export ── -->
+<!-- Modal Export -->
 <div id="exportModal" class="fixed inset-0 bg-black/50 z-[999] hidden">
     <div class="absolute inset-0" onclick="closeExportModal()"></div>
     <div class="relative w-full h-full flex items-end justify-center p-4">
@@ -694,7 +676,21 @@ if (!defined('BASE_URL')) {
         setTimeout(() => t.style.opacity = '0', 2800);
     }
 
-    /* ── PERBAIKAN 3: copyLink — HTTP-safe fallback ── */
+    /* ── Format created_at → "25 Apr 2026, 09:30" ── */
+    function formatCreatedAt(str) {
+        if (!str) return '';
+        const d = new Date(str.replace(' ', 'T'));
+        if (isNaN(d)) return '';
+        const tgl = d.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+        const jam = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        return tgl + ', ' + jam;
+    }
+
+    /* ── copyLink — HTTP-safe fallback ── */
     function copyLink(id, btn) {
         const el = getField(id);
         const text = el?.href && el.href !== '#' ? el.href : (el?.innerText || '');
@@ -720,9 +716,7 @@ if (!defined('BASE_URL')) {
         };
 
         if (navigator.clipboard) {
-            navigator.clipboard.writeText(text)
-                .then(() => markCopied(btn))
-                .catch(doFallback);
+            navigator.clipboard.writeText(text).then(() => markCopied(btn)).catch(doFallback);
         } else {
             doFallback();
         }
@@ -738,7 +732,6 @@ if (!defined('BASE_URL')) {
         }, 2000);
     }
 
-    /* ── PERBAIKAN 2 + 1: fillSuccessModal — pakai href pada <a>, set label WA ── */
     function fillSuccessModal({
         pin,
         linkBooking,
@@ -750,70 +743,51 @@ if (!defined('BASE_URL')) {
         isResend = false
     }) {
         getField('success-pin').innerText = pin;
-
-        /* Set href DAN innerText sekaligus supaya link bisa diklik */
         const setLink = (id, url) => {
             const el = getField(id);
             if (!el) return;
             el.href = url || '#';
             el.innerText = url || '-';
         };
-
         setLink('success-link-booking', linkBooking);
         setLink('success-link-abs', linkAbs);
         setLink('success-link-monitor', linkMonitor);
         setLink('success-link-not', linkNotulen);
-
-        /* QR — gambar + link */
         const qrImg = getField('success-qr-abs');
         const qrLink = getField('success-qr-link');
         qrImg.src = qrUrl;
         qrImg.style.display = 'block';
         if (qrLink) qrLink.href = linkAbs || '#';
-
-        /* Tombol WA */
         getField('success-wa-link').href = waUrl || '#';
-
-        /* Banner & label */
         getField('success-banner-emoji').textContent = isResend ? '📲' : '✅';
         getField('success-banner-title').textContent = isResend ? 'Kirim Ulang Info Booking' : 'Booking Berhasil!';
-        getField('success-banner-sub').textContent = isResend ?
-            'Tap tombol WhatsApp untuk kirim ulang ke peminjam' :
-            'Link akses dan QR absensi sudah siap';
-        getField('success-wa-label').textContent = isResend ?
-            'Kirim Ulang ke WhatsApp Peminjam' :
-            'Kirim ke WhatsApp Saya';
+        getField('success-banner-sub').textContent = isResend ? 'Tap tombol WhatsApp untuk kirim ulang ke peminjam' : 'Link akses dan QR absensi sudah siap';
+        getField('success-wa-label').textContent = isResend ? 'Kirim Ulang ke WhatsApp Peminjam' : 'Kirim ke WhatsApp Saya';
     }
 
     function buildQrUrl(targetUrl, size = '300x300') {
-        return 'https://api.qrserver.com/v1/create-qr-code/?size=' +
-            encodeURIComponent(size) + '&data=' + encodeURIComponent(targetUrl);
+        return 'https://api.qrserver.com/v1/create-qr-code/?size=' + encodeURIComponent(size) + '&data=' + encodeURIComponent(targetUrl);
     }
 
     function buildWaMessage(nama, peminjam, lokasiDisplay, startDate, endDate, jamStart, jamEnd, pin, linkAbs, linkMonitor, linkNotulen, qrUrl) {
         const tgl = startDate === endDate ? startDate : startDate + ' s.d. ' + endDate;
         const jam = jamStart.slice(0, 5) + ' - ' + jamEnd.slice(0, 5) + ' WIB';
         const sep = '-'.repeat(30);
-
         return (
             '[ INFORMASI BOOKING RUANG RAPAT ]\n' +
-            'Pusdiklat Mahkamah Agung RI\n' +
-            sep + '\n' +
+            'Pusdiklat Mahkamah Agung RI\n' + sep + '\n' +
             'Kegiatan : ' + nama + '\n' +
             'Peminjam : ' + peminjam + '\n' +
             'Lokasi   : ' + lokasiDisplay + '\n' +
             'Tanggal  : ' + tgl + '\n' +
-            'Waktu    : ' + jam + '\n' +
-            sep + '\n' +
+            'Waktu    : ' + jam + '\n' + sep + '\n' +
             'PIN Booking : ' + pin + '\n' +
-            '_(Gunakan PIN untuk akses monitoring,\nnotulen, edit & hapus booking)_\n' +
-            sep + '\n' +
+            '_(Gunakan PIN untuk akses monitoring,\nnotulen, edit & hapus booking)_\n' + sep + '\n' +
             '[ LINK AKSES ]\n' +
             '>> Isi Absensi\n' + linkAbs + '\n\n' +
             '>> Monitoring Absensi\n' + linkMonitor + '\n\n' +
             '>> Notulen\n' + linkNotulen + '\n\n' +
-            '>> QR Code Absensi\n' + qrUrl + '\n' +
-            sep + '\n' +
+            '>> QR Code Absensi\n' + qrUrl + '\n' + sep + '\n' +
             '_Terima kasih. Hubungi admin jika ada pertanyaan._'
         );
     }
@@ -857,8 +831,8 @@ if (!defined('BASE_URL')) {
     }
 
     function showAdminPin(pinValue = '') {
-        const box = getField('admin-pin-box');
-        const text = getField('admin-pin-text');
+        const box = getField('admin-pin-box'),
+            text = getField('admin-pin-text');
         if (!box || !text) return;
         if (IS_ADMIN && pinValue) {
             text.innerText = pinValue;
@@ -1063,6 +1037,7 @@ if (!defined('BASE_URL')) {
                 jam_end: normalizeText(item.jam_end || '12:00'),
                 peserta: Number(item.peserta || 0),
                 wa: normalizeText(item.wa || ''),
+                created_at: normalizeText(item.created_at || ''), // ← tambahan
                 is_bentrok: !!item.is_bentrok
             })) : [];
             bookingsData = markBentrok(bookingsData);
@@ -1182,12 +1157,27 @@ if (!defined('BASE_URL')) {
             lc.innerHTML = `<div class="text-center py-10 bg-white rounded-[2.5rem] border border-slate-50 text-slate-300 text-[10px] font-bold uppercase tracking-widest">Tidak ada booking ditemukan</div>`;
             return;
         }
+
         const todayStr = getTodayStr();
+
+        /* ── Sorting:
+           1. start_date  — tanggal kegiatan
+           2. jam_start   — jam kegiatan
+           3. created_at  — siapa booking lebih dulu
+           4. id          — fallback
+        ── */
         const sorted = [...data].sort((a, b) => {
-            const c = a.start_date.localeCompare(b.start_date);
-            return c !== 0 ? c : (a.jam_start || '').localeCompare(b.jam_start || '');
+            const byDate = a.start_date.localeCompare(b.start_date);
+            if (byDate !== 0) return byDate;
+            const byJam = (a.jam_start || '').localeCompare(b.jam_start || '');
+            if (byJam !== 0) return byJam;
+            const byCreated = (a.created_at || '').localeCompare(b.created_at || '');
+            if (byCreated !== 0) return byCreated;
+            return Number(a.id) - Number(b.id);
         });
+
         const groups = groupBentrok(sorted);
+
         lc.innerHTML = groups.map(group => {
             const isBentrok = group.length > 1;
             const cardsHtml = group.map(item => {
@@ -1199,6 +1189,10 @@ if (!defined('BASE_URL')) {
                     color: '#0ea5e9',
                     short: 'Luar Kantor'
                 };
+
+                /* Label waktu booking dibuat */
+                const createdLabel = item.created_at ? formatCreatedAt(item.created_at) : '';
+
                 return `
                     <div onclick="openBookingModal('detail','${item.id}')"
                         class="bg-white border border-slate-50 p-5 rounded-[2.2rem] shadow-sm flex items-start space-x-4 cursor-pointer ${isSelesai?'card-selesai':''}">
@@ -1227,10 +1221,16 @@ if (!defined('BASE_URL')) {
                                 <div class="flex items-center gap-2"><i class="fa-solid fa-users text-slate-300 text-[10px] w-3"></i><span class="text-[10px] font-bold text-slate-500">${Number(item.peserta||0)} Peserta</span></div>
                                 <div class="flex items-center gap-2"><i class="fa-solid fa-location-dot text-slate-300 text-[10px] w-3"></i><span class="text-[10px] font-bold text-slate-500 truncate">${esc(item.lokasi_display||'-')}</span></div>
                                 <div class="flex items-center gap-2"><i class="fa-brands fa-whatsapp text-slate-300 text-[10px] w-3"></i><span class="text-[10px] font-bold text-slate-500 truncate">${esc(item.wa||'-')}</span></div>
+                                ${createdLabel ? `
+                                <div class="flex items-center gap-2 col-span-2 pt-1.5 mt-0.5 border-t border-slate-50">
+                                    <i class="fa-regular fa-clock text-slate-300 text-[10px] w-3"></i>
+                                    <span class="text-[10px] font-semibold text-slate-400 italic">Dibooking ${esc(createdLabel)}</span>
+                                </div>` : ''}
                             </div>
                         </div>
                     </div>`;
             }).join('');
+
             return `
                 <div class="space-y-3">
                     ${isBentrok?`<div class="flex items-center gap-2 px-2"><span class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span><span class="text-[9px] font-black text-red-500 uppercase tracking-widest">Jadwal Tumpang Tindih (${group.length} Booking)</span></div>`:''}
@@ -1627,7 +1627,7 @@ if (!defined('BASE_URL')) {
         }
     }
 
-    /* ── Kirim ulang WA — admin only ── */
+    /* ── Kirim ulang WA ── */
     function kirimUlangWA() {
         const id = getVal('booking-id') || currentBookingId;
         const item = bookingsData.find(r => String(r.id) === String(id));
@@ -1635,26 +1635,17 @@ if (!defined('BASE_URL')) {
             showToast('Nomor WhatsApp tidak tersedia');
             return;
         }
-
         const pin = item.pin || '----';
         const linkBooking = BASE_URL + 'peminjaman_ruang_rapat.php';
         const linkAbs = BASE_URL + 'absensi_rapat.php?id=' + item.id;
         const linkMonitor = BASE_URL + 'absensi.php?id=' + item.id + '&pin=' + encodeURIComponent(pin);
         const linkNotulen = BASE_URL + 'notulen.php?id=' + item.id + '&pin=' + encodeURIComponent(pin);
         const qrUrl = buildQrUrl(linkAbs, '300x300');
-
-        const pesan = buildWaMessage(
-            item.nama, item.peminjam, item.lokasi_display || '-',
-            item.start_date, item.end_date, item.jam_start || '', item.jam_end || '',
-            pin, linkAbs, linkMonitor, linkNotulen, qrUrl
-        );
-
+        const pesan = buildWaMessage(item.nama, item.peminjam, item.lokasi_display || '-', item.start_date, item.end_date, item.jam_start || '', item.jam_end || '', pin, linkAbs, linkMonitor, linkNotulen, qrUrl);
         let nomor = item.wa.replace(/\D/g, '');
         if (nomor.startsWith('0')) nomor = '62' + nomor.slice(1);
         else if (!nomor.startsWith('62')) nomor = '62' + nomor;
-
         const waUrl = 'https://wa.me/' + nomor + '?text=' + encodeURIComponent(pesan);
-
         closeBookingModal();
         fillSuccessModal({
             pin,

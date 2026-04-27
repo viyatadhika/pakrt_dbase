@@ -17,7 +17,6 @@ if (!isset($conn) || !($conn instanceof mysqli)) {
     exit;
 }
 
-// Pastikan koneksi MySQL pakai UTF-8 agar emoji tidak corrupt
 $conn->set_charset('utf8mb4');
 
 $action = $_GET['action'] ?? '';
@@ -71,8 +70,8 @@ function cleanWa(string $wa): string
 {
     $wa = preg_replace('/[^0-9]/', '', $wa);
     if ($wa === '') return '';
-    if (strpos($wa, '0') === 0)        $wa = '62' . substr($wa, 1);
-    elseif (strpos($wa, '62') !== 0)   $wa = '62' . $wa;
+    if (strpos($wa, '0') === 0)       $wa = '62' . substr($wa, 1);
+    elseif (strpos($wa, '62') !== 0)  $wa = '62' . $wa;
     return $wa;
 }
 
@@ -217,11 +216,6 @@ function findBentrokInternal(
     return $rows;
 }
 
-/**
- * Bangun pesan WhatsApp dengan format rapi & link bisa langsung diklik.
- * Emoji menggunakan \u{XXXX} agar tidak bergantung pada encoding file.
- * Link berdiri sendiri di baris terpisah tanpa karakter pembungkus.
- */
 function buildWaMessage(
     string $nama,
     string $peminjam,
@@ -282,12 +276,12 @@ function roomList(mysqli $conn): void
     $rows = [];
     while ($row = $res->fetch_assoc()) {
         $rows[] = [
-            'id'        => (string)$row['id'],
+            'id'         => (string)$row['id'],
             'nama_ruang' => $row['nama_ruang'],
-            'lokasi'    => $row['lokasi'],
-            'kapasitas' => (int)$row['kapasitas'],
-            'fasilitas' => $row['fasilitas'],
-            'aktif'     => (int)$row['aktif']
+            'lokasi'     => $row['lokasi'],
+            'kapasitas'  => (int)$row['kapasitas'],
+            'fasilitas'  => $row['fasilitas'],
+            'aktif'      => (int)$row['aktif']
         ];
     }
     jsonOut($rows);
@@ -295,40 +289,49 @@ function roomList(mysqli $conn): void
 
 function bookingList(mysqli $conn): void
 {
+    /*
+     * ORDER BY:
+     *   1. start_date  — tanggal kegiatan
+     *   2. jam_start   — jam kegiatan
+     *   3. created_at  — siapa booking lebih dulu (jika tanggal & jam sama)
+     *   4. id          — fallback
+     */
     $res = $conn->query("
         SELECT b.id, b.jenis_lokasi, b.room_id, b.lokasi_external,
                COALESCE(r.nama_ruang,'') AS ruang,
                COALESCE(r.lokasi,'') AS lokasi_ruang,
                b.nama, b.peminjam, b.start_date, b.end_date,
                b.jam_start, b.jam_end, b.peserta, b.wa,
-               COALESCE(b.ket,'') AS ket, b.pin
+               COALESCE(b.ket,'') AS ket, b.pin,
+               b.created_at
         FROM booking_ruang_rapat b
         LEFT JOIN ruang_rapat r ON r.id = b.room_id
-        ORDER BY b.start_date ASC, b.jam_start ASC, b.id ASC
+        ORDER BY b.start_date ASC, b.jam_start ASC, b.created_at ASC, b.id ASC
     ");
     if (!$res) jsonOut(['error' => 'Query booking_list gagal', 'mysql_error' => $conn->error], 500);
 
     $rows = [];
     while ($row = $res->fetch_assoc()) {
         $rows[] = [
-            'id'             => (string)$row['id'],
-            'jenis_lokasi'   => $row['jenis_lokasi'],
-            'room_id'        => $row['room_id'] !== null ? (string)$row['room_id'] : '',
+            'id'              => (string)$row['id'],
+            'jenis_lokasi'    => $row['jenis_lokasi'],
+            'room_id'         => $row['room_id'] !== null ? (string)$row['room_id'] : '',
             'lokasi_external' => $row['lokasi_external'] ?? '',
-            'ruang'          => $row['ruang'],
-            'lokasi_ruang'   => $row['lokasi_ruang'],
-            'lokasi_display' => getDisplayLokasi($row),
-            'nama'           => $row['nama'],
-            'peminjam'       => $row['peminjam'],
-            'start_date'     => $row['start_date'],
-            'end_date'       => $row['end_date'],
-            'jam_start'      => $row['jam_start'],
-            'jam_end'        => $row['jam_end'],
-            'peserta'        => (int)$row['peserta'],
-            'wa'             => $row['wa'],
-            'ket'            => $row['ket'],
-            'pin'            => isAdminUser() ? ($row['pin'] ?? '') : '',
-            'is_bentrok'     => false
+            'ruang'           => $row['ruang'],
+            'lokasi_ruang'    => $row['lokasi_ruang'],
+            'lokasi_display'  => getDisplayLokasi($row),
+            'nama'            => $row['nama'],
+            'peminjam'        => $row['peminjam'],
+            'start_date'      => $row['start_date'],
+            'end_date'        => $row['end_date'],
+            'jam_start'       => $row['jam_start'],
+            'jam_end'         => $row['jam_end'],
+            'peserta'         => (int)$row['peserta'],
+            'wa'              => $row['wa'],
+            'ket'             => $row['ket'],
+            'pin'             => isAdminUser() ? ($row['pin'] ?? '') : '',
+            'created_at'      => $row['created_at'] ?? '',
+            'is_bentrok'      => false
         ];
     }
     jsonOut($rows);
@@ -436,7 +439,7 @@ function bookingCreate(mysqli $conn): void
         jsonOut(['error' => 'Gagal menyimpan booking', 'mysql_error' => $err], 500);
     }
 
-    $bookingId    = (string)$stmt->insert_id;
+    $bookingId = (string)$stmt->insert_id;
     $stmt->close();
 
     $linkBooking  = absUrl('peminjaman_ruang_rapat.php');
@@ -463,16 +466,16 @@ function bookingCreate(mysqli $conn): void
     $waUrl = buildWhatsappUrl($wa, $waMessage);
 
     jsonOut([
-        'success'       => true,
-        'id'            => $bookingId,
-        'pin'           => $pin,
-        'wa_number'     => $wa,
-        'wa_message'    => $waMessage,
-        'wa_url'        => $waUrl,
-        'link_booking'  => $linkBooking,
-        'link_absensi'  => $linkAbsensi,
-        'link_monitor'  => $linkMonitor,
-        'link_notulen'  => $linkNotulen,
+        'success'        => true,
+        'id'             => $bookingId,
+        'pin'            => $pin,
+        'wa_number'      => $wa,
+        'wa_message'     => $waMessage,
+        'wa_url'         => $waUrl,
+        'link_booking'   => $linkBooking,
+        'link_absensi'   => $linkAbsensi,
+        'link_monitor'   => $linkMonitor,
+        'link_notulen'   => $linkNotulen,
         'qr_absensi_url' => $qrAbsensiUrl
     ]);
 }

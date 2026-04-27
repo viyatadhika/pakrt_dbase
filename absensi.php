@@ -110,10 +110,26 @@ if ($isAdmin && empty($pin)) {
 
 /* ── 4. Sesi aktif ── */
 $today = date('Y-m-d');
-$selectedDate = $tanggal !== '' ? $tanggal : $today;
 
+// selectedDate: bisa berupa tanggal mana saja dalam rentang kegiatan (past maupun sekarang)
+// Tidak boleh melebihi today (tidak bisa lihat hari yang belum berlangsung)
+// Tetapi boleh lihat semua hari yang sudah terjadi, meskipun kegiatan sudah lewat
+$selectedDate = $tanggal !== '' ? $tanggal : (
+    $today >= $booking['start_date'] && $today <= $booking['end_date']
+    ? $today
+    : ($today > $booking['end_date'] ? $booking['end_date'] : $booking['start_date'])
+);
+
+// Batasi agar tidak melebihi today (hari yang belum terjadi tidak bisa dilihat)
+if ($selectedDate > $today) {
+    $selectedDate = $today;
+}
+// Batasi dalam rentang kegiatan
 if ($selectedDate < $booking['start_date']) {
     $selectedDate = $booking['start_date'];
+}
+if ($selectedDate > $booking['end_date']) {
+    $selectedDate = $booking['end_date'];
 }
 
 $selectedDay = hitungDayKeMengikutiKegiatan(
@@ -123,8 +139,10 @@ $selectedDay = hitungDayKeMengikutiKegiatan(
 );
 
 $isMultiDay = $booking['start_date'] !== $booking['end_date'];
-$sesiLabel = formatSesiLabel($booking['start_date'], $booking['end_date'], $selectedDate, $selectedDay);
+$sesiLabel  = formatSesiLabel($booking['start_date'], $booking['end_date'], $selectedDate, $selectedDay);
 
+// Bangun daftar tab hari — semua hari kegiatan ditampilkan
+// accessible = true hanya untuk hari yang sudah terjadi (today atau sebelumnya)
 $days = [];
 $startObj = new DateTime($booking['start_date']);
 $endObj   = new DateTime($booking['end_date']);
@@ -134,8 +152,9 @@ $dayNo    = 1;
 while ($cursor <= $endObj) {
     $d = $cursor->format('Y-m-d');
     $days[] = [
-        'tanggal' => $d,
-        'label'   => $isMultiDay ? ('Day ' . $dayNo) : fmtDate($d),
+        'tanggal'    => $d,
+        'label'      => $isMultiDay ? ('Day ' . $dayNo) : fmtDate($d),
+        'accessible' => $d <= $today,  // hanya hari yg sudah/sedang berlangsung yg bisa diklik
     ];
     $cursor->modify('+1 day');
     $dayNo++;
@@ -197,8 +216,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     if ($action === 'bulk_delete') {
-        $ids = json_decode($_POST['ids'] ?? '[]', true);
-        $ids = array_values(array_filter(array_map('intval', (array)$ids)));
+        $ids    = json_decode($_POST['ids'] ?? '[]', true);
+        $ids    = array_values(array_filter(array_map('intval', (array)$ids)));
 
         if (!$ids) {
             echo json_encode(['status' => false, 'message' => 'Tidak ada ID']);
@@ -237,16 +256,16 @@ if (isset($_GET['json']) && $_GET['json'] === '1') {
     $s->bind_param('is', $bookingId, $selectedDate);
     $s->execute();
     $fresh = [];
-    $rr = $s->get_result();
+    $rr    = $s->get_result();
     while ($row = $rr->fetch_assoc()) $fresh[] = $row;
     $s->close();
 
     header('Content-Type: application/json');
     echo json_encode([
-        'rows' => $fresh,
+        'rows'          => $fresh,
         'selected_date' => $selectedDate,
-        'selected_day' => $selectedDay,
-        'sesi_label' => $sesiLabel
+        'selected_day'  => $selectedDay,
+        'sesi_label'    => $sesiLabel
     ]);
     exit;
 }
@@ -268,6 +287,11 @@ $res  = $stmt->get_result();
 $rows = [];
 while ($row = $res->fetch_assoc()) $rows[] = $row;
 $stmt->close();
+
+// Status kegiatan
+$isBeforeStart = $today < $booking['start_date'];
+$isAfterEnd    = $today > $booking['end_date'];
+$isOngoing     = !$isBeforeStart && !$isAfterEnd;
 
 $title = 'Monitoring Absensi - ' . h($booking['nama']);
 include 'header.php';
@@ -298,6 +322,9 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         --red: #A32D2D;
         --red-lt: #FCEBEB;
         --red-bd: #F7C1C1;
+        --orange: #B45309;
+        --orange-lt: #FFF7ED;
+        --orange-bd: #FED7AA;
         --ink: #0f172a;
         --muted: #64748b;
         --border: rgba(0, 0, 0, .1);
@@ -320,7 +347,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         -webkit-font-smoothing: antialiased
     }
 
-    /* ── HEADER ── */
+    /* Header */
     .sticky-hdr {
         position: fixed;
         top: 0;
@@ -388,6 +415,59 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         background: var(--blue-lt)
     }
 
+    /* Status badge kegiatan */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0
+    }
+
+    .status-ongoing {
+        background: var(--green-lt);
+        color: var(--green);
+        border: .5px solid var(--green-bd)
+    }
+
+    .status-ended {
+        background: var(--bg);
+        color: var(--muted);
+        border: .5px solid var(--border)
+    }
+
+    .status-upcoming {
+        background: var(--orange-lt);
+        color: var(--orange);
+        border: .5px solid var(--orange-bd)
+    }
+
+    .pulse-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--green);
+        animation: pulse 2s infinite;
+        display: inline-block
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+            transform: scale(1)
+        }
+
+        50% {
+            opacity: .5;
+            transform: scale(.8)
+        }
+    }
+
     /* Bulk bar */
     .bulk-bar {
         display: none;
@@ -430,7 +510,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         color: var(--blue)
     }
 
-    /* Day tabs inside header */
+    /* Day tabs */
     .day-tabs {
         display: flex;
         gap: 6px;
@@ -461,16 +541,21 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         border-color: var(--blue-bd)
     }
 
-    /* Offset classes — calculated by JS based on actual header height */
-    .hdr-offset-single {
-        padding-top: 58px
+    .day-tab-disabled {
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        border: 1px solid rgba(0, 0, 0, .06);
+        background: var(--bg);
+        color: var(--muted);
+        opacity: .4;
+        cursor: not-allowed;
+        user-select: none
     }
 
-    .hdr-offset-multi {
-        padding-top: 96px
-    }
-
-    /* ── CONTENT ── */
+    /* Content */
     .page-body {
         padding: 18px 0 100px
     }
@@ -569,7 +654,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         margin-top: 1px
     }
 
-    /* Toolbar (search + count) */
+    /* Toolbar */
     .toolbar {
         display: flex;
         align-items: center;
@@ -1159,6 +1244,19 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
             <p><?= h($booking['nama']) ?></p>
         </div>
         <div class="hdr-actions">
+            <?php if ($isOngoing): ?>
+                <span class="status-badge status-ongoing">
+                    <span class="pulse-dot"></span>Berlangsung
+                </span>
+            <?php elseif ($isAfterEnd): ?>
+                <span class="status-badge status-ended">
+                    <i class="fa-solid fa-check" style="font-size:9px"></i>Selesai
+                </span>
+            <?php else: ?>
+                <span class="status-badge status-upcoming">
+                    <i class="fa-solid fa-clock" style="font-size:9px"></i>Belum mulai
+                </span>
+            <?php endif; ?>
             <a href="<?= h($exportUrl) ?>" class="icon-btn" title="Download PDF">
                 <i class="fa-solid fa-download"></i>
             </a>
@@ -1171,10 +1269,16 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
     <?php if (count($days) > 1): ?>
         <div class="day-tabs">
             <?php foreach ($days as $d): ?>
-                <a href="absensi.php?id=<?= (int)$bookingId ?>&pin=<?= urlencode($pin) ?>&tanggal=<?= urlencode($d['tanggal']) ?>"
-                    class="day-tab <?= $selectedDate === $d['tanggal'] ? 'active' : '' ?>">
-                    <?= h($d['label']) ?>
-                </a>
+                <?php if ($d['accessible']): ?>
+                    <a href="rapat_monitoring.php?id=<?= (int)$bookingId ?>&pin=<?= urlencode($pin) ?>&tanggal=<?= urlencode($d['tanggal']) ?>"
+                        class="day-tab <?= $selectedDate === $d['tanggal'] ? 'active' : '' ?>">
+                        <?= h($d['label']) ?>
+                    </a>
+                <?php else: ?>
+                    <span class="day-tab-disabled" title="Belum berlangsung">
+                        <?= h($d['label']) ?>
+                    </span>
+                <?php endif; ?>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
@@ -1387,6 +1491,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
     </div><!-- .page-body -->
 </main>
 
+<!-- FAB tambah manual (hanya tampil kalau kegiatan masih berlangsung atau sudah lewat — tetap bisa tambah manual untuk koreksi) -->
 <button type="button" class="fab no-print" onclick="openAdd()"><i class="fa-solid fa-plus"></i></button>
 
 <!-- Detail Modal -->
@@ -1491,7 +1596,7 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
         setTimeout(() => t.classList.remove('show'), dur);
     }
 
-    /* Adjust main padding-top dynamically based on actual header height */
+    /* Sinkronkan padding-top main dengan tinggi header aktual */
     function syncOffset() {
         const hdr = document.querySelector('.sticky-hdr');
         const main = document.querySelector('main');
@@ -1510,7 +1615,8 @@ $exportUrl = 'rapat_absensi_export.php?id=' . (int)$bookingId
     function filterData() {
         const q = $id('qSearch').value.toLowerCase().trim();
         const d = q ?
-            allRows.filter(r => [r.nama_peserta, r.unit_jabatan, r.instansi].some(v => String(v || '').toLowerCase().includes(q))) :
+            allRows.filter(r => [r.nama_peserta, r.unit_jabatan, r.instansi]
+                .some(v => String(v || '').toLowerCase().includes(q))) :
             allRows;
         updateStats(d);
         renderTable(d);
