@@ -5,8 +5,6 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
-
-
 include 'config.php';
 
 $activePage = basename($_SERVER['PHP_SELF']);
@@ -30,24 +28,31 @@ $prettyMap = [
 ];
 
 // ==================== QUERY DASAR ====================
-$query = "SELECT * FROM checklist_forms WHERE 1";
+$query = "
+    SELECT cf.*,
+        GROUP_CONCAT(r.emoji ORDER BY r.created_at SEPARATOR '') AS emoji_list,
+        COUNT(r.id) AS total_reactions
+    FROM checklist_forms cf
+    LEFT JOIN checklist_reactions r ON r.form_id = cf.id
+    WHERE 1
+";
 
 // Filter tanggal
 if ($tgl_awal && $tgl_akhir) {
-    $query .= " AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir'";
+    $query .= " AND cf.tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir'";
 }
 
 // Filter jenis form
 if ($form_type) {
-    $query .= " AND form_type = '$form_type'";
+    $query .= " AND cf.form_type = '$form_type'";
 }
 
 // Filter petugas
 if ($petugas) {
-    $query .= " AND nama_petugas LIKE '%$petugas%'";
+    $query .= " AND cf.nama_petugas LIKE '%$petugas%'";
 }
 
-$query .= " ORDER BY tanggal DESC, id DESC";
+$query .= " GROUP BY cf.id ORDER BY cf.tanggal DESC, cf.id DESC";
 $result = $conn->query($query);
 
 // ==================== DATA DROPDOWN ====================
@@ -114,7 +119,6 @@ $listPetugas = $conn->query("
         </select>
     </div>
 
-
     <div class="relative">
         <label>Nama Petugas</label>
 
@@ -140,10 +144,6 @@ $listPetugas = $conn->query("
 
         </div>
     </div>
-
-
-
-
 
     <button type="submit" class="btn-primary mt-4">Terapkan Filter</button>
 </form>
@@ -176,18 +176,14 @@ $filterUsed = ($tgl_awal || $tgl_akhir || $petugas || $form_type);
 
                 // Nama form
                 $rawFormType = $row['form_type'] ?? '';
-                $key = strtolower(trim($rawFormType));
-                $prettyMap = [
-                    'piketob' => 'Piket OB',
-                    'piket_ob' => 'Piket OB',
-                    'piket ob' => 'Piket OB',
-                    'plotingjaga' => 'Ploting Jaga',
-                    'general_cleaning' => 'General Cleaning',
-                    'ptsp' => 'PTSP',
-                ];
+                $key         = strtolower(trim($rawFormType));
                 $displayForm = $prettyMap[$key] ?? ucwords(str_replace(['_', '-'], ' ', $rawFormType));
 
                 $detailUrl = 'detail.php?' . http_build_query(['id' => (int)$row['id']]);
+
+                // Reaksi emoji
+                $emojiList      = $row['emoji_list'] ?? '';
+                $totalReactions = (int)($row['total_reactions'] ?? 0);
                 ?>
 
                 <!-- ==================== CARD ITEM ==================== -->
@@ -242,11 +238,28 @@ $filterUsed = ($tgl_awal || $tgl_akhir || $petugas || $form_type);
                     <!-- ================== BAWAH: STATUS + DETAIL BUTTON ============== -->
                     <div class="flex justify-between items-center mt-2">
 
-                        <!-- STATUS SELESAI -->
-                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-200 bg-green-50 text-green-700 flex items-center">
-                            <i class="fa-solid fa-check mr-1 text-[10px]"></i>
-                            Selesai
-                        </span>
+                        <!-- KIRI: STATUS + BADGE EMOJI -->
+                        <div class="flex items-center gap-2 flex-wrap">
+
+                            <!-- STATUS SELESAI -->
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-200 bg-green-50 text-green-700 flex items-center">
+                                <i class="fa-solid fa-check mr-1 text-[10px]"></i>
+                                Selesai
+                            </span>
+
+                            <!-- BADGE REAKSI EMOJI (hanya tampil jika ada reaksi) -->
+                            <?php if (!empty($emojiList)): ?>
+                                <span class="inline-flex items-center gap-1 text-[11px] bg-yellow-50 border border-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full font-medium">
+                                    <?= htmlspecialchars($emojiList); ?>
+                                    <?php if ($totalReactions > 1): ?>
+                                        <span class="text-[10px] text-yellow-700 font-semibold">
+                                            <?= $totalReactions; ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </span>
+                            <?php endif; ?>
+
+                        </div>
 
                         <!-- TOMBOL LIHAT DETAIL -->
                         <a href="<?= htmlspecialchars($detailUrl); ?>"
@@ -259,8 +272,6 @@ $filterUsed = ($tgl_awal || $tgl_akhir || $petugas || $form_type);
 
                 </div>
 
-
-
             <?php endwhile; ?>
 
         <?php else: ?>
@@ -272,12 +283,10 @@ $filterUsed = ($tgl_awal || $tgl_akhir || $petugas || $form_type);
                 <p class="empty-sub">
                     Tidak ada data sesuai filter.
                 </p>
-
             </div>
         <?php endif; ?>
 
     </div>
-
 
 <?php else: ?>
     <!-- ==================== UI KETIKA FILTER BELUM DIGUNAKAN ==================== -->
