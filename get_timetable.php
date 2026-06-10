@@ -3,35 +3,37 @@ session_start();
 include 'config.php';
 header('Content-Type: application/json');
 
-// ✅ Cek login
-if (!isset($_SESSION['user'])) {
-    echo json_encode(['error' => 'Belum login']);
-    exit;
-}
-
 $action = $_GET['action'] ?? 'read';
 $role   = strtolower($_SESSION['user']['role'] ?? '');
 
-// ✅ Proteksi server-side: hanya admin yang bisa create/update/delete
-if (in_array($action, ['create', 'update', 'delete']) && $role !== 'admin') {
-    echo json_encode(['error' => 'Tidak diizinkan']);
-    exit;
+// ✅ Action 'read' boleh diakses tanpa login (publik)
+// create / update / delete / cancel tetap butuh login + role admin
+if ($action !== 'read') {
+    if (!isset($_SESSION['user'])) {
+        echo json_encode(['error' => 'Belum login']);
+        exit;
+    }
+    if ($role !== 'admin') {
+        echo json_encode(['error' => 'Tidak diizinkan']);
+        exit;
+    }
 }
 
 switch ($action) {
 
     case 'read':
         $q = $conn->query("
-            SELECT 
+            SELECT
                 id,
                 judul,
                 DATE(start_date) AS start,
                 DATE(end_date)   AS end,
-                kategori AS pny,
+                kategori         AS pny,
                 asrama,
                 peserta,
                 kelas,
-                makan
+                makan,
+                status
             FROM agenda_kegiatan
             ORDER BY start_date ASC
         ");
@@ -79,6 +81,16 @@ switch ($action) {
         );
         $stmt->execute();
         echo json_encode(['status' => 'updated']);
+        break;
+
+    case 'cancel':
+        // Toggle: active → cancelled, cancelled → active (reaktivasi)
+        $id         = intval($_POST['id']);
+        $newStatus  = $_POST['new_status'] === 'cancelled' ? 'cancelled' : 'active';
+        $stmt = $conn->prepare("UPDATE agenda_kegiatan SET status=? WHERE id=?");
+        $stmt->bind_param("si", $newStatus, $id);
+        $stmt->execute();
+        echo json_encode(['status' => $newStatus]);
         break;
 
     case 'delete':
