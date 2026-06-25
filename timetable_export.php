@@ -8,74 +8,114 @@ require_once('fpdf/fpdf.php');
 /* =========================
    PARAM RENTANG TANGGAL
 ========================= */
-$from = $_GET['from'] ?? date('Y-01-01');
-$to   = $_GET['to']   ?? date('Y-12-31');
+$from = isset($_GET['from']) ? $_GET['from'] : date('Y-01-01');
+$to   = isset($_GET['to'])   ? $_GET['to']   : date('Y-12-31');
 
 /* =========================
-   AMBIL DATA AGENDA
+   AMBIL DATA
 ========================= */
 $sql = "
 SELECT *
 FROM agenda_kegiatan
 WHERE start_date <= '$to'
-AND end_date >= '$from'
+  AND end_date   >= '$from'
 ORDER BY start_date ASC
 ";
-$q = $conn->query($sql);
-
-$data = [];
-while ($r = $q->fetch_assoc()) {
-    $data[] = $r;
-}
+$q    = $conn->query($sql);
+$data = array();
+while ($r = $q->fetch_assoc()) $data[] = $r;
 
 /* =========================
    HELPER BULAN
 ========================= */
-function getMonths($from, $to)
+function getMonths(string $from, string $to)
 {
-    $months = [];
-    $start = new DateTime(date('Y-m-01', strtotime($from)));
-    $end   = new DateTime(date('Y-m-01', strtotime($to)));
+    $months = array();
+    $start  = new DateTime(date('Y-m-01', strtotime($from)));
+    $end    = new DateTime(date('Y-m-01', strtotime($to)));
     $end->modify('+1 month');
-
-    foreach (new DatePeriod($start, new DateInterval('P1M'), $end) as $dt) {
+    foreach (new DatePeriod($start, new DateInterval('P1M'), $end) as $dt)
         $months[] = $dt;
-    }
     return $months;
 }
 
+$namaBulanArr = array(
+    1  => 'JANUARI',
+    2  => 'FEBRUARI',
+    3  => 'MARET',
+    4  => 'APRIL',
+    5  => 'MEI',
+    6  => 'JUNI',
+    7  => 'JULI',
+    8  => 'AGUSTUS',
+    9  => 'SEPTEMBER',
+    10 => 'OKTOBER',
+    11 => 'NOVEMBER',
+    12 => 'DESEMBER',
+);
+
 /* =========================
-   HELPER REKAP
+   LEBAR KOLOM (tetap)
 ========================= */
-function parseItemCount($text)
-{
-    $text = trim((string)$text);
-    if ($text === '') return 0;
+$wNo   = 6;
+$wNama = 55;
+$wPeny = 28;
+$wPes  = 16;
+$wAs   = 24;
+$wKl   = 22;
+$wMk   = 26;
 
-    $parts = preg_split('/\s*,\s*|\s*\/\s*|\s*;\s*|\s*\n+\s*/', $text);
-    $parts = array_filter(array_map('trim', $parts), function ($v) {
-        return $v !== '';
-    });
+/* Legal Landscape = 355.6 mm lebar, margin 6+6=12 */
+$pageW  = 355 - 12;
+$fixedW = $wNo + $wNama + $wPeny + $wPes + $wAs + $wKl + $wMk;
 
-    return count($parts);
-}
+/* warna per kategori */
+$katColor = array(
+    'Menpim'    => array(255, 193,   7),
+    'Teknis'    => array(40, 167,  69),
+    'Kerjasama' => array(0, 123, 255),
+);
 
 /* =========================
    PDF CLASS
 ========================= */
 class PDF extends FPDF
 {
+    var $dates      = array();
+    var $wDay       = 0;
+    var $wNo        = 6;
+    var $wNama      = 55;
+    var $wPeny      = 28;
+    var $wPes       = 16;
+    var $wAs        = 24;
+    var $wKl        = 22;
+    var $wMk        = 26;
+    var $namaBulan  = '';
+    var $pageW      = 343;
+    var $rekapMode  = false;
+
+    /* ── Header dokumen ── */
     function Header()
     {
         $this->SetFont('Arial', 'B', 11);
         $this->Cell(0, 6, 'MAHKAMAH AGUNG REPUBLIK INDONESIA', 0, 1, 'C');
         $this->Cell(0, 6, 'BADAN STRAJAK DIKLAT KUMDIL', 0, 1, 'C');
-        $this->Ln(2);
+        $this->Ln(1);
         $this->SetFont('Arial', 'B', 10);
         $this->Cell(0, 6, 'REKAPITULASI KEGIATAN PELATIHAN', 0, 1, 'C');
-        $this->Ln(4);
+        $this->Ln(3);
+
+        if ($this->rekapMode) return;
+
+        if ($this->namaBulan !== '') {
+            $this->SetFont('Arial', 'B', 9);
+            $this->Cell(0, 5, $this->namaBulan, 0, 1);
+            $this->Ln(1);
+            $this->drawTableHeader();
+        }
     }
 
+    /* ── Footer dokumen ── */
     function Footer()
     {
         $this->SetY(-10);
@@ -83,15 +123,37 @@ class PDF extends FPDF
         $this->Cell(0, 8, 'Halaman ' . $this->PageNo(), 0, 0, 'C');
     }
 
-    function NbLines($w, $txt)
+    /* ── Gambar baris header tabel ── */
+    function drawTableHeader()
     {
-        $cw = &$this->CurrentFont['cw'];
+        $this->SetFont('Arial', 'B', 7);
+        $this->SetFillColor(220, 220, 220);
+
+        $this->Cell($this->wNo,   8, 'No',             1, 0, 'C', true);
+        $this->Cell($this->wNama, 8, 'Nama Pelatihan', 1, 0, 'C', true);
+        $this->Cell($this->wPeny, 8, 'Penyelenggara',  1, 0, 'C', true);
+
+        foreach ($this->dates as $d)
+            $this->Cell($this->wDay, 8, date('d', strtotime($d)), 1, 0, 'C', true);
+
+        $this->Cell($this->wPes, 8, 'Peserta',  1, 0, 'C', true);
+        $this->Cell($this->wAs,  8, 'Asrama',   1, 0, 'C', true);
+        $this->Cell($this->wKl,  8, 'Kelas',    1, 0, 'C', true);
+        $this->Cell($this->wMk,  8, 'R. Makan', 1, 1, 'C', true);
+
+        $this->SetFont('Arial', '', 7);
+    }
+
+    /* ── Hitung jumlah baris MultiCell ── */
+    function NbLines(float $w, string $txt)
+    {
+        $cw   = &$this->CurrentFont['cw'];
         $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
-        $s = str_replace("\r", '', (string)$txt);
-        $nb = strlen($s);
-        $sep = -1;
+        $s    = str_replace("\r", '', (string)$txt);
+        $nb   = strlen($s);
+        $sep  = -1;
         $i = $j = $l = 0;
-        $nl = 1;
+        $nl   = 1;
 
         while ($i < $nb) {
             $c = $s[$i];
@@ -103,8 +165,8 @@ class PDF extends FPDF
                 $nl++;
                 continue;
             }
-            if ($c == ' ') $sep = $i;
-            $l += $cw[$c] ?? 0;
+            if ($c == ' ')  $sep = $i;
+            $l += $cw[$c];
             if ($l > $wmax) {
                 if ($sep == -1) {
                     if ($i == $j) $i++;
@@ -121,12 +183,38 @@ class PDF extends FPDF
         }
         return $nl;
     }
+
+    /* ── Cek page break untuk baris data biasa ── */
+    function checkPageBreak(float $h)
+    {
+        if ($this->GetY() + $h > $this->PageBreakTrigger) {
+            $this->AddPage();
+        }
+    }
+
+    /* ── Cek page break untuk blok rekap (FIX: akses PageBreakTrigger dari dalam class) ── */
+    function checkPageBreakRekap(float $h)
+    {
+        if ($this->GetY() + $h > $this->PageBreakTrigger) {
+            $this->AddPage();
+            return true;
+        }
+        return false;
+    }
 }
 
 /* =========================
-   SET PDF
+   INISIALISASI PDF
 ========================= */
 $pdf = new PDF('L', 'mm', 'Legal');
+$pdf->wNo   = $wNo;
+$pdf->wNama = $wNama;
+$pdf->wPeny = $wPeny;
+$pdf->wPes  = $wPes;
+$pdf->wAs   = $wAs;
+$pdf->wKl   = $wKl;
+$pdf->wMk   = $wMk;
+$pdf->pageW = $pageW;
 $pdf->SetMargins(6, 10, 6);
 $pdf->SetAutoPageBreak(true, 12);
 
@@ -135,239 +223,317 @@ $months = getMonths($from, $to);
 /* =========================
    LOOP PER BULAN
 ========================= */
-foreach ($months as $m) {
+foreach ($months as $mDt) {
 
-    $bulanAwal  = $m->format('Y-m-01');
-    $bulanAkhir = $m->format('Y-m-t');
+    $bulanAwal  = $mDt->format('Y-m-01');
+    $bulanAkhir = $mDt->format('Y-m-t');
+    $bulanNo    = (int)$mDt->format('m');
 
-    $namaBulan = [
-        1 => 'JANUARI',
-        2 => 'FEBRUARI',
-        3 => 'MARET',
-        4 => 'APRIL',
-        5 => 'MEI',
-        6 => 'JUNI',
-        7 => 'JULI',
-        8 => 'AGUSTUS',
-        9 => 'SEPTEMBER',
-        10 => 'OKTOBER',
-        11 => 'NOVEMBER',
-        12 => 'DESEMBER'
-    ];
-
-    $bulanData = [];
+    $dataMonth = array();
     foreach ($data as $r) {
-        if ($r['end_date'] < $bulanAwal || $r['start_date'] > $bulanAkhir) continue;
-        $bulanData[] = $r;
+        if ($r['end_date'] >= $bulanAwal && $r['start_date'] <= $bulanAkhir)
+            $dataMonth[] = $r;
     }
 
-    /* =========================
-       REKAP DARI AGENDA
-    ========================= */
-    $totalPesertaAgenda = 0;
-    $totalPemakaianKelas = 0;
+    if (empty($dataMonth)) continue;
 
-    foreach ($bulanData as $r) {
-        $totalPesertaAgenda += (int)($r['peserta'] ?? 0);
-
-        $kelasText = trim((string)($r['kelas'] ?? ''));
-        $kelasCount = parseItemCount($kelasText);
-        $totalPemakaianKelas += $kelasCount;
+    /* Buat daftar tanggal bulan ini */
+    $dates   = array();
+    $dCursor = new DateTime($bulanAwal);
+    $dEnd    = new DateTime($bulanAkhir);
+    while ($dCursor <= $dEnd) {
+        $dates[] = $dCursor->format('Y-m-d');
+        $dCursor->modify('+1 day');
     }
 
-    /* =========================
-       REKAP KAMAR TERPAKAI
-       DIAMBIL DARI peserta_penginapan
-       BERDASARKAN agenda_id YANG MASUK BULAN INI
-    ========================= */
-    $jumlahKamarTerpakai = 0;
-    $agendaIdsBulan = [];
+    $wDay = ($pageW - $fixedW) / count($dates);
 
-    foreach ($bulanData as $ag) {
-        $agendaIdsBulan[] = (int)$ag['id'];
-    }
-
-    if (!empty($agendaIdsBulan)) {
-        $idList = implode(',', $agendaIdsBulan);
-
-        $sqlOcc = "
-            SELECT COUNT(DISTINCT CONCAT(
-                TRIM(COALESCE(gedung, '')),
-                '|',
-                TRIM(COALESCE(kamar, ''))
-            )) AS jumlah_kamar_terpakai
-            FROM peserta_penginapan
-            WHERE agenda_id IN ($idList)
-              AND TRIM(COALESCE(gedung, '')) <> ''
-              AND TRIM(COALESCE(kamar, '')) <> ''
-        ";
-
-        $qOcc = $conn->query($sqlOcc);
-        if ($qOcc && $occ = $qOcc->fetch_assoc()) {
-            $jumlahKamarTerpakai = (int)($occ['jumlah_kamar_terpakai'] ?? 0);
-        }
-    }
+    $pdf->dates     = $dates;
+    $pdf->wDay      = $wDay;
+    $pdf->namaBulan = $namaBulanArr[$bulanNo] . ' ' . $mDt->format('Y');
 
     $pdf->AddPage();
 
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->Cell(0, 6, $namaBulan[(int)$m->format('m')] . ' ' . $m->format('Y'), 0, 1);
-    $pdf->Ln(2);
-
-    /* ===== TANGGAL ===== */
-    $dates = [];
-    foreach (
-        new DatePeriod(
-            new DateTime($bulanAwal),
-            new DateInterval('P1D'),
-            (new DateTime($bulanAkhir))->modify('+1 day')
-        ) as $d
-    ) {
-        $dates[] = $d->format('Y-m-d');
-    }
-
-    /* ===== LEBAR KOLOM ===== */
-    $wNo = 6;
-    $wNama = 55;
-    $wPeny = 28;
-    $wPes = 16;
-    $wAs = 24;
-    $wKl = 22;
-    $wMk = 26;
-
-    $pageW = 355 - 12;
-    $fixed = $wNo + $wNama + $wPeny + $wPes + $wAs + $wKl + $wMk;
-    $wDay = ($pageW - $fixed) / count($dates);
-
-    /* ===== HEADER ===== */
-    $pdf->SetFont('Arial', 'B', 7);
-    $pdf->SetFillColor(220, 220, 220);
-
-    $pdf->Cell($wNo, 8, 'No', 1, 0, 'C', true);
-    $pdf->Cell($wNama, 8, 'Nama Pelatihan', 1, 0, 'C', true);
-    $pdf->Cell($wPeny, 8, 'Penyelenggara', 1, 0, 'C', true);
-
-    foreach ($dates as $d) {
-        $pdf->Cell($wDay, 8, date('d', strtotime($d)), 1, 0, 'C', true);
-    }
-
-    $pdf->Cell($wPes, 8, 'Peserta', 1, 0, 'C', true);
-    $pdf->Cell($wAs, 8, 'Asrama', 1, 0, 'C', true);
-    $pdf->Cell($wKl, 8, 'Kelas', 1, 0, 'C', true);
-    $pdf->Cell($wMk, 8, 'R. Makan', 1, 1, 'C', true);
-
-    /* ===== ISI ===== */
+    /* ===== BARIS DATA ===== */
     $pdf->SetFont('Arial', '', 7);
     $no = 1;
 
-    foreach ($bulanData as $r) {
+    foreach ($dataMonth as $r) {
+
         $lineH = 5;
 
-        $hNama = $pdf->NbLines($wNama, $r['judul']) * $lineH;
-        $hAs   = $pdf->NbLines($wAs, $r['asrama']) * $lineH;
-        $hKl   = $pdf->NbLines($wKl, $r['kelas']) * $lineH;
-        $hMk   = $pdf->NbLines($wMk, $r['makan']) * $lineH;
+        $hNama = $pdf->NbLines($wNama, (string)$r['judul'])  * $lineH;
+        $hAs   = $pdf->NbLines($wAs,   (string)$r['asrama']) * $lineH;
+        $hKl   = $pdf->NbLines($wKl,   (string)$r['kelas'])  * $lineH;
+        $hMk   = $pdf->NbLines($wMk,   (string)$r['makan'])  * $lineH;
+        $rowH  = max($hNama, $hAs, $hKl, $hMk, 10);
 
-        $rowH = max($hNama, $hAs, $hKl, $hMk, 10);
+        $pdf->checkPageBreak($rowH);
+
         $y = $pdf->GetY();
         $x = $pdf->GetX();
 
-        $pdf->Rect($x, $y, $wNo, $rowH);
-        $pdf->Rect($x + $wNo, $y, $wNama, $rowH);
-        $pdf->Rect($x + $wNo + $wNama, $y, $wPeny, $rowH);
-
+        /* Kolom hari: warna + border */
         $xx = $x + $wNo + $wNama + $wPeny;
-        foreach ($dates as $_) {
-            $pdf->Rect($xx, $y, $wDay, $rowH);
-            $xx += $wDay;
-        }
-
-        $pdf->Rect($xx, $y, $wPes, $rowH);
-        $xx += $wPes;
-        $pdf->Rect($xx, $y, $wAs, $rowH);
-        $xx += $wAs;
-        $pdf->Rect($xx, $y, $wKl, $rowH);
-        $xx += $wKl;
-        $pdf->Rect($xx, $y, $wMk, $rowH);
-
-        $pdf->SetXY($x, $y + ($rowH - $lineH) / 2);
-        $pdf->Cell($wNo, $lineH, $no++, 0, 0, 'C');
-
-        $pdf->SetXY($x + $wNo, $y + ($rowH - $hNama) / 2);
-        $pdf->MultiCell($wNama, $lineH, $r['judul'], 0, 'L');
-
-        $pdf->SetXY($x + $wNo + $wNama, $y + ($rowH - $lineH) / 2);
-        $pdf->Cell($wPeny, $lineH, $r['kategori'], 0, 0, 'C');
-
-        $xx = $x + $wNo + $wNama + $wPeny;
-
         foreach ($dates as $d) {
             if ($d >= $r['start_date'] && $d <= $r['end_date']) {
-
-                if ($r['kategori'] == 'Menpim') {
-                    $pdf->SetFillColor(255, 193, 7);
-                } elseif ($r['kategori'] == 'Teknis') {
-                    $pdf->SetFillColor(40, 167, 69);
-                } elseif ($r['kategori'] == 'Kerjasama') {
-                    $pdf->SetFillColor(0, 123, 255);
+                if (isset($katColor[$r['kategori']])) {
+                    $col = $katColor[$r['kategori']];
                 } else {
-                    $pdf->SetFillColor(255, 133, 27);
+                    $col = array(255, 133, 27);
                 }
-
+                $pdf->SetFillColor($col[0], $col[1], $col[2]);
                 $pdf->Rect($xx, $y, $wDay, $rowH, 'F');
             }
-
             $pdf->Rect($xx, $y, $wDay, $rowH);
             $xx += $wDay;
         }
 
-        $pdf->SetXY($x + $pageW - $wMk - $wKl - $wAs - $wPes, $y + ($rowH - $lineH) / 2);
-        $pdf->Cell($wPes, $lineH, (int)$r['peserta'], 0, 0, 'C');
+        /* Border kolom tetap */
+        $pdf->Rect($x,                 $y, $wNo,   $rowH);
+        $pdf->Rect($x + $wNo,          $y, $wNama, $rowH);
+        $pdf->Rect($x + $wNo + $wNama, $y, $wPeny, $rowH);
 
-        $pdf->SetXY($x + $pageW - $wMk - $wKl - $wAs, $y + ($rowH - $hAs) / 2);
-        $pdf->MultiCell($wAs, $lineH, $r['asrama'], 0, 'C');
+        $xRight = $x + $pageW;
+        $pdf->Rect($xRight - $wMk - $wKl - $wAs - $wPes, $y, $wPes, $rowH);
+        $pdf->Rect($xRight - $wMk - $wKl - $wAs,         $y, $wAs,  $rowH);
+        $pdf->Rect($xRight - $wMk - $wKl,                $y, $wKl,  $rowH);
+        $pdf->Rect($xRight - $wMk,                        $y, $wMk,  $rowH);
 
-        $pdf->SetXY($x + $pageW - $wMk - $wKl, $y + ($rowH - $hKl) / 2);
-        $pdf->MultiCell($wKl, $lineH, $r['kelas'], 0, 'C');
+        /* Teks */
+        $pdf->SetXY($x, $y + ($rowH - $lineH) / 2);
+        $pdf->Cell($wNo, $lineH, (string)$no++, 0, 0, 'C');
 
-        $pdf->SetXY($x + $pageW - $wMk, $y + ($rowH - $hMk) / 2);
-        $pdf->MultiCell($wMk, $lineH, $r['makan'], 0, 'C');
+        $pdf->SetXY($x + $wNo, $y + ($rowH - $hNama) / 2);
+        $pdf->MultiCell($wNama, $lineH, (string)$r['judul'], 0, 'L');
+
+        $pdf->SetXY($x + $wNo + $wNama, $y + ($rowH - $lineH) / 2);
+        $pdf->Cell($wPeny, $lineH, (string)$r['kategori'], 0, 0, 'C');
+
+        $pdf->SetXY($xRight - $wMk - $wKl - $wAs - $wPes, $y + ($rowH - $lineH) / 2);
+        $pdf->Cell($wPes, $lineH, (string)(int)$r['peserta'], 0, 0, 'C');
+
+        $pdf->SetXY($xRight - $wMk - $wKl - $wAs, $y + ($rowH - $hAs) / 2);
+        $pdf->MultiCell($wAs, $lineH, (string)$r['asrama'], 0, 'C');
+
+        $pdf->SetXY($xRight - $wMk - $wKl, $y + ($rowH - $hKl) / 2);
+        $pdf->MultiCell($wKl, $lineH, (string)$r['kelas'], 0, 'C');
+
+        $pdf->SetXY($xRight - $wMk, $y + ($rowH - $hMk) / 2);
+        $pdf->MultiCell($wMk, $lineH, (string)$r['makan'], 0, 'C');
 
         $pdf->SetY($y + $rowH);
     }
 
-    if (empty($bulanData)) {
-        $pdf->SetFont('Arial', 'I', 8);
-        $pdf->Cell(0, 8, 'Tidak ada agenda pada bulan ini.', 1, 1, 'C');
+    /* =====================================================
+       TABEL REKAPITULASI
+    ===================================================== */
+
+    $totalPeserta  = 0;
+    $totalKegiatan = 0;
+    $kelasSet      = array();
+    $asramaSet     = array();
+    $makanSet      = array();
+
+    $rekapKat = array(
+        'Menpim'    => array('kegiatan' => 0, 'peserta' => 0),
+        'Teknis'    => array('kegiatan' => 0, 'peserta' => 0),
+        'Kerjasama' => array('kegiatan' => 0, 'peserta' => 0),
+        'Pustrajak' => array('kegiatan' => 0, 'peserta' => 0),
+        'Lainnya'   => array('kegiatan' => 0, 'peserta' => 0),
+    );
+
+    foreach ($dataMonth as $r) {
+        $peserta = (int)$r['peserta'];
+        $totalPeserta  += $peserta;
+        $totalKegiatan++;
+
+        $kat = $r['kategori'];
+        if (!isset($rekapKat[$kat])) $kat = 'Lainnya';
+        $rekapKat[$kat]['kegiatan']++;
+        $rekapKat[$kat]['peserta'] += $peserta;
+
+        if (!empty($r['kelas'])) {
+            foreach (preg_split('/[,;\n]+/', $r['kelas']) as $kl) {
+                $kl = trim($kl);
+                if ($kl !== '') $kelasSet[$kl] = true;
+            }
+        }
+        if (!empty($r['asrama'])) {
+            foreach (preg_split('/[,;\n]+/', $r['asrama']) as $as) {
+                $as = trim($as);
+                if ($as !== '') $asramaSet[$as] = true;
+            }
+        }
+        if (!empty($r['makan'])) {
+            foreach (preg_split('/[,;\n]+/', $r['makan']) as $mk) {
+                $mk = trim($mk);
+                if ($mk !== '') $makanSet[$mk] = true;
+            }
+        }
     }
 
-    $pdf->Ln(4);
+    /* Hari aktif */
+    $hariAktif = array();
+    foreach ($dataMonth as $r) {
+        $dC = new DateTime(max($r['start_date'], $bulanAwal));
+        $dE = new DateTime(min($r['end_date'],   $bulanAkhir));
+        while ($dC <= $dE) {
+            $hariAktif[$dC->format('Y-m-d')] = true;
+            $dC->modify('+1 day');
+        }
+    }
+    $totalHariAktif = count($hariAktif);
 
-    /* =========================
-       TABEL REKAP OKUPANSI
-    ========================= */
+    /* Bersihkan set */
+    $kelasClean  = array();
+    foreach (array_keys($kelasSet)  as $v) {
+        $v = trim($v);
+        if ($v !== '' && $v !== '-') $kelasClean[$v]  = true;
+    }
+    $asramaClean = array();
+    foreach (array_keys($asramaSet) as $v) {
+        $v = trim($v);
+        if ($v !== '' && $v !== '-') $asramaClean[$v] = true;
+    }
+    $makanClean  = array();
+    foreach (array_keys($makanSet)  as $v) {
+        $v = trim($v);
+        if ($v !== '' && $v !== '-') $makanClean[$v]  = true;
+    }
+
+    $totalKelas  = count($kelasClean);
+    $totalAsrama = count($asramaClean);
+    $totalMakan  = count($makanClean);
+    $kelasStr    = implode(', ', array_keys($kelasClean));
+    $asramaStr   = implode(', ', array_keys($asramaClean));
+    $makanStr    = implode(', ', array_keys($makanClean));
+
+    /* Lebar kolom rekap */
+    $wR1 = 55;
+    $wR2 = 25;
+    $wR3 = 25;
+    $wR4 = $pageW - $wR1 - $wR2 - $wR3;
+    $wF1 = 55;
+    $wF2 = $pageW - $wF1;
+
+    $katLabels = array(
+        'Menpim'    => 'Kepemimpinan (Menpim)',
+        'Teknis'    => 'Teknis Yudisial',
+        'Kerjasama' => 'Kerjasama / Seleksi',
+        'Pustrajak' => 'Penyusunan Naskah (Pustrajak)',
+        'Lainnya'   => 'Lainnya',
+    );
+
+    $katAktif = 0;
+    foreach ($rekapKat as $kVal) {
+        if ($kVal['kegiatan'] > 0) $katAktif++;
+    }
+
+    $hKelasRek  = max($pdf->NbLines($wF2, $kelasStr  ?: '-') * 5, 6);
+    $hAsramaRek = max($pdf->NbLines($wF2, $asramaStr ?: '-') * 5, 6);
+    $hMakanRek  = max($pdf->NbLines($wF2, $makanStr  ?: '-') * 5, 6);
+
+    $totalRekapH = 5 + 7 + 1 + 7 + ($katAktif * 6) + 7
+        + 3 + 7 + $hKelasRek + $hAsramaRek + $hMakanRek + 6 + 4;
+
+    /* FIX: gunakan method dalam class, bukan akses langsung ke PageBreakTrigger */
+    $pdf->rekapMode = true;
+
+    if (!$pdf->checkPageBreakRekap($totalRekapH)) {
+        $pdf->Ln(5);
+    }
+
+    $x = $pdf->GetX();
+
+    /* Judul rekapitulasi */
     $pdf->SetFont('Arial', 'B', 8);
-    $pdf->Cell(0, 6, 'REKAP OKUPANSI', 0, 1);
+    $pdf->SetFillColor(50, 100, 50);
+    $pdf->SetTextColor(255, 255, 255);
+    $pdf->Cell($pageW, 7, 'REKAPITULASI BULAN ' . $pdf->namaBulan, 1, 1, 'C', true);
+    $pdf->SetTextColor(0, 0, 0);
 
+    /* Tabel ringkasan kategori */
+    $pdf->Ln(1);
+    $pdf->SetFont('Arial', 'B', 7);
+    $pdf->SetFillColor(200, 220, 200);
+    $pdf->Cell($wR1, 7, 'Kategori',      1, 0, 'C', true);
+    $pdf->Cell($wR2, 7, 'Jml Kegiatan',  1, 0, 'C', true);
+    $pdf->Cell($wR3, 7, 'Jml Peserta',   1, 0, 'C', true);
+    $pdf->Cell($wR4, 7, 'Keterangan',    1, 1, 'C', true);
+
+    $pdf->SetFont('Arial', '', 7);
+    $fill = false;
+    foreach ($rekapKat as $kKey => $kVal) {
+        if ($kVal['kegiatan'] == 0) continue;
+        $pdf->SetFillColor(240, 248, 240);
+        $pdf->Cell($wR1, 6, $katLabels[$kKey],         1, 0, 'L', $fill);
+        $pdf->Cell($wR2, 6, (string)$kVal['kegiatan'], 1, 0, 'C', $fill);
+        $pdf->Cell($wR3, 6, (string)$kVal['peserta'],  1, 0, 'C', $fill);
+        $pdf->Cell($wR4, 6, '',                        1, 1, 'C', $fill);
+        $fill = !$fill;
+    }
     $pdf->SetFont('Arial', 'B', 7);
     $pdf->SetFillColor(220, 220, 220);
+    $pdf->Cell($wR1, 7, 'TOTAL',                1, 0, 'C', true);
+    $pdf->Cell($wR2, 7, (string)$totalKegiatan, 1, 0, 'C', true);
+    $pdf->Cell($wR3, 7, (string)$totalPeserta,  1, 0, 'C', true);
+    $pdf->Cell($wR4, 7, '',                     1, 1, 'C', true);
 
-    $wLabel = 100;
-    $wVal   = 55;
-
-    $pdf->Cell($wLabel, 6, 'Keterangan', 1, 0, 'C', true);
-    $pdf->Cell($wVal, 6, 'Jumlah', 1, 1, 'C', true);
+    /* Tabel fasilitas */
+    $pdf->Ln(3);
+    $pdf->SetFont('Arial', 'B', 7);
+    $pdf->SetFillColor(200, 210, 230);
+    $pdf->Cell($wF1, 7, 'Fasilitas', 1, 0, 'C', true);
+    $pdf->Cell($wF2, 7, 'Rincian',   1, 1, 'C', true);
 
     $pdf->SetFont('Arial', '', 7);
 
-    $pdf->Cell($wLabel, 6, 'Total Peserta Agenda', 1, 0);
-    $pdf->Cell($wVal, 6, $totalPesertaAgenda . ' orang', 1, 1, 'C');
+    /* Ruang Kelas */
+    $yF = $pdf->GetY();
+    $pdf->SetFillColor(240, 244, 250);
+    $pdf->Rect($x,        $yF, $wF1, $hKelasRek, 'DF');
+    $pdf->Rect($x + $wF1, $yF, $wF2, $hKelasRek);
+    $pdf->SetXY($x,        $yF + ($hKelasRek - 5) / 2);
+    $pdf->Cell($wF1, 5, 'Ruang Kelas (' . $totalKelas . ' kelas)', 0, 0, 'L');
+    $pdf->SetXY($x + $wF1, $yF);
+    $pdf->MultiCell($wF2, 5, $kelasStr ?: '-', 0, 'L');
+    $pdf->SetY($yF + $hKelasRek);
 
-    $pdf->Cell($wLabel, 6, 'Pemakaian Kelas', 1, 0);
-    $pdf->Cell($wVal, 6, $totalPemakaianKelas . ' kelas', 1, 1, 'C');
+    /* Asrama */
+    $yF = $pdf->GetY();
+    $pdf->SetFillColor(248, 248, 248);
+    $pdf->Rect($x,        $yF, $wF1, $hAsramaRek, 'DF');
+    $pdf->Rect($x + $wF1, $yF, $wF2, $hAsramaRek);
+    $pdf->SetXY($x,        $yF + ($hAsramaRek - 5) / 2);
+    $pdf->Cell($wF1, 5, 'Asrama (' . $totalAsrama . ' blok)', 0, 0, 'L');
+    $pdf->SetXY($x + $wF1, $yF);
+    $pdf->MultiCell($wF2, 5, $asramaStr ?: '-', 0, 'L');
+    $pdf->SetY($yF + $hAsramaRek);
 
-    $pdf->Cell($wLabel, 6, 'Kamar Terpakai', 1, 0);
-    $pdf->Cell($wVal, 6, $jumlahKamarTerpakai . ' kamar', 1, 1, 'C');
+    /* Ruang Makan */
+    $yF = $pdf->GetY();
+    $pdf->SetFillColor(240, 244, 250);
+    $pdf->Rect($x,        $yF, $wF1, $hMakanRek, 'DF');
+    $pdf->Rect($x + $wF1, $yF, $wF2, $hMakanRek);
+    $pdf->SetXY($x,        $yF + ($hMakanRek - 5) / 2);
+    $pdf->Cell($wF1, 5, 'Ruang Makan (' . $totalMakan . ' ruang)', 0, 0, 'L');
+    $pdf->SetXY($x + $wF1, $yF);
+    $pdf->MultiCell($wF2, 5, $makanStr ?: '-', 0, 'L');
+    $pdf->SetY($yF + $hMakanRek);
+
+    /* Hari Aktif */
+    $yF = $pdf->GetY();
+    $pdf->SetFillColor(240, 244, 250);
+    $pdf->Rect($x,        $yF, $wF1, 6, 'DF');
+    $pdf->Rect($x + $wF1, $yF, $wF2, 6);
+    $pdf->SetXY($x,        $yF);
+    $pdf->Cell($wF1, 6, 'Hari Aktif Kegiatan', 0, 0, 'L');
+    $pdf->SetXY($x + $wF1, $yF);
+    $pdf->Cell($wF2, 6, $totalHariAktif . ' hari (dari ' . count($dates) . ' hari)', 0, 1, 'L');
+
+    /* Kembalikan ke mode normal */
+    $pdf->rekapMode = false;
 }
 
 /* =========================
