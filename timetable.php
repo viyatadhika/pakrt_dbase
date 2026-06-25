@@ -3399,6 +3399,156 @@ $isAdmin = isset($_SESSION['user']) && strtolower($_SESSION['user']['role'] ?? '
             font-size: 8px !important;
         }
     }
+
+
+    /* =========================================================
+   FULL FINAL BUTTON CENTER FIX
+   Hanya merapikan posisi teks/icon tombol agar benar-benar tengah.
+   Tidak mengubah logika dan tampilan utama.
+   ========================================================= */
+
+    /* Semua tombol utama modal */
+    .btn-primary,
+    .btn-danger,
+    .btn-warning,
+    .btn-success,
+    #btnSubmit,
+    #btnHapus,
+    #btnBatalkan,
+    #btnAktifkan,
+    #exportModal button[onclick="downloadExport()"] {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+
+        text-align: center !important;
+        vertical-align: middle !important;
+        line-height: 1 !important;
+
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+
+        white-space: nowrap !important;
+    }
+
+    /* Tinggi tombol agar teks tepat di tengah */
+    .btn-primary,
+    #btnSubmit,
+    #exportModal button[onclick="downloadExport()"] {
+        min-height: 56px !important;
+        height: 56px !important;
+    }
+
+    .btn-danger,
+    .btn-warning,
+    .btn-success,
+    #btnHapus,
+    #btnBatalkan,
+    #btnAktifkan {
+        min-height: 48px !important;
+        height: 48px !important;
+    }
+
+    /* Pastikan icon tidak menggeser baseline tulisan */
+    .btn-primary i,
+    .btn-danger i,
+    .btn-warning i,
+    .btn-success i,
+    #btnSubmit i,
+    #btnHapus i,
+    #btnBatalkan i,
+    #btnAktifkan i {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+        transform: none !important;
+    }
+
+    /* Kalau teks tombol dibungkus span tetap rata tengah */
+    .btn-primary span,
+    .btn-danger span,
+    .btn-warning span,
+    .btn-success span,
+    #btnSubmit span,
+    #btnHapus span,
+    #btnBatalkan span,
+    #btnAktifkan span {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1 !important;
+    }
+
+    /* Tombol close/edit bulat tetap icon center */
+    .modal-close,
+    .modal-edit-btn,
+    .top-bar-back,
+    .top-bar-icon,
+    .tt-nav-btn,
+    .mobile-cal-reset {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        line-height: 1 !important;
+    }
+
+    .modal-close i,
+    .modal-edit-btn i,
+    .top-bar-back i,
+    .top-bar-icon i,
+    .tt-nav-btn i {
+        line-height: 1 !important;
+        margin: 0 !important;
+    }
+
+    /* Mobile tetap proporsional */
+    @media(max-width:900px) {
+
+        .btn-primary,
+        #btnSubmit,
+        #exportModal button[onclick="downloadExport()"] {
+            min-height: 54px !important;
+            height: 54px !important;
+        }
+
+        .btn-danger,
+        .btn-warning,
+        .btn-success,
+        #btnHapus,
+        #btnBatalkan,
+        #btnAktifkan {
+            min-height: 46px !important;
+            height: 46px !important;
+        }
+    }
+
+
+
+    /* =========================================================
+   FULL FINAL CRUD BUTTON LOGIC FORCE
+   Hanya mengatur visibilitas tombol CRUD.
+   ========================================================= */
+    #stokModal #btnSubmit.hidden,
+    #stokModal #btnHapus.hidden,
+    #stokModal #btnBatalkan.hidden,
+    #stokModal #btnAktifkan.hidden,
+    #stokModal #btnEditTrigger.hidden {
+        display: none !important;
+    }
+
+    #stokModal #btnSubmit,
+    #stokModal #btnHapus,
+    #stokModal #btnBatalkan,
+    #stokModal #btnAktifkan {
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        gap: 8px !important;
+        line-height: 1 !important;
+    }
 </style>
 
 <!-- TOP HEADER BAR -->
@@ -3515,10 +3665,10 @@ $isAdmin = isset($_SESSION['user']) && strtolower($_SESSION['user']['role'] ?? '
                     <div><label class="form-label">Ruang Makan</label><input id="f-makan" type="text" class="form-input"></div>
                 </div>
                 <?php if ($isAdmin): ?>
-                    <button id="btnSubmit" type="submit" class="btn-primary" style="display:none">Simpan Jadwal</button>
-                    <button id="btnHapus" type="button" onclick="handleDelete()" class="btn-danger" style="display:none"><i class="fa-solid fa-trash-can"></i> Hapus Jadwal</button>
-                    <button id="btnBatalkan" type="button" onclick="handleCancel()" class="btn-warning" style="display:none"><i class="fa-solid fa-ban"></i> Batalkan Kegiatan</button>
-                    <button id="btnAktifkan" type="button" onclick="handleReactivate()" class="btn-success" style="display:none"><i class="fa-solid fa-rotate-left"></i> Aktifkan Kembali</button>
+                    <button id="btnSubmit" type="submit" class="hidden btn-primary" style="display:none">Simpan Jadwal</button>
+                    <button id="btnHapus" type="button" onclick="handleDelete()" class="hidden btn-danger" style="display:none"><i class="fa-solid fa-trash-can"></i> Hapus Jadwal</button>
+                    <button id="btnBatalkan" type="button" onclick="handleCancel()" class="hidden btn-warning" style="display:none"><i class="fa-solid fa-ban"></i> Batalkan Jadwal</button>
+                    <button id="btnAktifkan" type="button" onclick="handleReactivate()" class="hidden btn-success" style="display:none"><i class="fa-solid fa-rotate-left"></i> Aktifkan Kembali</button>
                 <?php endif; ?>
             </div>
         </form>
@@ -4006,26 +4156,98 @@ $isAdmin = isset($_SESSION['user']) && strtolower($_SESSION['user']['role'] ?? '
         document.body.style.overflow = '';
     }
 
+
+
+
+
+
+
+
+
+    function crudEl(id) {
+        return document.getElementById(id);
+    }
+
+    function crudHide(id) {
+        const el = crudEl(id);
+        if (!el) return;
+        el.classList.add('hidden');
+        el.style.display = 'none';
+    }
+
+    function crudShow(id, display = 'flex') {
+        const el = crudEl(id);
+        if (!el) return;
+        el.classList.remove('hidden');
+        el.style.display = display;
+    }
+
+    function resetCrudButtons() {
+        crudHide('btnSubmit');
+        crudHide('btnHapus');
+        crudHide('btnBatalkan');
+        crudHide('btnAktifkan');
+        crudHide('btnEditTrigger');
+    }
+
+    function setCrudButtonMode(mode) {
+        resetCrudButtons();
+        if (!IS_ADMIN) return;
+
+        const btnSubmit = crudEl('btnSubmit');
+        const btnHapus = crudEl('btnHapus');
+        const btnBatalkan = crudEl('btnBatalkan');
+        const btnAktifkan = crudEl('btnAktifkan');
+
+        if (mode === 'add') {
+            if (btnSubmit) btnSubmit.innerHTML = 'Simpan Jadwal';
+            crudShow('btnSubmit');
+            return;
+        }
+
+        if (mode === 'detail-active') {
+            crudShow('btnEditTrigger', 'flex');
+            return;
+        }
+
+        if (mode === 'edit-active') {
+            if (btnSubmit) btnSubmit.innerHTML = 'Simpan Perubahan';
+            if (btnBatalkan) btnBatalkan.innerHTML = '<i class="fa-solid fa-ban"></i> Batalkan Jadwal';
+            if (btnHapus) btnHapus.innerHTML = '<i class="fa-solid fa-trash-can"></i> Hapus Jadwal';
+
+            crudShow('btnSubmit');
+            crudShow('btnBatalkan');
+            crudShow('btnHapus');
+            return;
+        }
+
+        if (mode === 'inactive') {
+            if (btnAktifkan) btnAktifkan.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Aktifkan Kembali';
+            crudShow('btnAktifkan');
+        }
+    }
+
     function openModalTambah() {
         if (!IS_ADMIN) return;
+
         document.getElementById('sheetTitle').textContent = 'Tambah Jadwal';
         document.getElementById('agenda-form').reset();
         document.getElementById('edit-id').value = '';
+
         const t = toStr(new Date());
         document.getElementById('f-start').value = t;
         document.getElementById('f-end').value = t;
+
         toggleInputs(false);
-        showBtn('btnSubmit', 'Simpan Jadwal');
-        hideBtn('btnEditTrigger');
-        hideBtn('btnHapus');
-        hideBtn('btnBatalkan');
-        hideBtn('btnAktifkan');
+        setCrudButtonMode('add');
+
         showModal();
     }
 
     function openModalDetail(id) {
         const item = agendaData.find(a => String(a.id) === String(id));
         if (!item) return;
+
         document.getElementById('sheetTitle').textContent = 'Detail Jadwal';
         document.getElementById('edit-id').value = item.id;
         document.getElementById('f-judul').value = item.judul || '';
@@ -4036,27 +4258,21 @@ $isAdmin = isset($_SESSION['user']) && strtolower($_SESSION['user']['role'] ?? '
         document.getElementById('f-asrama').value = item.asrama || '';
         document.getElementById('f-kelas').value = item.kelas || '';
         document.getElementById('f-makan').value = item.makan || '';
+
         toggleInputs(true);
-        hideBtn('btnSubmit');
-        hideBtn('btnHapus');
-        if (IS_ADMIN) {
-            showFlex('btnEditTrigger');
-            const cancelled = item.status === 'cancelled';
-            cancelled ? hideBtn('btnBatalkan') : showFlex('btnBatalkan');
-            cancelled ? showFlex('btnAktifkan') : hideBtn('btnAktifkan');
-        }
+
+        const isCancelled = item.status === 'cancelled';
+        setCrudButtonMode(isCancelled ? 'inactive' : 'detail-active');
+
         showModal();
     }
 
     function enableEditMode() {
         if (!IS_ADMIN) return;
+
         document.getElementById('sheetTitle').textContent = 'Ubah Jadwal';
         toggleInputs(false);
-        showBtn('btnSubmit', 'Simpan Perubahan');
-        hideBtn('btnEditTrigger');
-        showFlex('btnHapus');
-        hideBtn('btnBatalkan');
-        hideBtn('btnAktifkan');
+        setCrudButtonMode('edit-active');
     }
 
     /* ── CRUD ── */
