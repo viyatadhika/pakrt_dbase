@@ -9,9 +9,9 @@
         <span>Riwayat</span>
     </a>
 
-    <a href="statistik.php" class="nav-item" data-page="statistik.php">
-        <i class="fa-solid fa-chart-column"></i>
-        <span>Statistik</span>
+    <a href="menu.php" class="nav-item" data-page="menu.php">
+        <i class="fa-solid fa-grip"></i>
+        <span>Lainnya</span>
     </a>
 
     <a href="profil.php" class="nav-item" data-page="profil.php">

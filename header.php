@@ -3,8 +3,13 @@ header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-// Versi CSS — naikkan angka ini setiap kali ada perubahan di style.css
-define('CSS_VERSION', '1.0.5');
+if (!defined('CSS_VERSION')) {
+    define('CSS_VERSION', '1.0.6');
+}
+
+if (!isset($title) || trim((string)$title) === '') {
+    $title = 'PAK RT Super App';
+}
 ?>
 
 <!DOCTYPE html>
@@ -14,19 +19,19 @@ define('CSS_VERSION', '1.0.5');
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- Favicon -->
-    <link rel="icon" href="assets/pakrt_ico.png" sizes="192x192">
-    <meta name="theme-color" content="#ffffff">
-    <link rel="apple-touch-icon" href="assets/pakrt_ico.png">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
-    <?php
-    if (!isset($title) || trim($title) === '') {
-        $title = 'PAK RT Super App';
-    }
-    ?>
     <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0ea5e9">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PAK RT">
+
+    <!-- Icon -->
+    <link rel="icon" href="assets/pakrt_ico.png" sizes="192x192" type="image/png">
+    <link rel="apple-touch-icon" href="assets/pakrt_ico.png">
 
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -37,17 +42,20 @@ define('CSS_VERSION', '1.0.5');
     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-    <!-- Style utama — ganti time() ke versi statis -->
+    <!-- Style utama -->
     <link rel="stylesheet" href="style.css?v=<?= CSS_VERSION ?>">
 
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0ea5e9">
-
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-                .then(() => console.log("✅ Service Worker terdaftar"))
-                .catch(err => console.error("❌ Gagal daftar SW", err));
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", function() {
+                navigator.serviceWorker.register("service-worker.js")
+                    .then(function(registration) {
+                        console.log("Service Worker aktif:", registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.error("Service Worker gagal:", error);
+                    });
+            });
         }
     </script>
 </head>

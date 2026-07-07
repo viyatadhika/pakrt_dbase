@@ -17,28 +17,26 @@ include 'header.php';
 
     <footer class="footer">&copy; 2025 PAK RT. All rights reserved.</footer>
 
-
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", function() {
             const splash = document.querySelector(".splash-screen");
             const footer = document.querySelector(".footer");
 
-            // Muncul dulu
-            splash.classList.remove("fade-out");
-            footer.classList.remove("fade-out");
+            if (splash) splash.classList.remove("fade-out");
+            if (footer) footer.classList.remove("fade-out");
 
-            // Setelah 2.2 detik → mulai animasi keluar
-            setTimeout(() => {
-                splash.classList.add("fade-out");
-                footer.classList.add("fade-out");
+            setTimeout(function() {
+                if (splash) splash.classList.add("fade-out");
+                if (footer) footer.classList.add("fade-out");
 
-                // Langsung redirect saat animasi dimulai (tidak menunggu selesai)
-                setTimeout(() => {
+                setTimeout(function() {
                     window.location.href = "login.php";
-                });
+                }, 500);
             }, 3000);
         });
     </script>
 
     <?php include 'footer.php'; ?>
 </body>
+
+</html>

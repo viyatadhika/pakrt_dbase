@@ -2,7 +2,7 @@
   "name": "PAK RT SuperApp",
   "short_name": "PAK RT",
   "description": "Pemantauan • Administrasi • Kinerja • Rumah • Tangga",
-  "start_url": "./login.php",
+  "start_url": "./index.php",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
@@ -10,23 +10,18 @@
   "theme_color": "#0ea5e9",
   "lang": "id",
   "icons": [
-    {
-      "src": "assets/pakrt_ico.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "assets/pakrt_ico.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "assets/pakrt_ico.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ]
+  {
+    "src": "assets/pakrt_ico.png",
+    "sizes": "1024x1024",
+    "type": "image/png",
+    "purpose": "any"
+  },
+  {
+    "src": "assets/pakrt_ico.png",
+    "sizes": "1024x1024",
+    "type": "image/png",
+    "purpose": "maskable"
+  }
+]
+
 }
