@@ -322,14 +322,14 @@ $namaDepan = explode(' ', trim($namaLengkap))[0] ?: 'Pengguna';
                     <i class="fa-solid fa-chevron-right menu-chevron"></i>
                 </a>
 
-                <a href="peserta_penginapan.php" class="menu-item" data-menu="peserta pengajar penginapan cekin">
+                <!-- <a href="peserta_penginapan.php" class="menu-item" data-menu="peserta pengajar penginapan cekin">
                     <div class="menu-icon soft-emerald"><i class="fa-solid fa-users"></i></div>
                     <div class="menu-text">
                         <div class="menu-name">Data Peserta</div>
                         <div class="menu-desc">Input peserta dan pengajar</div>
                     </div>
                     <i class="fa-solid fa-chevron-right menu-chevron"></i>
-                </a>
+                </a> -->
 
                 <a id="openUploadCekin" href="javascript:void(0)" class="menu-item" data-menu="cekin checkout checkin peserta pengajar">
                     <div class="menu-icon soft-purple"><i class="fa-solid fa-right-to-bracket"></i></div>
