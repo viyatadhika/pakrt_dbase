@@ -2962,16 +2962,16 @@ include 'header.php';
 
 
         /* =========================================================
-           FINAL OVERRIDE - HEADER ADMIN LOG SEPERTI TIMETABLE
-           Hanya mengubah tema header dan jarak halaman.
+           FINAL OVERRIDE - HEADER ADMIN LOG PUTIH FULL + KIRI
+           Hanya mengubah header dan jarak halaman.
            Logika, query, tab, tracking, export, dan modal tidak diubah.
         ========================================================= */
         :root {
-            --al-hdr-h: 66px;
+            --al-hdr-h: 64px;
             --al-bg-soft: #f4f8fc;
             --al-blue: #0284c7;
             --al-blue-soft: #eff8ff;
-            --al-line: #e0f2fe;
+            --al-header-line: #e5e7eb;
         }
 
         html,
@@ -2984,26 +2984,24 @@ include 'header.php';
             top: 0 !important;
             left: 0 !important;
             right: 0 !important;
+            z-index: 1000 !important;
+            width: 100% !important;
             height: var(--al-hdr-h) !important;
-            padding: 8px 12px !important;
-            background: var(--al-bg-soft) !important;
+            padding: 0 16px !important;
+            background: #fff !important;
             border: 0 !important;
-            box-shadow: none !important;
+            border-bottom: 1px solid var(--al-header-line) !important;
+            border-radius: 0 !important;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, .045) !important;
             display: flex !important;
             align-items: center !important;
+            justify-content: flex-start !important;
             gap: 12px !important;
-            z-index: 1000 !important;
         }
 
         .al-topbar::before {
-            content: "";
-            position: absolute;
-            inset: 8px 10px;
-            background: #fff;
-            border: 1px solid var(--al-line);
-            border-radius: 20px;
-            box-shadow: 0 10px 26px rgba(15, 23, 42, .045);
-            z-index: -1;
+            display: none !important;
+            content: none !important;
         }
 
         .al-back {
@@ -3015,6 +3013,9 @@ include 'header.php';
             color: var(--al-blue) !important;
             box-shadow: none !important;
             flex: 0 0 40px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
         .al-back:hover {
@@ -3023,12 +3024,19 @@ include 'header.php';
             border: 0 !important;
         }
 
+        .al-topbar>div:not(.al-topbar-right) {
+            min-width: 0 !important;
+            text-align: left !important;
+        }
+
         .al-title {
+            margin: 0 !important;
             font-size: 17px !important;
             font-weight: 900 !important;
             color: var(--al-blue) !important;
-            line-height: 1.1 !important;
-            letter-spacing: 0 !important;
+            line-height: 1.12 !important;
+            letter-spacing: -.01em !important;
+            text-align: left !important;
         }
 
         .al-subtitle {
@@ -3036,7 +3044,12 @@ include 'header.php';
             font-size: 11px !important;
             font-weight: 700 !important;
             color: #94a3b8 !important;
-            line-height: 1.1 !important;
+            line-height: 1.15 !important;
+            text-align: left !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: 100% !important;
         }
 
         .al-topbar-right {
@@ -3044,9 +3057,10 @@ include 'header.php';
             display: flex !important;
             align-items: center !important;
             gap: 8px !important;
-            padding-right: 8px !important;
+            padding-right: 0 !important;
             position: relative !important;
             z-index: 1 !important;
+            flex-shrink: 0 !important;
         }
 
         .live-badge {
@@ -3079,7 +3093,7 @@ include 'header.php';
         }
 
         .al-page {
-            padding: 86px 12px 80px !important;
+            padding: calc(var(--al-hdr-h) + 20px) 20px 80px !important;
             background: var(--al-bg-soft) !important;
             min-height: 100vh !important;
         }
@@ -3094,16 +3108,9 @@ include 'header.php';
             box-shadow: 0 10px 26px rgba(15, 23, 42, .035) !important;
         }
 
-        @media (min-width: 1024px) {
-            .al-page {
-                padding-left: 20px !important;
-                padding-right: 20px !important;
-            }
-        }
-
         @media (max-width: 900px) {
             :root {
-                --al-hdr-h: 73px;
+                --al-hdr-h: 64px;
             }
 
             html,
@@ -3113,31 +3120,29 @@ include 'header.php';
 
             .al-topbar {
                 height: var(--al-hdr-h) !important;
-                padding: 16px 20px 0 !important;
+                padding: 0 14px !important;
                 background: #fff !important;
                 border-bottom: 1px solid #f1f5f9 !important;
-            }
-
-            .al-topbar::before {
-                display: none !important;
+                box-shadow: 0 2px 8px rgba(15, 23, 42, .04) !important;
             }
 
             .al-back {
-                width: 40px !important;
-                height: 40px !important;
+                width: 38px !important;
+                height: 38px !important;
+                flex-basis: 38px !important;
                 background: #f0f9ff !important;
             }
 
             .al-title {
-                font-size: 17px !important;
+                font-size: 16px !important;
                 line-height: 1.15 !important;
             }
 
             .al-subtitle {
-                margin-top: 1px !important;
-                font-size: 12px !important;
-                font-weight: 500 !important;
-                color: #9ca3af !important;
+                margin-top: 2px !important;
+                font-size: 10.5px !important;
+                font-weight: 700 !important;
+                color: #94a3b8 !important;
             }
 
             .al-topbar-right {
@@ -3155,15 +3160,16 @@ include 'header.php';
             }
 
             .al-page {
-                padding: 88px 14px 92px !important;
+                padding: calc(var(--al-hdr-h) + 16px) 14px 92px !important;
                 background: #fff !important;
             }
         }
 
         @media (max-width: 420px) {
             .al-topbar {
-                padding-left: 16px !important;
-                padding-right: 16px !important;
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+                gap: 10px !important;
             }
 
             .al-page {
