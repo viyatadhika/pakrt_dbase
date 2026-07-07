@@ -3551,6 +3551,242 @@ $isAdmin = isset($_SESSION['user']) && strtolower($_SESSION['user']['role'] ?? '
     }
 </style>
 
+
+
+<style>
+    /* =========================================================
+   FINAL OVERRIDE HEADER TIMETABLE - PUTIH FULL & RATA KIRI
+   Hanya merapikan header. Logika, tabel, modal, dan JS tidak diubah.
+========================================================= */
+    :root {
+        --hdr-h: 68px !important;
+        --bg: #f4f8fc !important;
+    }
+
+    html,
+    body {
+        background: var(--bg) !important;
+    }
+
+    .top-bar {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: var(--hdr-h) !important;
+        padding: 0 16px !important;
+        background: #fff !important;
+        border: 0 !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, .045) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        z-index: 300 !important;
+    }
+
+    .top-bar::before {
+        display: none !important;
+    }
+
+    .top-bar-left {
+        height: auto !important;
+        min-width: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        padding-left: 0 !important;
+    }
+
+    .top-bar-back {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        border-radius: 999px !important;
+        border: 0 !important;
+        background: #eff8ff !important;
+        color: #0284c7 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 0 0 40px !important;
+        box-shadow: none !important;
+    }
+
+    .top-bar-back:hover {
+        background: #e0f2fe !important;
+    }
+
+    .top-bar-back i {
+        font-size: 14px !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+    }
+
+    .top-bar-title {
+        margin: 0 !important;
+        color: #0284c7 !important;
+        font-size: 17px !important;
+        line-height: 1.12 !important;
+        font-weight: 900 !important;
+        letter-spacing: 0 !important;
+        white-space: nowrap !important;
+    }
+
+    .top-bar-sub {
+        margin-top: 3px !important;
+        color: #94a3b8 !important;
+        font-size: 11px !important;
+        line-height: 1.15 !important;
+        font-weight: 700 !important;
+        white-space: nowrap !important;
+    }
+
+    .top-bar-right {
+        height: auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        padding-right: 0 !important;
+        margin-left: auto !important;
+    }
+
+    .top-bar-icon {
+        position: static !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        border: 0 !important;
+        border-radius: 999px !important;
+        background: transparent !important;
+        color: #0284c7 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: none !important;
+        font-size: 18px !important;
+    }
+
+    .top-bar-icon:hover {
+        background: #eff8ff !important;
+    }
+
+    .top-bar-icon i {
+        font-size: 18px !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+    }
+
+    .tt-page {
+        top: var(--hdr-h) !important;
+        height: calc(100vh - var(--hdr-h)) !important;
+        padding-top: 10px !important;
+        background: var(--bg) !important;
+    }
+
+    .toast {
+        top: calc(var(--hdr-h) + 12px) !important;
+    }
+
+    @media(max-width:900px) {
+        :root {
+            --hdr-h: 68px !important;
+        }
+
+        html,
+        body {
+            background: var(--bg) !important;
+        }
+
+        .top-bar {
+            height: var(--hdr-h) !important;
+            padding: 0 14px !important;
+            background: #fff !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, .04) !important;
+            z-index: 300 !important;
+        }
+
+        .top-bar-left {
+            gap: 12px !important;
+            padding-left: 0 !important;
+        }
+
+        .top-bar-back {
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+        }
+
+        .top-bar-title {
+            font-size: 17px !important;
+            line-height: 1.12 !important;
+        }
+
+        .top-bar-sub {
+            margin-top: 3px !important;
+            font-size: 11px !important;
+            line-height: 1.15 !important;
+            font-weight: 700 !important;
+        }
+
+        .top-bar-right {
+            padding-right: 0 !important;
+        }
+
+        .top-bar-icon {
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            font-size: 18px !important;
+        }
+
+        .tt-page {
+            position: relative !important;
+            top: auto !important;
+            height: auto !important;
+            min-height: 100vh !important;
+            padding-top: calc(var(--hdr-h) + 10px) !important;
+            padding-bottom: 96px !important;
+            margin-top: 0 !important;
+            overflow: visible !important;
+            background: var(--bg) !important;
+        }
+
+        .tt-meta {
+            margin-top: 0 !important;
+        }
+    }
+
+    @media(max-width:420px) {
+        .top-bar {
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+        }
+
+        .top-bar-left {
+            gap: 10px !important;
+        }
+
+        .top-bar-back,
+        .top-bar-icon {
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+        }
+
+        .top-bar-title {
+            font-size: 16px !important;
+        }
+
+        .top-bar-sub {
+            font-size: 10.5px !important;
+        }
+    }
+</style>
+
 <!-- TOP HEADER BAR -->
 <div class="top-bar">
     <div class="top-bar-left">

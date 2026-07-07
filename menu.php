@@ -295,6 +295,86 @@ $namaDepan = explode(' ', trim($namaLengkap))[0] ?: 'Pengguna';
             font-size: .72rem !important;
         }
     }
+
+    /* ===================== BOTTOM SHEET MODAL FINAL FIX ===================== */
+    .fade-bg {
+        position: fixed !important;
+        inset: 0 !important;
+        background: rgba(15, 23, 42, .45) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transition: opacity .22s ease, visibility .22s ease !important;
+        z-index: 9980 !important;
+    }
+
+    .fade-bg.show {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
+
+    .sheet {
+        position: fixed !important;
+        left: 50% !important;
+        bottom: 0 !important;
+        width: min(100%, 520px) !important;
+        max-height: 88vh !important;
+        overflow-y: auto !important;
+        background: #fff !important;
+        border-radius: 26px 26px 0 0 !important;
+        box-shadow: 0 -18px 55px rgba(15, 23, 42, .20) !important;
+        transform: translate(-50%, 110%) !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transition: transform .26s ease, opacity .22s ease, visibility .22s ease !important;
+        z-index: 9990 !important;
+        box-sizing: border-box !important;
+        padding-top: 10px !important;
+    }
+
+    .sheet.show {
+        transform: translate(-50%, 0) !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
+
+    .sheet-handle {
+        width: 44px !important;
+        height: 5px !important;
+        border-radius: 999px !important;
+        background: #d1d5db !important;
+        margin: 0 auto 10px !important;
+    }
+
+    body.sheet-open {
+        overflow: hidden !important;
+        touch-action: none !important;
+    }
+
+    @media (min-width: 768px) {
+        .sheet {
+            bottom: 22px !important;
+            border-radius: 26px !important;
+            max-height: 82vh !important;
+        }
+
+        .sheet.show {
+            transform: translate(-50%, 0) !important;
+        }
+    }
+
+    @media (max-width: 520px) {
+        .sheet {
+            width: 100% !important;
+            max-height: 90vh !important;
+            border-radius: 24px 24px 0 0 !important;
+        }
+    }
 </style>
 
 <body data-page="menu">
@@ -722,4 +802,70 @@ $namaDepan = explode(' ', trim($namaLengkap))[0] ?: 'Pengguna';
             </div>
         </div>
     </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function byId(id) {
+                return document.getElementById(id);
+            }
+
+            function openSheet(sheetId, bgId) {
+                const sheet = byId(sheetId);
+                const bg = byId(bgId);
+                if (!sheet || !bg) return;
+                bg.classList.add('show');
+                sheet.classList.add('show');
+                document.body.classList.add('sheet-open');
+            }
+
+            function closeSheet(sheetId, bgId) {
+                const sheet = byId(sheetId);
+                const bg = byId(bgId);
+                if (sheet) sheet.classList.remove('show');
+                if (bg) bg.classList.remove('show');
+                document.body.classList.remove('sheet-open');
+            }
+
+            function bindSheet(openId, closeId, sheetId, bgId) {
+                const opener = byId(openId);
+                const closer = byId(closeId);
+                const bg = byId(bgId);
+
+                if (opener) {
+                    opener.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        openSheet(sheetId, bgId);
+                    });
+                }
+
+                if (closer) {
+                    closer.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        closeSheet(sheetId, bgId);
+                    });
+                }
+
+                if (bg) {
+                    bg.addEventListener('click', function() {
+                        closeSheet(sheetId, bgId);
+                    });
+                }
+            }
+
+            bindSheet('openUploadPresensi', 'closeSheetPresensi', 'sheetPresensi', 'fadeBgPresensi');
+            bindSheet('openUploadLaporanKerusakan', 'closeSheetLaporanKerusakan', 'sheetLaporanKerusakan', 'fadeBgLaporanKerusakan');
+            bindSheet('openUploadGudang', 'closeSheetGudang', 'sheetGudang', 'fadeBgGudang');
+            bindSheet('openUploadCekin', 'closeSheetCekin', 'sheetCekin', 'fadeBgCekin');
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Escape') return;
+                closeSheet('sheetPresensi', 'fadeBgPresensi');
+                closeSheet('sheetLaporanKerusakan', 'fadeBgLaporanKerusakan');
+                closeSheet('sheetGudang', 'fadeBgGudang');
+                closeSheet('sheetCekin', 'fadeBgCekin');
+            });
+        });
+    </script>
+
     <?php include 'footer.php'; ?>
