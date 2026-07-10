@@ -512,6 +512,15 @@ $title = "Log Aktivitas";
    Riwayat disimpan di user_lokasi_history oleh api/simpan_lokasi_tracking.php
    ============================================================ */
 date_default_timezone_set('Asia/Jakarta');
+if (isset($conn) && $conn instanceof mysqli) {
+    @$conn->query("SET time_zone = '+07:00'");
+}
+
+/* Threshold dibuat sama untuk seluruh proses baca live tracking.
+   PAK RT hanya menjadi viewer: data tetap dikirim oleh aplikasi Warga RT. */
+define('AL_TRACKING_ONLINE_SECONDS', 60);
+define('AL_TRACKING_IDLE_SECONDS', 300);
+define('AL_TRACKING_LIVE_WINDOW_SECONDS', 300);
 
 $conn->query("CREATE TABLE IF NOT EXISTS user_lokasi_live (
     user_id INT NOT NULL PRIMARY KEY,
@@ -545,6 +554,16 @@ $conn->query("CREATE TABLE IF NOT EXISTS user_lokasi_history (
 
 function al_trackingRows(mysqli $conn): array
 {
+    /*
+       Admin Log PAK RT hanya membaca data live tracking dari aplikasi Warga RT.
+       Yang ditampilkan hanya user yang benar-benar masih aktif mengirim heartbeat
+       ke user_lokasi_live dalam jendela waktu AL_TRACKING_LIVE_WINDOW_SECONDS.
+       Ini membuat hasilnya sama dengan konsep live tracking Warga RT: bukan semua
+       riwayat user lama, tetapi posisi live yang masih segar.
+    */
+    $window = defined('AL_TRACKING_LIVE_WINDOW_SECONDS') ? (int)AL_TRACKING_LIVE_WINDOW_SECONDS : 300;
+    if ($window < 60) $window = 60;
+
     $sql = "
         SELECT
             l.user_id AS id,
@@ -558,24 +577,30 @@ function al_trackingRows(mysqli $conn): array
             l.ip_address,
             l.first_seen,
             l.last_seen AS created_at,
-            TIMESTAMPDIFF(SECOND, l.last_seen, NOW()) AS age_second
+            GREATEST(0, TIMESTAMPDIFF(SECOND, l.last_seen, NOW())) AS age_second
         FROM user_lokasi_live l
         LEFT JOIN users u ON u.id = l.user_id
+        WHERE l.last_seen IS NOT NULL
+          AND l.last_seen >= DATE_SUB(NOW(), INTERVAL {$window} SECOND)
+          AND l.latitude BETWEEN -90 AND 90
+          AND l.longitude BETWEEN -180 AND 180
+          AND NOT (l.latitude = 0 AND l.longitude = 0)
         ORDER BY l.last_seen DESC
-        LIMIT 200
+        LIMIT 500
     ";
     $q = $conn->query($sql);
     if (!$q) return [];
     return $q->fetch_all(MYSQLI_ASSOC);
 }
-
 function al_trackingStatus(int $ageSecond): array
 {
-    if ($ageSecond <= 30) return ['online', 'Online', '🟢'];
-    if ($ageSecond <= 120) return ['idle', 'Idle', '🟡'];
+    $online = defined('AL_TRACKING_ONLINE_SECONDS') ? (int)AL_TRACKING_ONLINE_SECONDS : 60;
+    $idle = defined('AL_TRACKING_IDLE_SECONDS') ? (int)AL_TRACKING_IDLE_SECONDS : 300;
+
+    if ($ageSecond <= $online) return ['online', 'Online', '🟢'];
+    if ($ageSecond <= $idle) return ['idle', 'Idle', '🟡'];
     return ['offline', 'Offline', '🔴'];
 }
-
 function al_trackingAgeText(int $ageSecond): string
 {
     if ($ageSecond < 60) return $ageSecond . ' detik lalu';
@@ -587,10 +612,13 @@ function al_trackingAgeText(int $ageSecond): string
 function al_trackingSummary(array $rows): array
 {
     $online = $idle = $offline = 0;
+    $onlineLimit = defined('AL_TRACKING_ONLINE_SECONDS') ? (int)AL_TRACKING_ONLINE_SECONDS : 60;
+    $idleLimit = defined('AL_TRACKING_IDLE_SECONDS') ? (int)AL_TRACKING_IDLE_SECONDS : 300;
+
     foreach ($rows as $r) {
         $age = max(0, (int)($r['age_second'] ?? 999999));
-        if ($age <= 30) $online++;
-        elseif ($age <= 120) $idle++;
+        if ($age <= $onlineLimit) $online++;
+        elseif ($age <= $idleLimit) $idle++;
         else $offline++;
     }
     return [
@@ -600,7 +628,6 @@ function al_trackingSummary(array $rows): array
         'offline' => $offline,
     ];
 }
-
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'tracking') {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -3215,9 +3242,9 @@ include 'header.php';
             <section class="tracking-hero">
                 <div class="tracking-hero-inner">
                     <h2>Live Tracking Petugas</h2>
-                    <p>Monitoring posisi terakhir pengguna yang sedang membuka aplikasi. Data otomatis diperbarui tanpa reload halaman setiap 5 detik.</p>
+                    <p>Monitoring posisi terakhir pengguna dari aplikasi Warga RT. PAK RT hanya membaca data live yang masih aktif dalam 5 menit terakhir.</p>
                     <div class="tracking-stat-grid">
-                        <div class="tracking-stat"><span>Total Terpantau</span><strong id="sumTotal"><?= (int)$trackingSummary['total'] ?></strong></div>
+                        <div class="tracking-stat"><span>Live Terpantau</span><strong id="sumTotal"><?= (int)$trackingSummary['total'] ?></strong></div>
                         <div class="tracking-stat"><span>Online</span><strong id="sumOnline"><?= (int)$trackingSummary['online'] ?></strong></div>
                         <div class="tracking-stat"><span>Idle</span><strong id="sumIdle"><?= (int)$trackingSummary['idle'] ?></strong></div>
                         <div class="tracking-stat"><span>Offline</span><strong id="sumOffline"><?= (int)$trackingSummary['offline'] ?></strong></div>

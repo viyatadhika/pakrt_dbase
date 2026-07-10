@@ -166,6 +166,209 @@ function dashboardFetchPelatihanBerlangsung(mysqli $conn): array
     return [];
 }
 
+function dashboardFetchAgendaBulanIni(mysqli $conn): array
+{
+    $candidates = [
+        ['table' => 'timetable', 'name' => ['nama_kegiatan', 'nama', 'judul', 'agenda', 'kegiatan'], 'start' => ['start_date', 'tanggal_mulai', 'mulai', 'tanggal_awal', 'tgl_mulai', 'tanggal'], 'end' => ['end_date', 'tanggal_selesai', 'selesai', 'tanggal_akhir', 'tgl_selesai', 'tanggal']],
+        ['table' => 'jadwal_kegiatan', 'name' => ['nama_kegiatan', 'nama', 'judul', 'agenda', 'kegiatan'], 'start' => ['start_date', 'tanggal_mulai', 'mulai', 'tanggal_awal', 'tgl_mulai', 'tanggal'], 'end' => ['end_date', 'tanggal_selesai', 'selesai', 'tanggal_akhir', 'tgl_selesai', 'tanggal']],
+        ['table' => 'kegiatan', 'name' => ['nama_kegiatan', 'nama', 'judul', 'agenda', 'kegiatan'], 'start' => ['start_date', 'tanggal_mulai', 'mulai', 'tanggal_awal', 'tgl_mulai', 'tanggal'], 'end' => ['end_date', 'tanggal_selesai', 'selesai', 'tanggal_akhir', 'tgl_selesai', 'tanggal']],
+        ['table' => 'agenda_kegiatan', 'name' => ['nama_kegiatan', 'nama', 'judul', 'agenda', 'kegiatan'], 'start' => ['start_date', 'tanggal_mulai', 'mulai', 'tanggal_awal', 'tgl_mulai', 'tanggal'], 'end' => ['end_date', 'tanggal_selesai', 'selesai', 'tanggal_akhir', 'tgl_selesai', 'tanggal']],
+    ];
+
+    foreach ($candidates as $cfg) {
+        $table = $cfg['table'];
+        if (!dashboardTableExists($conn, $table)) continue;
+
+        $nameCol = '';
+        foreach ($cfg['name'] as $col) {
+            if (dashboardColumnExists($conn, $table, $col)) {
+                $nameCol = $col;
+                break;
+            }
+        }
+        $startCol = '';
+        foreach ($cfg['start'] as $col) {
+            if (dashboardColumnExists($conn, $table, $col)) {
+                $startCol = $col;
+                break;
+            }
+        }
+        $endCol = '';
+        foreach ($cfg['end'] as $col) {
+            if (dashboardColumnExists($conn, $table, $col)) {
+                $endCol = $col;
+                break;
+            }
+        }
+
+        if ($nameCol === '' || $startCol === '') continue;
+        if ($endCol === '') $endCol = $startCol;
+
+        $safeTable = $conn->real_escape_string($table);
+        $safeName = $conn->real_escape_string($nameCol);
+        $safeStart = $conn->real_escape_string($startCol);
+        $safeEnd = $conn->real_escape_string($endCol);
+
+        $sql = "
+            SELECT `{$safeName}` AS nama, `{$safeStart}` AS mulai, `{$safeEnd}` AS selesai
+            FROM `{$safeTable}`
+            WHERE DATE(`{$safeStart}`) <= LAST_DAY(CURDATE())
+              AND DATE(`{$safeEnd}`) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+            ORDER BY
+                CASE
+                    WHEN CURDATE() BETWEEN DATE(`{$safeStart}`) AND DATE(`{$safeEnd}`) THEN 0
+                    WHEN DATE(`{$safeStart}`) > CURDATE() THEN 1
+                    ELSE 2
+                END,
+                `{$safeStart}` ASC
+            LIMIT 8
+        ";
+        $q = $conn->query($sql);
+        if (!$q) continue;
+
+        $rows = [];
+        while ($row = $q->fetch_assoc()) {
+            $nama = trim((string)($row['nama'] ?? ''));
+            if ($nama !== '') $rows[] = $row;
+        }
+        return $rows;
+    }
+
+    return [];
+}
+
+
+function dashboardNormalizeAgendaCategory(string $value): string
+{
+    $v = strtolower(trim($value));
+    if ($v === '') return 'Lainnya';
+
+    if (strpos($v, 'menpim') !== false || strpos($v, 'manajemen') !== false || strpos($v, 'pimpinan') !== false) {
+        return 'Menpim';
+    }
+    if (strpos($v, 'teknis') !== false || strpos($v, 'hakim') !== false || strpos($v, 'yudisial') !== false) {
+        return 'Teknis';
+    }
+    if (strpos($v, 'pustrajak') !== false || strpos($v, 'strategi') !== false || strpos($v, 'kebijakan') !== false) {
+        return 'Pustrajak';
+    }
+    if (strpos($v, 'kerja sama') !== false || strpos($v, 'kerjasama') !== false || strpos($v, 'kolaborasi') !== false) {
+        return 'Kerjasama';
+    }
+
+    return 'Lainnya';
+}
+
+function dashboardFetchKomposisiAgendaBulanIni(mysqli $conn, array $agendaRows = []): array
+{
+    $candidates = [
+        ['table' => 'timetable', 'name' => ['nama_kegiatan', 'nama', 'judul', 'agenda', 'kegiatan'], 'category' => ['kategori', 'kategori_kegiatan', 'jenis_kegiatan', 'bidang', 'unit', 'tipe_kegiatan'], 'start' => ['start_date', 'tanggal_mulai', 'mulai', 'tanggal_awal', 'tgl_mulai', 'tanggal'], 'end' => ['end_date', 'tanggal_selesai', 'selesai', 'tanggal_akhir', 'tgl_selesai', 'tanggal']],
+        ['table' => 'jadwal_kegiatan', 'name' => ['nama_kegiatan', 'nama', 'judul', 'agenda', 'kegiatan'], 'category' => ['kategori', 'kategori_kegiatan', 'jenis_kegiatan', 'bidang', 'unit', 'tipe_kegiatan'], 'start' => ['start_date', 'tanggal_mulai', 'mulai', 'tanggal_awal', 'tgl_mulai', 'tanggal'], 'end' => ['end_date', 'tanggal_selesai', 'selesai', 'tanggal_akhir', 'tgl_selesai', 'tanggal']],
+        ['table' => 'kegiatan', 'name' => ['nama_kegiatan', 'nama', 'judul', 'agenda', 'kegiatan'], 'category' => ['kategori', 'kategori_kegiatan', 'jenis_kegiatan', 'bidang', 'unit', 'tipe_kegiatan'], 'start' => ['start_date', 'tanggal_mulai', 'mulai', 'tanggal_awal', 'tgl_mulai', 'tanggal'], 'end' => ['end_date', 'tanggal_selesai', 'selesai', 'tanggal_akhir', 'tgl_selesai', 'tanggal']],
+        ['table' => 'agenda_kegiatan', 'name' => ['nama_kegiatan', 'nama', 'judul', 'agenda', 'kegiatan'], 'category' => ['kategori', 'kategori_kegiatan', 'jenis_kegiatan', 'bidang', 'unit', 'tipe_kegiatan'], 'start' => ['start_date', 'tanggal_mulai', 'mulai', 'tanggal_awal', 'tgl_mulai', 'tanggal'], 'end' => ['end_date', 'tanggal_selesai', 'selesai', 'tanggal_akhir', 'tgl_selesai', 'tanggal']],
+    ];
+
+    foreach ($candidates as $cfg) {
+        $table = $cfg['table'];
+        if (!dashboardTableExists($conn, $table)) continue;
+
+        $nameCol = '';
+        foreach ($cfg['name'] as $col) {
+            if (dashboardColumnExists($conn, $table, $col)) {
+                $nameCol = $col;
+                break;
+            }
+        }
+        $categoryCol = '';
+        foreach ($cfg['category'] as $col) {
+            if (dashboardColumnExists($conn, $table, $col)) {
+                $categoryCol = $col;
+                break;
+            }
+        }
+        $startCol = '';
+        foreach ($cfg['start'] as $col) {
+            if (dashboardColumnExists($conn, $table, $col)) {
+                $startCol = $col;
+                break;
+            }
+        }
+        $endCol = '';
+        foreach ($cfg['end'] as $col) {
+            if (dashboardColumnExists($conn, $table, $col)) {
+                $endCol = $col;
+                break;
+            }
+        }
+
+        if ($nameCol === '' || $startCol === '') continue;
+        if ($endCol === '') $endCol = $startCol;
+
+        $safeTable = $conn->real_escape_string($table);
+        $safeName = $conn->real_escape_string($nameCol);
+        $safeStart = $conn->real_escape_string($startCol);
+        $safeEnd = $conn->real_escape_string($endCol);
+        $categorySelect = $categoryCol !== ''
+            ? "`" . $conn->real_escape_string($categoryCol) . "` AS kategori_asli"
+            : "'' AS kategori_asli";
+
+        $q = $conn->query("\n            SELECT\n                `{$safeName}` AS nama,\n                {$categorySelect},\n                `{$safeStart}` AS mulai,\n                `{$safeEnd}` AS selesai\n            FROM `{$safeTable}`\n            WHERE DATE(`{$safeStart}`) <= LAST_DAY(CURDATE())\n              AND DATE(`{$safeEnd}`) >= DATE_FORMAT(CURDATE(), '%Y-%m-01')\n            ORDER BY `{$safeStart}` ASC, `{$safeName}` ASC\n        ");
+
+        if (!$q) continue;
+
+        $groups = [];
+        while ($row = $q->fetch_assoc()) {
+            $nama = trim((string)($row['nama'] ?? ''));
+            if ($nama === '') continue;
+
+            $sourceCategory = trim((string)($row['kategori_asli'] ?? ''));
+            $kategori = dashboardNormalizeAgendaCategory($sourceCategory !== '' ? $sourceCategory : $nama);
+            if (!isset($groups[$kategori])) {
+                $groups[$kategori] = ['kategori' => $kategori, 'total' => 0, 'items' => []];
+            }
+            $groups[$kategori]['total']++;
+            $groups[$kategori]['items'][] = [
+                'nama' => $nama,
+                'mulai' => (string)($row['mulai'] ?? ''),
+                'selesai' => (string)($row['selesai'] ?? $row['mulai'] ?? ''),
+            ];
+        }
+
+        if ($groups) {
+            $order = ['Menpim', 'Teknis', 'Pustrajak', 'Kerjasama', 'Lainnya'];
+            $rows = [];
+            foreach ($order as $key) {
+                if (isset($groups[$key])) $rows[] = $groups[$key];
+            }
+            return $rows;
+        }
+    }
+
+    // Fallback dari data agenda yang sudah diambil sebelumnya.
+    $groups = [];
+    foreach ($agendaRows as $agenda) {
+        $nama = trim((string)($agenda['nama'] ?? ''));
+        if ($nama === '') continue;
+        $kategori = dashboardNormalizeAgendaCategory($nama);
+        if (!isset($groups[$kategori])) {
+            $groups[$kategori] = ['kategori' => $kategori, 'total' => 0, 'items' => []];
+        }
+        $groups[$kategori]['total']++;
+        $groups[$kategori]['items'][] = [
+            'nama' => $nama,
+            'mulai' => (string)($agenda['mulai'] ?? ''),
+            'selesai' => (string)($agenda['selesai'] ?? $agenda['mulai'] ?? ''),
+        ];
+    }
+
+    $order = ['Menpim', 'Teknis', 'Pustrajak', 'Kerjasama', 'Lainnya'];
+    $out = [];
+    foreach ($order as $key) {
+        if (isset($groups[$key])) $out[] = $groups[$key];
+    }
+    return $out;
+}
+
 function dashboardSafeCountQuery(mysqli $conn, string $sql): int
 {
     $q = $conn->query($sql);
@@ -485,6 +688,12 @@ foreach ($execPelatihanBerlangsung as $pl) {
     if ($nm !== '') $execPelatihanNames[] = $nm;
 }
 
+$dashAgendaBulanIni = dashboardFetchAgendaBulanIni($conn);
+$dashKomposisiAgenda = dashboardFetchKomposisiAgendaBulanIni($conn, $dashAgendaBulanIni);
+$dashTotalAgendaBulanIni = array_sum(array_map(static function ($row) {
+    return (int)($row['total'] ?? 0);
+}, $dashKomposisiAgenda));
+
 $execAiSummary = 'Hingga pukul ' . date('H:i') . ' WIB, tercatat ' . (int)$dashPresensi['hadir'] . ' pegawai telah melakukan presensi masuk';
 if ($execTotalUsers > 0) {
     $execAiSummary .= ' dari total ' . $execTotalUsers . ' pegawai';
@@ -500,6 +709,259 @@ if ($execPelatihanNames) {
 if ($execGpsTidakValid > 0) {
     $execAiSummary .= ' Perhatian: terdapat ' . $execGpsTidakValid . ' presensi dengan GPS tidak valid yang perlu dicek.';
 }
+
+/* ===================== MONITORING KERUSAKAN & KETERSEDIAAN FASILITAS ===================== */
+function dashboardFirstExistingColumn(mysqli $conn, string $table, array $columns): string
+{
+    foreach ($columns as $col) {
+        if (dashboardColumnExists($conn, $table, $col)) return $col;
+    }
+    return '';
+}
+
+function dashboardFetchKerusakanGedung(mysqli $conn): array
+{
+    if (!dashboardTableExists($conn, 'laporan_kerusakan')) return [];
+
+    $statusAktif = "('dilaporkan','diverifikasi','diterima_teknisi')";
+    $statusProses = "('dalam_perbaikan','menunggu_part')";
+
+    if (dashboardTableExists($conn, 'master_lokasi') && dashboardColumnExists($conn, 'master_lokasi', 'nama_lokasi')) {
+        $sql = "
+            SELECT
+                COALESCE(NULLIF(TRIM(ml.nama_lokasi), ''), 'Lokasi belum diisi') AS gedung,
+                COUNT(lk.id) AS total,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(lk.status,''))) IN {$statusAktif} THEN 1 ELSE 0 END) AS aktif,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(lk.status,''))) IN {$statusProses} THEN 1 ELSE 0 END) AS proses,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(lk.status,''))) = 'selesai' THEN 1 ELSE 0 END) AS selesai,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(lk.status,''))) <> 'selesai' THEN 1 ELSE 0 END) AS belum
+            FROM laporan_kerusakan lk
+            LEFT JOIN master_lokasi ml ON lk.lokasi_id = ml.id
+            GROUP BY COALESCE(NULLIF(TRIM(ml.nama_lokasi), ''), 'Lokasi belum diisi')
+            ORDER BY aktif DESC, proses DESC, total DESC, gedung ASC
+        ";
+
+        $q = $conn->query($sql);
+        if ($q) {
+            $rows = [];
+            while ($r = $q->fetch_assoc()) {
+                $total = (int)($r['total'] ?? 0);
+                $selesai = (int)($r['selesai'] ?? 0);
+                $rows[] = [
+                    'gedung' => (string)($r['gedung'] ?? '-'),
+                    'total' => $total,
+                    'aktif' => (int)($r['aktif'] ?? 0),
+                    'proses' => (int)($r['proses'] ?? 0),
+                    'selesai' => $selesai,
+                    'belum' => (int)($r['belum'] ?? max(0, $total - $selesai)),
+                    'persen_selesai' => $total > 0 ? (int)round(($selesai / $total) * 100) : 0,
+                ];
+            }
+            return $rows;
+        }
+    }
+
+    if (dashboardTableExists($conn, 'lokasi') && dashboardColumnExists($conn, 'lokasi', 'nama_lokasi')) {
+        $sql = "
+            SELECT
+                COALESCE(NULLIF(TRIM(l.nama_lokasi), ''), 'Lokasi belum diisi') AS gedung,
+                COUNT(lk.id) AS total,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(lk.status,''))) IN {$statusAktif} THEN 1 ELSE 0 END) AS aktif,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(lk.status,''))) IN {$statusProses} THEN 1 ELSE 0 END) AS proses,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(lk.status,''))) = 'selesai' THEN 1 ELSE 0 END) AS selesai,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(lk.status,''))) <> 'selesai' THEN 1 ELSE 0 END) AS belum
+            FROM laporan_kerusakan lk
+            LEFT JOIN lokasi l ON lk.lokasi_id = l.id
+            GROUP BY COALESCE(NULLIF(TRIM(l.nama_lokasi), ''), 'Lokasi belum diisi')
+            ORDER BY aktif DESC, proses DESC, total DESC, gedung ASC
+        ";
+
+        $q = $conn->query($sql);
+        if ($q) {
+            $rows = [];
+            while ($r = $q->fetch_assoc()) {
+                $total = (int)($r['total'] ?? 0);
+                $selesai = (int)($r['selesai'] ?? 0);
+                $rows[] = [
+                    'gedung' => (string)($r['gedung'] ?? '-'),
+                    'total' => $total,
+                    'aktif' => (int)($r['aktif'] ?? 0),
+                    'proses' => (int)($r['proses'] ?? 0),
+                    'selesai' => $selesai,
+                    'belum' => (int)($r['belum'] ?? max(0, $total - $selesai)),
+                    'persen_selesai' => $total > 0 ? (int)round(($selesai / $total) * 100) : 0,
+                ];
+            }
+            return $rows;
+        }
+    }
+
+    return [];
+}
+
+function dashboardFetchKerusakanSummary(mysqli $conn): array
+{
+    $out = ['total' => 0, 'belum' => 0, 'selesai' => 0];
+    if (!dashboardTableExists($conn, 'laporan_kerusakan')) return $out;
+
+    $q = $conn->query("\n        SELECT\n            COUNT(id) AS total,\n            SUM(CASE WHEN LOWER(TRIM(COALESCE(status,''))) = 'selesai' THEN 1 ELSE 0 END) AS selesai,\n            SUM(CASE WHEN LOWER(TRIM(COALESCE(status,''))) <> 'selesai' THEN 1 ELSE 0 END) AS belum\n        FROM laporan_kerusakan\n    ");
+    if ($q) {
+        $r = $q->fetch_assoc();
+        foreach ($out as $k => $v) $out[$k] = (int)($r[$k] ?? 0);
+    }
+    return $out;
+}
+
+function dashboardCountDistinctRoom(mysqli $conn, string $table, string $gedungCol, string $kamarCol, string $where = ''): int
+{
+    if (!dashboardTableExists($conn, $table)) return 0;
+    if (!dashboardColumnExists($conn, $table, $gedungCol) || !dashboardColumnExists($conn, $table, $kamarCol)) return 0;
+
+    $safeTable = $conn->real_escape_string($table);
+    $safeGedung = $conn->real_escape_string($gedungCol);
+    $safeKamar = $conn->real_escape_string($kamarCol);
+    $sqlWhere = $where !== '' ? "WHERE {$where}" : '';
+
+    return dashboardSafeCountQuery($conn, "
+        SELECT COUNT(DISTINCT CONCAT(COALESCE(`{$safeGedung}`,''),'|',COALESCE(`{$safeKamar}`,''))) AS total
+        FROM `{$safeTable}`
+        {$sqlWhere}
+    ");
+}
+
+function dashboardCountTotalAsramaRooms(mysqli $conn): int
+{
+    $masterCandidates = [
+        ['table' => 'kamar_asrama', 'gedung' => 'gedung', 'kamar' => 'kamar'],
+        ['table' => 'asrama_kamar', 'gedung' => 'gedung', 'kamar' => 'kamar'],
+        ['table' => 'kamar', 'gedung' => 'gedung', 'kamar' => 'nomor_kamar'],
+        ['table' => 'kamar', 'gedung' => 'gedung', 'kamar' => 'kamar'],
+    ];
+
+    foreach ($masterCandidates as $cfg) {
+        $count = dashboardCountDistinctRoom($conn, $cfg['table'], $cfg['gedung'], $cfg['kamar']);
+        if ($count > 0) return $count;
+    }
+
+    // Fallback: jika belum ada master kamar, total kamar diambil dari kamar yang pernah tercatat di peserta_penginapan.
+    foreach (['peserta_penginapan', 'peserta_inap', 'penginapan_peserta'] as $table) {
+        if (!dashboardTableExists($conn, $table)) continue;
+        $gedungCol = dashboardFirstExistingColumn($conn, $table, ['gedung', 'nama_gedung', 'asrama']);
+        $kamarCol = dashboardFirstExistingColumn($conn, $table, ['kamar', 'nomor_kamar', 'no_kamar']);
+        if ($gedungCol !== '' && $kamarCol !== '') {
+            $count = dashboardCountDistinctRoom($conn, $table, $gedungCol, $kamarCol, "TRIM(COALESCE(`{$conn->real_escape_string($kamarCol)}`,'')) <> ''");
+            if ($count > 0) return $count;
+        }
+    }
+
+    return 0;
+}
+
+function dashboardCountUsedAsramaRooms(mysqli $conn): int
+{
+    foreach (['peserta_penginapan', 'peserta_inap', 'penginapan_peserta'] as $table) {
+        if (!dashboardTableExists($conn, $table)) continue;
+
+        $gedungCol = dashboardFirstExistingColumn($conn, $table, ['gedung', 'nama_gedung', 'asrama']);
+        $kamarCol = dashboardFirstExistingColumn($conn, $table, ['kamar', 'nomor_kamar', 'no_kamar']);
+        if ($gedungCol === '' || $kamarCol === '') continue;
+
+        $statusCol = dashboardFirstExistingColumn($conn, $table, ['status_inap', 'status', 'status_peserta']);
+        $checkinCol = dashboardFirstExistingColumn($conn, $table, ['checkin_date', 'tanggal_checkin', 'tanggal_masuk', 'tgl_masuk']);
+        $checkoutCol = dashboardFirstExistingColumn($conn, $table, ['checkout_date', 'tanggal_checkout', 'tanggal_keluar', 'tgl_keluar']);
+
+        $safeKamar = $conn->real_escape_string($kamarCol);
+        $whereParts = ["TRIM(COALESCE(`{$safeKamar}`,'')) <> ''"];
+
+        if ($statusCol !== '') {
+            $safeStatus = $conn->real_escape_string($statusCol);
+            $whereParts[] = "LOWER(TRIM(COALESCE(`{$safeStatus}`,''))) IN ('check-in','checkin','inap','belum check-in','belum checkin')";
+        } elseif ($checkinCol !== '' && $checkoutCol !== '') {
+            $safeIn = $conn->real_escape_string($checkinCol);
+            $safeOut = $conn->real_escape_string($checkoutCol);
+            $whereParts[] = "DATE(`{$safeIn}`) <= CURDATE() AND DATE(`{$safeOut}`) >= CURDATE()";
+        }
+
+        return dashboardCountDistinctRoom($conn, $table, $gedungCol, $kamarCol, implode(' AND ', $whereParts));
+    }
+
+    return 0;
+}
+
+function dashboardCountTotalClasses(mysqli $conn): int
+{
+    $candidates = [
+        ['table' => 'ruang_kelas', 'col' => 'nama_kelas'],
+        ['table' => 'ruang_kelas', 'col' => 'nama_ruang'],
+        ['table' => 'kelas', 'col' => 'nama_kelas'],
+        ['table' => 'kelas', 'col' => 'nama'],
+    ];
+
+    foreach ($candidates as $cfg) {
+        if (!dashboardTableExists($conn, $cfg['table']) || !dashboardColumnExists($conn, $cfg['table'], $cfg['col'])) continue;
+        $safeTable = $conn->real_escape_string($cfg['table']);
+        $safeCol = $conn->real_escape_string($cfg['col']);
+        $count = dashboardSafeCountQuery($conn, "SELECT COUNT(DISTINCT `{$safeCol}`) AS total FROM `{$safeTable}` WHERE TRIM(COALESCE(`{$safeCol}`,'')) <> ''");
+        if ($count > 0) return $count;
+    }
+
+    // Fallback dari data agenda/timetable yang pernah memakai kelas.
+    foreach (['timetable', 'agenda_kegiatan', 'jadwal_kegiatan', 'kegiatan'] as $table) {
+        if (!dashboardTableExists($conn, $table)) continue;
+        $classCol = dashboardFirstExistingColumn($conn, $table, ['kelas', 'ruang_kelas', 'nama_kelas', 'ruang']);
+        if ($classCol !== '') {
+            $safeTable = $conn->real_escape_string($table);
+            $safeCol = $conn->real_escape_string($classCol);
+            $count = dashboardSafeCountQuery($conn, "SELECT COUNT(DISTINCT `{$safeCol}`) AS total FROM `{$safeTable}` WHERE TRIM(COALESCE(`{$safeCol}`,'')) <> ''");
+            if ($count > 0) return $count;
+        }
+    }
+
+    return 0;
+}
+
+function dashboardCountUsedClasses(mysqli $conn): int
+{
+    foreach (['timetable', 'agenda_kegiatan', 'jadwal_kegiatan', 'kegiatan'] as $table) {
+        if (!dashboardTableExists($conn, $table)) continue;
+
+        $classCol = dashboardFirstExistingColumn($conn, $table, ['kelas', 'ruang_kelas', 'nama_kelas', 'ruang']);
+        if ($classCol === '') continue;
+
+        $startCol = dashboardFirstExistingColumn($conn, $table, ['start_date', 'tanggal_mulai', 'mulai', 'tgl_mulai', 'tanggal']);
+        $endCol = dashboardFirstExistingColumn($conn, $table, ['end_date', 'tanggal_selesai', 'selesai', 'tgl_selesai', 'tanggal']);
+
+        $safeTable = $conn->real_escape_string($table);
+        $safeClass = $conn->real_escape_string($classCol);
+
+        $where = "WHERE TRIM(COALESCE(`{$safeClass}`,'')) <> ''";
+        if ($startCol !== '') {
+            $safeStart = $conn->real_escape_string($startCol);
+            $safeEnd = $endCol !== '' ? $conn->real_escape_string($endCol) : $safeStart;
+            $where .= " AND DATE(`{$safeStart}`) <= CURDATE() AND DATE(`{$safeEnd}`) >= CURDATE()";
+        }
+
+        return dashboardSafeCountQuery($conn, "
+            SELECT COUNT(DISTINCT `{$safeClass}`) AS total
+            FROM `{$safeTable}`
+            {$where}
+        ");
+    }
+
+    return 0;
+}
+
+$dashKerusakanGedung = dashboardFetchKerusakanGedung($conn);
+$dashKerusakanSummary = dashboardFetchKerusakanSummary($conn);
+
+$dashTotalKamarAsrama = dashboardCountTotalAsramaRooms($conn);
+$dashKamarTerpakai = dashboardCountUsedAsramaRooms($conn);
+$dashKamarKosong = max(0, $dashTotalKamarAsrama - $dashKamarTerpakai);
+
+$dashTotalKelas = dashboardCountTotalClasses($conn);
+$dashKelasTerpakai = dashboardCountUsedClasses($conn);
+$dashKelasKosong = max(0, $dashTotalKelas - $dashKelasTerpakai);
+
 
 
 ?>
@@ -2499,6 +2961,1280 @@ if ($execGpsTidakValid > 0) {
             font-size: .68rem !important;
         }
     }
+
+    /* ===== TREN 7 HARI + AGENDA BULANAN DUA KOLOM ===== */
+    .trend-agenda-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+        gap: .75rem;
+        margin-top: .75rem;
+        align-items: stretch;
+    }
+
+    .trend-agenda-grid>.trend-full-card,
+    .trend-agenda-grid>.presensi-soft-card {
+        width: 100%;
+        min-width: 0;
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    .trend-agenda-grid .agenda-card-body {
+        max-height: 245px;
+        overflow-y: auto;
+        padding-right: 2px;
+    }
+
+    .trend-full-card {
+        margin-top: 0;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #e0f2fe;
+        border-radius: 22px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+        padding: .95rem;
+        box-sizing: border-box;
+    }
+
+    .trend-line-wrap {
+        width: 100%;
+        margin-top: .35rem;
+        overflow: hidden;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .trend-line-svg {
+        display: block;
+        width: 100%;
+        height: 230px;
+        overflow: visible;
+    }
+
+
+
+    .trend-modern-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 255px;
+        margin-top: .45rem;
+        padding: .65rem .35rem .15rem;
+        border-radius: 18px;
+        background:
+            radial-gradient(circle at 88% 6%, rgba(99, 102, 241, .10), transparent 32%),
+            linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #eef2ff;
+        overflow: hidden;
+    }
+
+    .trend-modern-chart-wrap canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .trend-grid-line {
+        stroke: #e2e8f0;
+        stroke-width: 1;
+        stroke-dasharray: 4 5;
+    }
+
+    .trend-axis-label {
+        fill: #94a3b8;
+        font-size: 11px;
+        font-weight: 700;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .trend-date-label {
+        fill: #64748b;
+        font-size: 11px;
+        font-weight: 800;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .trend-area {
+        fill: url(#trendAreaGradient);
+    }
+
+    .trend-line-path {
+        fill: none;
+        stroke: #4f46e5;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        filter: drop-shadow(0 5px 7px rgba(79, 70, 229, .18));
+    }
+
+    .trend-point-halo {
+        fill: rgba(79, 70, 229, .12);
+    }
+
+    .trend-point {
+        fill: #fff;
+        stroke: #4f46e5;
+        stroke-width: 3;
+    }
+
+    .trend-point-value {
+        fill: #1e293b;
+        font-size: 12px;
+        font-weight: 900;
+        text-anchor: middle;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .trend-summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        flex-wrap: wrap;
+        margin-top: .25rem;
+        padding-top: .7rem;
+        border-top: 1px solid #eef2f7;
+        color: #64748b;
+        font-size: .68rem;
+        font-weight: 800;
+    }
+
+    .trend-summary-row strong {
+        color: #0f172a;
+        font-weight: 900;
+    }
+
+    .agenda-card-body {
+        display: grid;
+        gap: .55rem;
+    }
+
+    .agenda-item {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) auto;
+        gap: .7rem;
+        align-items: center;
+        padding: .68rem .72rem;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .agenda-date-box {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        background: #eef2ff;
+        color: #4338ca;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .agenda-date-box strong {
+        font-size: .9rem;
+        font-weight: 900;
+    }
+
+    .agenda-date-box span {
+        margin-top: 3px;
+        font-size: .55rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .agenda-info {
+        min-width: 0;
+    }
+
+    .agenda-info strong {
+        display: block;
+        font-size: .75rem;
+        color: #0f172a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .agenda-info span {
+        display: block;
+        margin-top: .18rem;
+        font-size: .64rem;
+        color: #64748b;
+        font-weight: 700;
+    }
+
+    .agenda-status {
+        border-radius: 999px;
+        padding: .32rem .48rem;
+        font-size: .59rem;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .agenda-status.ongoing {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .agenda-status.upcoming {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .agenda-status.done {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .agenda-card-footer {
+        margin: .75rem -.9rem -.9rem;
+        border-top: 1px solid #e2e8f0;
+        padding: .72rem .9rem;
+        text-align: center;
+    }
+
+    .agenda-card-footer a {
+        color: #2563eb;
+        font-size: .72rem;
+        font-weight: 900;
+        text-decoration: none;
+    }
+
+    @media (max-width: 900px) {
+        .trend-agenda-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .trend-agenda-grid .agenda-card-body {
+            max-height: none;
+        }
+    }
+
+    @media (max-width: 520px) {
+        .trend-full-card {
+            border-radius: 18px;
+            padding: .85rem;
+        }
+
+        .trend-line-svg {
+            height: 205px;
+        }
+
+        .trend-modern-chart-wrap {
+            height: 220px;
+            padding: .5rem .15rem .1rem;
+            border-radius: 15px;
+        }
+
+        .trend-axis-label,
+        .trend-date-label {
+            font-size: 10px;
+        }
+
+        .trend-point-value {
+            font-size: 11px;
+        }
+
+        .agenda-item {
+            grid-template-columns: 38px minmax(0, 1fr);
+        }
+
+        .agenda-date-box {
+            width: 38px;
+            height: 38px;
+        }
+
+        .agenda-status {
+            grid-column: 2;
+            justify-self: start;
+        }
+    }
+
+
+    /* ===== DONUT KOMPOSISI AGENDA BULAN INI ===== */
+    .agenda-donut-card {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .agenda-donut-content {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: minmax(170px, .95fr) minmax(155px, 1.05fr);
+        gap: .8rem;
+        align-items: center;
+    }
+
+    .agenda-donut-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 245px;
+        min-height: 210px;
+    }
+
+    .agenda-donut-chart-wrap canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .agenda-donut-center {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        text-align: center;
+    }
+
+    .agenda-donut-center strong {
+        color: #0f172a;
+        font-size: 1.55rem;
+        line-height: 1;
+        font-weight: 900;
+        letter-spacing: -.05em;
+    }
+
+    .agenda-donut-center span {
+        margin-top: .28rem;
+        color: #64748b;
+        font-size: .62rem;
+        line-height: 1;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+
+    .agenda-donut-legend {
+        display: grid;
+        gap: .48rem;
+        align-content: center;
+        min-width: 0;
+        max-height: 245px;
+        overflow-y: auto;
+        padding-right: 3px;
+    }
+
+    .agenda-donut-legend-item {
+        display: grid;
+        grid-template-columns: 10px minmax(0, 1fr) auto;
+        gap: .5rem;
+        align-items: center;
+        padding: .55rem .6rem;
+        border-radius: 13px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .agenda-donut-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: #4f46e5;
+    }
+
+    .agenda-donut-label {
+        min-width: 0;
+        color: #475569;
+        font-size: .67rem;
+        line-height: 1.2;
+        font-weight: 800;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .agenda-donut-category {
+        min-width: 0;
+    }
+
+    .agenda-donut-legend-item {
+        width: 100%;
+        cursor: pointer;
+        text-align: left;
+        font-family: inherit;
+        transition: border-color .18s ease, background .18s ease, transform .18s ease;
+    }
+
+    .agenda-donut-legend-item:hover,
+    .agenda-donut-legend-item.is-open {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        transform: translateY(-1px);
+    }
+
+    .agenda-donut-chevron {
+        color: #94a3b8;
+        font-size: .62rem;
+        transition: transform .18s ease;
+    }
+
+    .agenda-donut-legend-item.is-open .agenda-donut-chevron {
+        transform: rotate(180deg);
+        color: #2563eb;
+    }
+
+    .agenda-donut-count {
+        color: #0f172a;
+        font-size: .72rem;
+        font-weight: 900;
+    }
+
+    .agenda-donut-detail {
+        display: none;
+        margin-top: .42rem;
+        padding: .55rem;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #dbeafe;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 8px 18px rgba(15, 23, 42, .05);
+        max-height: 185px;
+        overflow-y: auto;
+    }
+
+    .agenda-donut-detail.is-open {
+        display: grid;
+        gap: .5rem;
+        animation: agendaDetailIn .18s ease-out;
+    }
+
+    @keyframes agendaDetailIn {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .agenda-donut-training {
+        position: relative;
+        padding: .62rem .65rem .62rem .72rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .035);
+    }
+
+    .agenda-donut-training::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: .55rem;
+        bottom: .55rem;
+        width: 3px;
+        border-radius: 999px;
+        background: #cbd5e1;
+    }
+
+    .agenda-donut-training:last-child {
+        margin-bottom: 0;
+    }
+
+    .agenda-donut-training-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .55rem;
+    }
+
+    .agenda-donut-training strong {
+        display: block;
+        min-width: 0;
+        color: #0f172a;
+        font-size: .65rem;
+        line-height: 1.42;
+        font-weight: 850;
+    }
+
+    .agenda-donut-training-date {
+        display: flex;
+        align-items: center;
+        gap: .32rem;
+        margin-top: .3rem;
+        color: #64748b;
+        font-size: .59rem;
+        line-height: 1.3;
+        font-weight: 700;
+    }
+
+    .agenda-donut-status {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: .26rem;
+        padding: .28rem .46rem;
+        border-radius: 999px;
+        font-size: .56rem;
+        line-height: 1;
+        font-weight: 900;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .agenda-donut-status::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 999px;
+        background: currentColor;
+    }
+
+    .agenda-donut-status.done {
+        color: #475569;
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+    }
+
+    .agenda-donut-status.ongoing {
+        color: #15803d;
+        background: #dcfce7;
+        border-color: #bbf7d0;
+    }
+
+    .agenda-donut-status.upcoming {
+        color: #1d4ed8;
+        background: #dbeafe;
+        border-color: #bfdbfe;
+    }
+
+    .agenda-donut-empty {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @media (max-width: 1100px) and (min-width: 901px) {
+        .agenda-donut-content {
+            grid-template-columns: 1fr;
+            gap: .4rem;
+        }
+
+        .agenda-donut-chart-wrap {
+            height: 195px;
+            min-height: 180px;
+        }
+
+        .agenda-donut-legend {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            max-height: 105px;
+        }
+    }
+
+    @media (max-width: 520px) {
+        .agenda-donut-content {
+            grid-template-columns: 1fr;
+        }
+
+        .agenda-donut-chart-wrap {
+            height: 220px;
+        }
+
+        .agenda-donut-legend {
+            max-height: none;
+        }
+    }
+
+    /* ===== MONITORING KERUSAKAN PIMPINAN - SIMPLE & RINGKAS ===== */
+    .facility-monitor-grid {
+        display: grid;
+        /* Disamakan persis dengan .exec-panel-grid di atas */
+        grid-template-columns: 1.1fr .9fr;
+        gap: .75rem;
+        margin: 0 1rem 1rem;
+        width: auto;
+        max-width: none;
+        box-sizing: border-box;
+        align-items: stretch;
+    }
+
+    .facility-card {
+        background: #fff;
+        border: 1px solid #eef2f7;
+        border-radius: 22px;
+        padding: .9rem;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        height: 100%;
+    }
+
+    .facility-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: .75rem;
+        margin-bottom: .75rem;
+    }
+
+    .facility-title {
+        font-size: .86rem;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1.15;
+    }
+
+    .facility-sub {
+        margin-top: .15rem;
+        font-size: .66rem;
+        color: #94a3b8;
+        font-weight: 700;
+    }
+
+    .facility-link {
+        border-radius: 999px;
+        padding: .38rem .6rem;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: .65rem;
+        font-weight: 900;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .damage-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: .5rem;
+        margin-bottom: .75rem;
+    }
+
+    .damage-summary-box {
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: .65rem .55rem;
+        min-height: 70px;
+    }
+
+    .damage-summary-label {
+        font-size: .6rem;
+        font-weight: 900;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        line-height: 1.15;
+    }
+
+    .damage-summary-value {
+        margin-top: .34rem;
+        font-size: 1.22rem;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1;
+        letter-spacing: -.04em;
+    }
+
+    .damage-summary-box.active .damage-summary-value {
+        color: #b91c1c;
+    }
+
+    .damage-summary-box.process .damage-summary-value {
+        color: #c2410c;
+    }
+
+    .damage-summary-box.done .damage-summary-value {
+        color: #15803d;
+    }
+
+    .damage-list {
+        display: grid;
+        gap: .58rem;
+        max-height: 620px;
+        overflow-y: auto;
+        padding-right: 2px;
+    }
+
+    .damage-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .damage-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .damage-list::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+    }
+
+    .damage-row-simple {
+        padding: .68rem .72rem;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .damage-row-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .7rem;
+        margin-bottom: .5rem;
+    }
+
+    .damage-name {
+        font-size: .78rem;
+        font-weight: 900;
+        color: #0f172a;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .damage-total {
+        font-size: .68rem;
+        font-weight: 900;
+        color: #475569;
+        white-space: nowrap;
+    }
+
+    .damage-progress {
+        height: 9px;
+        border-radius: 999px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .damage-progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #38bdf8, #0284c7);
+    }
+
+    .damage-row-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .55rem;
+        margin-top: .48rem;
+        font-size: .64rem;
+        font-weight: 800;
+        color: #64748b;
+    }
+
+    .damage-status-inline {
+        display: inline-flex;
+        gap: .45rem;
+        flex-wrap: wrap;
+    }
+
+    .damage-status-inline span b {
+        color: #0f172a;
+    }
+
+    .availability-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .6rem;
+    }
+
+    .availability-box {
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: .75rem;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .availability-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: .55rem;
+        background: #e0f2fe;
+        color: #0284c7;
+    }
+
+    .availability-label {
+        font-size: .66rem;
+        font-weight: 900;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .availability-value {
+        margin-top: .25rem;
+        font-size: 1.45rem;
+        font-weight: 900;
+        color: #0f172a;
+        line-height: 1;
+        letter-spacing: -.04em;
+    }
+
+    .availability-note {
+        margin-top: .35rem;
+        font-size: .65rem;
+        font-weight: 700;
+        color: #64748b;
+        line-height: 1.35;
+    }
+
+    @media (max-width: 900px) {
+        .facility-monitor-grid {
+            grid-template-columns: 1fr;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            box-sizing: border-box !important;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .damage-summary-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 520px) {
+        .facility-card {
+            border-radius: 20px;
+            padding: .85rem;
+        }
+
+        .availability-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+
+    /* ===== FINAL ALIGN CARD DASHBOARD =====
+       Kerusakan Gedung dan Ketersediaan dibuat sejajar dengan KPI Bulan Ini / Perlu Perhatian. */
+    body[data-page="beranda"] .facility-monitor-grid {
+        display: grid !important;
+        grid-template-columns: 1.1fr .9fr !important;
+        gap: .75rem !important;
+        margin: 0 1rem 1rem !important;
+        width: auto !important;
+        max-width: none !important;
+        box-sizing: border-box !important;
+        align-items: stretch !important;
+    }
+
+    body[data-page="beranda"] .facility-card {
+        width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        height: 100% !important;
+    }
+
+    body[data-page="beranda"] .damage-summary-grid,
+    body[data-page="beranda"] .availability-grid {
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    body[data-page="beranda"] .damage-list {
+        max-height: 430px !important;
+        overflow-y: auto !important;
+        padding-right: 2px !important;
+    }
+
+    @media (max-width: 900px) {
+        body[data-page="beranda"] .facility-monitor-grid {
+            grid-template-columns: 1fr !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+    }
+
+    @media (max-width: 520px) {
+
+        body[data-page="beranda"] .damage-summary-grid,
+        body[data-page="beranda"] .availability-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        body[data-page="beranda"] .damage-list {
+            max-height: 520px !important;
+        }
+    }
+
+
+    /* ===== FINAL COMPACT FACILITY CARDS =====
+       Tinggi Kerusakan Gedung dipadatkan dan disamakan dengan card Ketersediaan. */
+    body[data-page="beranda"] .facility-monitor-grid {
+        align-items: start !important;
+    }
+
+    body[data-page="beranda"] .facility-monitor-grid>.facility-card {
+        height: 320px !important;
+        min-height: 320px !important;
+        max-height: 320px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+
+    body[data-page="beranda"] .facility-head {
+        flex: 0 0 auto !important;
+        margin-bottom: .58rem !important;
+    }
+
+    body[data-page="beranda"] .damage-summary-grid {
+        flex: 0 0 auto !important;
+        margin-bottom: .55rem !important;
+        gap: .42rem !important;
+    }
+
+    body[data-page="beranda"] .damage-summary-box {
+        min-height: 58px !important;
+        padding: .52rem .5rem !important;
+        border-radius: 14px !important;
+    }
+
+    body[data-page="beranda"] .damage-summary-value {
+        margin-top: .24rem !important;
+        font-size: 1.08rem !important;
+    }
+
+    body[data-page="beranda"] .damage-list {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain !important;
+        padding-right: 4px !important;
+        gap: .42rem !important;
+    }
+
+    body[data-page="beranda"] .damage-row-simple {
+        padding: .52rem .58rem !important;
+        border-radius: 13px !important;
+    }
+
+    body[data-page="beranda"] .damage-row-top {
+        margin-bottom: .34rem !important;
+    }
+
+    body[data-page="beranda"] .damage-progress {
+        height: 7px !important;
+    }
+
+    body[data-page="beranda"] .damage-row-bottom {
+        margin-top: .34rem !important;
+        font-size: .61rem !important;
+    }
+
+    body[data-page="beranda"] .availability-grid {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        align-content: stretch !important;
+    }
+
+    body[data-page="beranda"] .availability-box {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+    }
+
+    @media (max-width: 900px) {
+        body[data-page="beranda"] .facility-monitor-grid>.facility-card {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+        }
+
+        body[data-page="beranda"] .damage-list {
+            max-height: 300px !important;
+        }
+
+        body[data-page="beranda"] .availability-box {
+            min-height: 130px !important;
+        }
+    }
+
+    /* ===== DETAIL MONITORING PRESENSI: 2 KOLOM SEJAJAR ===== */
+    .monitoring-presensi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        align-items: stretch;
+    }
+
+    .monitoring-presensi-grid .presensi-soft-card {
+        height: 100%;
+        min-width: 0;
+    }
+
+    @media (max-width: 768px) {
+        .monitoring-presensi-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+
+    /* ===== FINAL: TINGGI CARD DASHBOARD DINAIKKAN SEDIKIT =====
+       Menjaga card dua kolom tetap sejajar dan memastikan isi tidak terpotong. */
+    @media (min-width: 901px) {
+        body[data-page="beranda"] .trend-agenda-grid {
+            align-items: stretch !important;
+        }
+
+        body[data-page="beranda"] .trend-agenda-grid>.trend-full-card,
+        body[data-page="beranda"] .trend-agenda-grid>.presensi-soft-card {
+            height: 390px !important;
+            min-height: 390px !important;
+            max-height: 390px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+
+        body[data-page="beranda"] .trend-modern-chart-wrap {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            height: auto !important;
+        }
+
+        body[data-page="beranda"] .trend-summary-row {
+            flex: 0 0 auto !important;
+        }
+
+        body[data-page="beranda"] .trend-agenda-grid .agenda-card-body {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain !important;
+            padding-right: 5px !important;
+        }
+
+        body[data-page="beranda"] .trend-agenda-grid .agenda-card-footer {
+            flex: 0 0 auto !important;
+            margin-top: .7rem !important;
+        }
+
+        body[data-page="beranda"] .facility-monitor-grid {
+            align-items: stretch !important;
+        }
+
+        body[data-page="beranda"] .facility-monitor-grid>.facility-card {
+            height: 370px !important;
+            min-height: 370px !important;
+            max-height: 370px !important;
+        }
+
+        body[data-page="beranda"] .availability-grid {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            align-items: stretch !important;
+        }
+
+        body[data-page="beranda"] .availability-box {
+            min-height: 0 !important;
+            height: 100% !important;
+        }
+    }
+
+    @media (max-width: 900px) {
+
+        body[data-page="beranda"] .trend-agenda-grid>.trend-full-card,
+        body[data-page="beranda"] .trend-agenda-grid>.presensi-soft-card,
+        body[data-page="beranda"] .facility-monitor-grid>.facility-card {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+
+        body[data-page="beranda"] .trend-agenda-grid .agenda-card-body {
+            max-height: 330px !important;
+            overflow-y: auto !important;
+        }
+    }
+
+
+    /* ===== FINAL: KATEGORI DONUT MODERN, SIMPLE, DAN RAPI ===== */
+    .agenda-donut-legend {
+        gap: .42rem !important;
+        padding: 2px 5px 2px 1px !important;
+        align-content: start !important;
+    }
+
+    .agenda-donut-category {
+        position: relative;
+        min-width: 0;
+    }
+
+    .agenda-donut-legend-item {
+        display: grid !important;
+        grid-template-columns: 10px minmax(0, 1fr) auto 22px !important;
+        gap: .55rem !important;
+        align-items: center !important;
+        width: 100% !important;
+        min-height: 46px !important;
+        padding: .62rem .68rem !important;
+        border: 1px solid #e5eaf1 !important;
+        border-radius: 14px !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, .035) !important;
+        transform: none !important;
+        outline: none !important;
+        overflow: hidden !important;
+    }
+
+    .agenda-donut-legend-item:hover {
+        border-color: #cbd5e1 !important;
+        background: #f8fafc !important;
+        box-shadow: 0 5px 14px rgba(15, 23, 42, .055) !important;
+    }
+
+    .agenda-donut-legend-item:focus-visible {
+        border-color: #93c5fd !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .12) !important;
+    }
+
+    .agenda-donut-legend-item.is-open {
+        border-color: #bfdbfe !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+        box-shadow: 0 7px 18px rgba(37, 99, 235, .08) !important;
+    }
+
+    .agenda-donut-dot {
+        width: 9px !important;
+        height: 9px !important;
+        box-shadow: 0 0 0 4px rgba(148, 163, 184, .10) !important;
+    }
+
+    .agenda-donut-label {
+        color: #1e293b !important;
+        font-size: .69rem !important;
+        font-weight: 850 !important;
+        letter-spacing: -.01em !important;
+    }
+
+    .agenda-donut-count {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 26px !important;
+        height: 24px !important;
+        padding: 0 .45rem !important;
+        border-radius: 999px !important;
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        font-size: .66rem !important;
+        font-weight: 900 !important;
+        line-height: 1 !important;
+    }
+
+    .agenda-donut-legend-item.is-open .agenda-donut-count {
+        background: #dbeafe !important;
+        color: #1d4ed8 !important;
+    }
+
+    .agenda-donut-chevron {
+        width: 22px !important;
+        height: 22px !important;
+        border-radius: 999px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        justify-self: end !important;
+        color: #94a3b8 !important;
+        background: #f8fafc !important;
+        font-size: .55rem !important;
+        transition: transform .2s ease, color .2s ease, background .2s ease !important;
+    }
+
+    .agenda-donut-legend-item.is-open .agenda-donut-chevron {
+        color: #2563eb !important;
+        background: #eaf2ff !important;
+        transform: rotate(180deg) !important;
+    }
+
+    .agenda-donut-detail {
+        margin: .4rem 0 .08rem !important;
+        padding: .45rem !important;
+        border: 1px solid #e7edf5 !important;
+        border-radius: 14px !important;
+        background: #f8fafc !important;
+        box-shadow: none !important;
+        max-height: 205px !important;
+    }
+
+    .agenda-donut-detail.is-open {
+        gap: .42rem !important;
+    }
+
+    .agenda-donut-training {
+        padding: .58rem .62rem !important;
+        border: 1px solid #e8edf3 !important;
+        border-radius: 12px !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        transition: border-color .18s ease, box-shadow .18s ease !important;
+    }
+
+    .agenda-donut-training:hover {
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .04) !important;
+    }
+
+    .agenda-donut-training::before {
+        display: none !important;
+    }
+
+    .agenda-donut-training-top {
+        align-items: center !important;
+        gap: .45rem !important;
+    }
+
+    .agenda-donut-training strong {
+        font-size: .64rem !important;
+        line-height: 1.4 !important;
+        color: #172033 !important;
+    }
+
+    .agenda-donut-training-date {
+        margin-top: .28rem !important;
+        font-size: .58rem !important;
+        color: #64748b !important;
+    }
+
+    .agenda-donut-status {
+        padding: .27rem .43rem !important;
+        font-size: .53rem !important;
+    }
+
+    @media (max-width: 520px) {
+        .agenda-donut-legend-item {
+            grid-template-columns: 9px minmax(0, 1fr) auto 21px !important;
+            min-height: 44px !important;
+            padding: .58rem .62rem !important;
+            border-radius: 13px !important;
+        }
+
+        .agenda-donut-label {
+            font-size: .67rem !important;
+        }
+
+        .agenda-donut-count {
+            min-width: 24px !important;
+            height: 22px !important;
+            font-size: .63rem !important;
+        }
+    }
 </style>
 
 <body data-page="beranda">
@@ -2582,7 +4318,114 @@ if ($execGpsTidakValid > 0) {
                 </div>
             </div>
 
-            <div class="exec-panel-grid">
+            <div class="trend-agenda-grid">
+                <div class="trend-full-card">
+                    <div class="presensi-card-head">
+                        <div>
+                            <div class="presensi-card-title">Tren Kehadiran 7 Hari</div>
+                            <div class="presensi-sub">Jumlah pegawai presensi masuk setiap hari</div>
+                        </div>
+                        <a href="riwayat_absensi.php" class="presensi-card-link">Detail</a>
+                    </div>
+                    <?php
+                    $trendValues = array_map('intval', $dashChart7ValuesOut ?: array_fill(0, 7, 0));
+                    $trendLabels = $dashChart7Labels ?: [];
+                    $trendAverage = count($trendValues) ? round(array_sum($trendValues) / count($trendValues), 1) : 0;
+                    $trendLast = $trendValues ? (int)end($trendValues) : 0;
+                    $trendPrevious = count($trendValues) > 1 ? (int)$trendValues[count($trendValues) - 2] : 0;
+                    $trendChange = $trendLast - $trendPrevious;
+                    ?>
+                    <div class="trend-modern-chart-wrap">
+                        <canvas id="trendKehadiranChart" aria-label="Grafik tren kehadiran tujuh hari terakhir" role="img"></canvas>
+                    </div>
+                    <div class="trend-summary-row">
+                        <span>Rata-rata <strong><?= number_format($trendAverage, 1, ',', '.') ?> pegawai/hari</strong></span>
+                        <span>Hari terakhir <strong><?= $trendLast ?> pegawai</strong></span>
+                        <span>Perubahan <strong><?= $trendChange > 0 ? '+' : '' ?><?= $trendChange ?></strong> dari hari sebelumnya</span>
+                    </div>
+                </div>
+                <div class="presensi-soft-card agenda-donut-card">
+                    <div class="presensi-card-head">
+                        <div>
+                            <div class="presensi-card-title">Komposisi Agenda Bulan Ini</div>
+                            <div class="presensi-sub"><?= date('F Y') ?> berdasarkan kategori kegiatan</div>
+                        </div>
+                        <span class="presensi-card-link"><?= (int)$dashTotalAgendaBulanIni ?> agenda</span>
+                    </div>
+
+                    <?php if (empty($dashKomposisiAgenda)): ?>
+                        <div class="presensi-empty agenda-donut-empty">Belum ada data agenda yang dapat dikelompokkan pada bulan ini.</div>
+                    <?php else: ?>
+                        <div class="agenda-donut-content">
+                            <div class="agenda-donut-chart-wrap">
+                                <canvas id="agendaKomposisiChart" aria-label="Grafik komposisi agenda bulan ini" role="img"></canvas>
+                                <div class="agenda-donut-center" aria-hidden="true">
+                                    <strong><?= (int)$dashTotalAgendaBulanIni ?></strong>
+                                    <span>Agenda</span>
+                                </div>
+                            </div>
+                            <div class="agenda-donut-legend" id="agendaDonutLegend">
+                                <?php foreach ($dashKomposisiAgenda as $idxKategori => $kategoriAgenda): ?>
+                                    <?php
+                                    $kategoriKey = 'agenda-category-' . (int)$idxKategori;
+                                    $agendaItems = is_array($kategoriAgenda['items'] ?? null) ? $kategoriAgenda['items'] : [];
+                                    ?>
+                                    <div class="agenda-donut-category" data-category-index="<?= (int)$idxKategori ?>">
+                                        <button type="button" class="agenda-donut-legend-item" data-target="<?= $kategoriKey ?>" aria-expanded="false">
+                                            <span class="agenda-donut-dot" data-color-index="<?= (int)$idxKategori ?>"></span>
+                                            <span class="agenda-donut-label"><?= htmlspecialchars($kategoriAgenda['kategori'] ?? 'Lainnya', ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="agenda-donut-count"><?= (int)($kategoriAgenda['total'] ?? 0) ?></span>
+                                            <i class="fa-solid fa-chevron-down agenda-donut-chevron" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="agenda-donut-detail" id="<?= $kategoriKey ?>">
+                                            <?php if (!$agendaItems): ?>
+                                                <div class="presensi-empty">Belum ada rincian pelatihan.</div>
+                                                <?php else: foreach ($agendaItems as $agendaItem): ?>
+                                                    <?php
+                                                    $mulaiTs = strtotime((string)($agendaItem['mulai'] ?? ''));
+                                                    $selesaiTs = strtotime((string)($agendaItem['selesai'] ?? $agendaItem['mulai'] ?? ''));
+                                                    $rentangAgenda = $mulaiTs ? date('d M Y', $mulaiTs) : '-';
+                                                    if ($selesaiTs && $mulaiTs && date('Y-m-d', $selesaiTs) !== date('Y-m-d', $mulaiTs)) {
+                                                        $rentangAgenda .= ' - ' . date('d M Y', $selesaiTs);
+                                                    }
+                                                    ?>
+                                                    <?php
+                                                    $mulaiDate = $mulaiTs ? date('Y-m-d', $mulaiTs) : $todaySql;
+                                                    $selesaiDate = $selesaiTs ? date('Y-m-d', $selesaiTs) : $mulaiDate;
+                                                    if ($todaySql >= $mulaiDate && $todaySql <= $selesaiDate) {
+                                                        $statusAgendaClass = 'ongoing';
+                                                        $statusAgendaLabel = 'Berlangsung';
+                                                    } elseif ($todaySql < $mulaiDate) {
+                                                        $statusAgendaClass = 'upcoming';
+                                                        $statusAgendaLabel = 'Akan datang';
+                                                    } else {
+                                                        $statusAgendaClass = 'done';
+                                                        $statusAgendaLabel = 'Selesai';
+                                                    }
+                                                    ?>
+                                                    <div class="agenda-donut-training">
+                                                        <div class="agenda-donut-training-top">
+                                                            <strong><?= htmlspecialchars($agendaItem['nama'] ?? '-', ENT_QUOTES, 'UTF-8') ?></strong>
+                                                            <span class="agenda-donut-status <?= $statusAgendaClass ?>"><?= $statusAgendaLabel ?></span>
+                                                        </div>
+                                                        <span class="agenda-donut-training-date"><i class="fa-regular fa-calendar"></i> <?= htmlspecialchars($rentangAgenda, ENT_QUOTES, 'UTF-8') ?></span>
+                                                    </div>
+                                            <?php endforeach;
+                                            endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="agenda-card-footer">
+                        <a href="timetable.php"><i class="fa-solid fa-calendar-days"></i> Lihat Agenda</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- <div class="exec-panel-grid">
                 <div class="exec-panel">
                     <div class="exec-panel-head">
                         <div>
@@ -2635,32 +4478,12 @@ if ($execGpsTidakValid > 0) {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
-            <div class="exec-ai-summary">
-                <div class="exec-ai-icon"><i class="fa-solid fa-robot"></i></div>
-                <div>
-                    <strong>Ringkasan AI</strong>
-                    <small class="exec-ai-meta">Diperbarui otomatis • <?= date('d M Y') ?> • <?= date('H:i') ?> WIB</small>
-                    <p class="exec-ai-copy"><?= htmlspecialchars($execAiSummary, ENT_QUOTES, 'UTF-8') ?></p>
-                    <?php if (!empty($execPelatihanNames)): ?>
-                        <div class="exec-ai-training">
-                            <div class="exec-ai-training-title">Pelatihan/kegiatan yang sedang berlangsung</div>
-                            <ol class="exec-ai-training-list">
-                                <?php foreach (array_slice($execPelatihanNames, 0, 5) as $idxPelatihan => $namaPelatihan): ?>
-                                    <li><span><?= htmlspecialchars($namaPelatihan, ENT_QUOTES, 'UTF-8') ?></span></li>
-                                <?php endforeach; ?>
-                                <?php if (count($execPelatihanNames) > 5): ?>
-                                    <li class="more"><span>+<?= count($execPelatihanNames) - 5 ?> kegiatan lainnya</span></li>
-                                <?php endif; ?>
-                            </ol>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
+
         </section>
 
-        <div class="final-section-title">
+        <!-- <div class="final-section-title">
             <span>Ringkasan Hari Ini</span>
             <small><?= date('d M Y') ?></small>
         </div>
@@ -2690,7 +4513,83 @@ if ($execGpsTidakValid > 0) {
                 <div class="ops-label-final">Rapat</div>
                 <div class="ops-value-final"><?= (int)$dashOps['rapat_today'] ?></div>
             </div>
+        </div> -->
+
+        <div class="facility-monitor-grid">
+            <div class="facility-card">
+                <div class="facility-head">
+                    <div>
+                        <div class="facility-title">Kerusakan Gedung</div>
+                        <div class="facility-sub">Total, belum diperbaiki, dan selesai</div>
+                    </div>
+                    <a href="laporan_kerusakan.php" class="facility-link">Detail</a>
+                </div>
+
+                <div class="damage-summary-grid">
+                    <div class="damage-summary-box">
+                        <div class="damage-summary-label">Total</div>
+                        <div class="damage-summary-value"><?= (int)$dashKerusakanSummary['total'] ?></div>
+                    </div>
+                    <div class="damage-summary-box active">
+                        <div class="damage-summary-label">Belum Diperbaiki</div>
+                        <div class="damage-summary-value"><?= (int)$dashKerusakanSummary['belum'] ?></div>
+                    </div>
+                    <div class="damage-summary-box done">
+                        <div class="damage-summary-label">Selesai</div>
+                        <div class="damage-summary-value"><?= (int)$dashKerusakanSummary['selesai'] ?></div>
+                    </div>
+                </div>
+
+                <div class="damage-list">
+                    <?php if (empty($dashKerusakanGedung)): ?>
+                        <div class="presensi-empty">Belum ada data kerusakan per gedung.</div>
+                        <?php else: foreach ($dashKerusakanGedung as $kg): ?>
+                            <div class="damage-row-simple">
+                                <div class="damage-row-top">
+                                    <div class="damage-name"><?= htmlspecialchars($kg['gedung'] ?: '-', ENT_QUOTES, 'UTF-8') ?></div>
+                                    <div class="damage-total"><?= (int)$kg['total'] ?> laporan</div>
+                                </div>
+                                <div class="damage-progress" title="<?= (int)$kg['persen_selesai'] ?>% selesai">
+                                    <div class="damage-progress-fill" style="width:<?= max(0, min(100, (int)$kg['persen_selesai'])) ?>%"></div>
+                                </div>
+                                <div class="damage-row-bottom">
+                                    <span><?= (int)$kg['persen_selesai'] ?>% selesai</span>
+                                    <span class="damage-status-inline">
+                                        <span>Belum <b><?= (int)$kg['belum'] ?></b></span>
+                                        <span>Selesai <b><?= (int)$kg['selesai'] ?></b></span>
+                                    </span>
+                                </div>
+                            </div>
+                    <?php endforeach;
+                    endif; ?>
+                </div>
+            </div>
+
+            <div class="facility-card">
+                <div class="facility-head">
+                    <div>
+                        <div class="facility-title">Ketersediaan Asrama &amp; Kelas</div>
+                        <div class="facility-sub">Estimasi hari ini dari data penginapan dan timetable</div>
+                    </div>
+                    <a href="timetable.php" class="facility-link">Lihat</a>
+                </div>
+                <div class="availability-grid">
+                    <div class="availability-box">
+                        <div class="availability-icon"><i class="fa-solid fa-bed"></i></div>
+                        <div class="availability-label">Kamar kosong</div>
+                        <div class="availability-value"><?= (int)$dashKamarKosong ?></div>
+                        <div class="availability-note"><?= (int)$dashKamarTerpakai ?> terpakai dari <?= (int)$dashTotalKamarAsrama ?> kamar</div>
+                    </div>
+                    <div class="availability-box">
+                        <div class="availability-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                        <div class="availability-label">Kelas kosong</div>
+                        <div class="availability-value"><?= (int)$dashKelasKosong ?></div>
+                        <div class="availability-note"><?= (int)$dashKelasTerpakai ?> terpakai dari <?= (int)$dashTotalKelas ?> kelas</div>
+                    </div>
+                </div>
+            </div>
         </div>
+
         <!-- <?php
                 $menuCepat = [
                     ["timetable.php", "fa-calendar-days", "Timetable", "sky", "", ""],
@@ -2737,7 +4636,7 @@ if ($execGpsTidakValid > 0) {
                 </div>
             </div>
 
-            <div class="presensi-soft-grid">
+            <div class="presensi-soft-grid monitoring-presensi-grid">
                 <div class="presensi-soft-card">
                     <div class="presensi-card-head">
                         <div class="presensi-card-title">Presensi Terbaru</div>
@@ -2753,44 +4652,6 @@ if ($execGpsTidakValid > 0) {
                                         <span><?= htmlspecialchars(($p['jenis_presensi'] ?? '-') . ' • ' . date('H:i', strtotime($p['created_at'] ?? 'now')) . ' WIB', ENT_QUOTES, 'UTF-8') ?></span>
                                     </div>
                                     <span class="presensi-pill <?= (strtolower(trim((string)($p['jenis_presensi'] ?? ''))) === 'masuk') ? 'pill-green' : 'pill-blue' ?>"><?= htmlspecialchars($p['catatan'] ?: 'WFO', ENT_QUOTES, 'UTF-8') ?></span>
-                                </div>
-                        <?php endforeach;
-                        endif; ?>
-                    </div>
-                </div>
-
-                <div class="presensi-soft-card">
-                    <div class="presensi-card-head">
-                        <div class="presensi-card-title">Tren 7 Hari</div>
-                        <a href="riwayat_absensi.php" class="presensi-card-link">Detail</a>
-                    </div>
-                    <?php $maxBar = max(1, max($dashChart7ValuesOut ?: [0])); ?>
-                    <div class="presensi-chart-bars">
-                        <?php foreach ($dashChart7Labels as $idx => $lbl): ?>
-                            <?php $val = (int)($dashChart7ValuesOut[$idx] ?? 0);
-                            $h = max(6, (int)round(($val / $maxBar) * 92)); ?>
-                            <div class="presensi-bar-wrap" title="<?= htmlspecialchars($lbl . ': ' . $val, ENT_QUOTES, 'UTF-8') ?>">
-                                <div class="presensi-bar" style="height:<?= $h ?>px"></div>
-                                <div class="presensi-bar-label"><?= htmlspecialchars($lbl, ENT_QUOTES, 'UTF-8') ?></div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            </div>
-
-            <div class="presensi-soft-grid">
-                <div class="presensi-soft-card">
-                    <div class="presensi-card-head">
-                        <div class="presensi-card-title">Belum Presensi</div>
-                        <span class="presensi-card-link"><?= count($dashBelumPresensi) ?> tampil</span>
-                    </div>
-                    <div class="presensi-list">
-                        <?php if (!$dashBelumPresensi): ?>
-                            <div class="presensi-empty">Semua sudah presensi masuk.</div>
-                            <?php else: foreach ($dashBelumPresensi as $b): ?>
-                                <div class="presensi-list-item">
-                                    <div class="presensi-person"><strong><?= htmlspecialchars($b['nama'] ?? '-', ENT_QUOTES, 'UTF-8') ?></strong><span>Belum presensi masuk</span></div>
-                                    <span class="presensi-pill pill-amber">Belum</span>
                                 </div>
                         <?php endforeach;
                         endif; ?>
@@ -2815,7 +4676,10 @@ if ($execGpsTidakValid > 0) {
                                 }
                                 ?>
                                 <div class="presensi-list-item">
-                                    <div class="presensi-person"><strong><?= htmlspecialchars($t['nama_petugas'] ?? '-', ENT_QUOTES, 'UTF-8') ?></strong><span><?= date('H:i', $jamTelat ?: time()) ?> WIB</span></div>
+                                    <div class="presensi-person">
+                                        <strong><?= htmlspecialchars($t['nama_petugas'] ?? '-', ENT_QUOTES, 'UTF-8') ?></strong>
+                                        <span><?= date('H:i', $jamTelat ?: time()) ?> WIB</span>
+                                    </div>
                                     <span class="presensi-pill pill-red"><?= $menitTelat ?> mnt</span>
                                 </div>
                         <?php endforeach;
@@ -2849,6 +4713,29 @@ if ($execGpsTidakValid > 0) {
                 <p class="k-value"><?= $totalArea ?></p>
             </div>
         </div> -->
+
+        <!-- Ringkasan AI dipindahkan ke paling bawah halaman dashboard -->
+        <div class="exec-ai-summary">
+            <div class="exec-ai-icon"><i class="fa-solid fa-robot"></i></div>
+            <div>
+                <strong>Ringkasan AI</strong>
+                <small class="exec-ai-meta">Diperbarui otomatis • <?= date('d M Y') ?> • <?= date('H:i') ?> WIB</small>
+                <p class="exec-ai-copy"><?= htmlspecialchars($execAiSummary, ENT_QUOTES, 'UTF-8') ?></p>
+                <?php if (!empty($execPelatihanNames)): ?>
+                    <div class="exec-ai-training">
+                        <div class="exec-ai-training-title">Pelatihan/kegiatan yang sedang berlangsung</div>
+                        <ol class="exec-ai-training-list">
+                            <?php foreach (array_slice($execPelatihanNames, 0, 5) as $idxPelatihan => $namaPelatihan): ?>
+                                <li><span><?= htmlspecialchars($namaPelatihan, ENT_QUOTES, 'UTF-8') ?></span></li>
+                            <?php endforeach; ?>
+                            <?php if (count($execPelatihanNames) > 5): ?>
+                                <li class="more"><span>+<?= count($execPelatihanNames) - 5 ?> kegiatan lainnya</span></li>
+                            <?php endif; ?>
+                        </ol>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
 
         <div id="logoutModal">
             <div id="logoutBox" class="logout-card">
@@ -3452,4 +5339,297 @@ if ($execGpsTidakValid > 0) {
         })();
     </script>
 
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+        (async function() {
+            const canvas = document.getElementById('trendKehadiranChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+
+            /*
+             * Canvas tidak mengikuti font CSS secara otomatis.
+             * Tunggu seluruh webfont selesai dimuat, lalu ambil font yang benar-benar
+             * dipakai halaman agar tulisan grafik sama persis dengan tema aplikasi.
+             */
+            if (document.fonts && document.fonts.ready) {
+                try {
+                    await document.fonts.ready;
+                } catch (e) {}
+            }
+
+            const bodyStyle = window.getComputedStyle(document.body);
+            const appFontFamily = bodyStyle.fontFamily || 'Arial, sans-serif';
+
+            Chart.defaults.font.family = appFontFamily;
+            Chart.defaults.font.size = 12;
+            Chart.defaults.font.weight = '600';
+            Chart.defaults.color = '#64748b';
+
+            const labels = <?= json_encode(array_values($dashChart7Labels), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+            const values = <?= json_encode(array_values($dashChart7ValuesOut), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, 'rgba(79, 70, 229, .30)');
+            gradient.addColorStop(.55, 'rgba(99, 102, 241, .10)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+            const chartFont = function(size, weight) {
+                return {
+                    family: appFontFamily,
+                    size: size,
+                    weight: weight,
+                    lineHeight: 1.25
+                };
+            };
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Kehadiran',
+                        data: values,
+                        borderColor: '#4f46e5',
+                        backgroundColor: gradient,
+                        fill: true,
+                        borderWidth: 3,
+                        tension: .42,
+                        cubicInterpolationMode: 'monotone',
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBorderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#4f46e5',
+                        pointHoverBackgroundColor: '#4f46e5',
+                        pointHoverBorderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    animation: {
+                        duration: 700,
+                        easing: 'easeOutQuart'
+                    },
+                    layout: {
+                        padding: {
+                            top: 14,
+                            right: 10,
+                            bottom: 0,
+                            left: 2
+                        }
+                    },
+                    font: chartFont(12, '600'),
+                    plugins: {
+                        legend: {
+                            display: false,
+                            labels: {
+                                font: chartFont(12, '700')
+                            }
+                        },
+                        tooltip: {
+                            displayColors: false,
+                            backgroundColor: '#0f172a',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e2e8f0',
+                            padding: 11,
+                            cornerRadius: 10,
+                            titleFont: chartFont(12, '800'),
+                            bodyFont: chartFont(11, '600'),
+                            footerFont: chartFont(10, '600'),
+                            callbacks: {
+                                title: function(items) {
+                                    return items.length ? 'Tanggal ' + items[0].label : '';
+                                },
+                                label: function(item) {
+                                    return item.parsed.y + ' pegawai hadir';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            border: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                font: chartFont(10, '700'),
+                                maxRotation: 0,
+                                autoSkip: false
+                            },
+                            title: {
+                                font: chartFont(11, '700')
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grace: '15%',
+                            border: {
+                                display: false
+                            },
+                            grid: {
+                                color: 'rgba(148,163,184,.18)',
+                                drawTicks: false
+                            },
+                            ticks: {
+                                precision: 0,
+                                color: '#94a3b8',
+                                padding: 8,
+                                font: chartFont(10, '700')
+                            },
+                            title: {
+                                font: chartFont(11, '700')
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+
+
+    <script>
+        (async function() {
+            const canvas = document.getElementById('agendaKomposisiChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+
+            if (document.fonts && document.fonts.ready) {
+                try {
+                    await document.fonts.ready;
+                } catch (e) {}
+            }
+
+            const bodyStyle = window.getComputedStyle(document.body);
+            const appFontFamily = bodyStyle.fontFamily || 'Arial, sans-serif';
+            const labels = <?= json_encode(array_values(array_map(static function ($row) {
+                                return (string)($row['kategori'] ?? 'Lainnya');
+                            }, $dashKomposisiAgenda)), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+            const values = <?= json_encode(array_values(array_map(static function ($row) {
+                                return (int)($row['total'] ?? 0);
+                            }, $dashKomposisiAgenda)), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+            const categoryColors = {
+                'Menpim': '#facc15',
+                'Teknis': '#22c55e',
+                'Pustrajak': '#f97316',
+                'Kerjasama': '#3b82f6',
+                'Lainnya': '#94a3b8'
+            };
+            const palette = labels.map(function(label) {
+                return categoryColors[label] || categoryColors.Lainnya;
+            });
+
+            document.querySelectorAll('.agenda-donut-dot[data-color-index]').forEach(function(dot) {
+                const index = parseInt(dot.getAttribute('data-color-index') || '0', 10);
+                dot.style.backgroundColor = palette[index] || categoryColors.Lainnya;
+            });
+
+            function toggleAgendaCategory(index) {
+                const category = document.querySelector('.agenda-donut-category[data-category-index="' + index + '"]');
+                if (!category) return;
+                const button = category.querySelector('.agenda-donut-legend-item');
+                const detail = category.querySelector('.agenda-donut-detail');
+                if (!button || !detail) return;
+
+                const willOpen = !detail.classList.contains('is-open');
+                document.querySelectorAll('.agenda-donut-detail.is-open').forEach(function(el) {
+                    el.classList.remove('is-open');
+                });
+                document.querySelectorAll('.agenda-donut-legend-item.is-open').forEach(function(el) {
+                    el.classList.remove('is-open');
+                    el.setAttribute('aria-expanded', 'false');
+                });
+
+                if (willOpen) {
+                    detail.classList.add('is-open');
+                    button.classList.add('is-open');
+                    button.setAttribute('aria-expanded', 'true');
+                    category.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest'
+                    });
+                }
+            }
+
+            document.querySelectorAll('.agenda-donut-legend-item[data-target]').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const category = button.closest('.agenda-donut-category');
+                    if (!category) return;
+                    toggleAgendaCategory(parseInt(category.getAttribute('data-category-index') || '0', 10));
+                });
+            });
+
+            const agendaChart = new Chart(canvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: palette.slice(0, Math.max(1, labels.length)),
+                        borderColor: '#ffffff',
+                        borderWidth: 4,
+                        hoverBorderWidth: 4,
+                        hoverOffset: 7,
+                        spacing: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: function(event, elements) {
+                        if (elements && elements.length) {
+                            toggleAgendaCategory(elements[0].index);
+                        }
+                    },
+                    cutout: '68%',
+                    animation: {
+                        duration: 750,
+                        easing: 'easeOutQuart'
+                    },
+                    layout: {
+                        padding: 8
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e2e8f0',
+                            padding: 11,
+                            cornerRadius: 10,
+                            titleFont: {
+                                family: appFontFamily,
+                                size: 12,
+                                weight: '800'
+                            },
+                            bodyFont: {
+                                family: appFontFamily,
+                                size: 11,
+                                weight: '600'
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce(function(sum, value) {
+                                        return sum + Number(value || 0);
+                                    }, 0);
+                                    const value = Number(context.raw || 0);
+                                    const percent = total > 0 ? Math.round((value / total) * 100) : 0;
+                                    return ' ' + context.label + ': ' + value + ' agenda (' + percent + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
     <?php include 'footer.php'; ?>

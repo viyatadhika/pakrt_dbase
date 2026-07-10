@@ -14,6 +14,13 @@ include 'config.php';
 
 date_default_timezone_set('Asia/Jakarta');
 
+if (isset($conn) && $conn instanceof mysqli) {
+    @mysqli_query($conn, "SET time_zone = '+07:00'");
+}
+
+$todayStart = date('Y-m-d 00:00:00');
+$todayEnd = date('Y-m-d 00:00:00', strtotime('+1 day'));
+
 /*
    PENTING:
    Proses POST harus berada SEBELUM include header.php.
@@ -71,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'simpa
         FROM presensi_lokasi_petugas
         WHERE user_id = ?
           AND jenis_presensi = ?
-          AND DATE(created_at) = CURDATE()
+          AND created_at >= ?
+          AND created_at < ?
         LIMIT 1
     ");
 
@@ -80,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'simpa
         exit('Query cek presensi gagal: ' . $conn->error);
     }
 
-    $cek->bind_param('is', $user_id, $jenis_presensi);
+    $cek->bind_param('isss', $user_id, $jenis_presensi, $todayStart, $todayEnd);
     $cek->execute();
     $cekRes = $cek->get_result();
     $sudahPresensiJenisIni = $cekRes && $cekRes->num_rows > 0;
@@ -97,7 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'simpa
             FROM presensi_lokasi_petugas
             WHERE user_id = ?
               AND jenis_presensi = 'Masuk'
-              AND DATE(created_at) = CURDATE()
+              AND created_at >= ?
+          AND created_at < ?
             LIMIT 1
         ");
 
@@ -106,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'simpa
             exit('Query cek presensi masuk gagal: ' . $conn->error);
         }
 
-        $cekMasuk->bind_param('i', $user_id);
+        $cekMasuk->bind_param('iss', $user_id, $todayStart, $todayEnd);
         $cekMasuk->execute();
         $cekMasukRes = $cekMasuk->get_result();
         $rowMasukHariIni = $cekMasukRes ? $cekMasukRes->fetch_assoc() : null;
@@ -125,17 +134,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'simpa
         }
     }
 
-    $uploadDir = __DIR__ . '/uploads/presensi_lokasi/';
+    /*
+       File ini tetap bisa dijalankan dari folder PAKRT,
+       tetapi foto presensi disimpan ke folder aplikasi WARGART:
+       ../wargart/uploads/presensi_lokasi/
+    */
+    $wargartBase = realpath(__DIR__ . '/../wargart');
+    if ($wargartBase === false) {
+        http_response_code(500);
+        exit('Folder aplikasi wargart tidak ditemukan. Pastikan posisi folder: htdocs/pakrt dan htdocs/wargart.');
+    }
+
+    $uploadDir = $wargartBase . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'presensi_lokasi' . DIRECTORY_SEPARATOR;
     if (!is_dir($uploadDir)) {
         if (!mkdir($uploadDir, 0777, true) && !is_dir($uploadDir)) {
             http_response_code(500);
-            exit('Folder upload presensi gagal dibuat.');
+            exit('Folder wargart/uploads/presensi_lokasi gagal dibuat.');
         }
     }
 
     if (!is_writable($uploadDir)) {
         http_response_code(500);
-        exit('Folder uploads/presensi_lokasi belum bisa ditulis.');
+        exit('Folder wargart/uploads/presensi_lokasi belum bisa ditulis.');
     }
 
     $fotoPath = null;
@@ -155,10 +175,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'simpa
             exit('Gagal upload foto.');
         }
 
-        $fotoPath = 'uploads/presensi_lokasi/' . $filename;
+        $fotoPath = '../wargart/uploads/presensi_lokasi/' . $filename;
     }
 
-    $stmt = $conn->prepare("\n        INSERT INTO presensi_lokasi_petugas\n        (user_id, nama_petugas, jenis_presensi, lokasi_presensi, latitude, longitude, accuracy, distance_meter, lokasi_valid, foto_presensi, catatan, created_at)\n        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())\n    ");
+    $createdAt = date('Y-m-d H:i:s');
+
+    $stmt = $conn->prepare("\n        INSERT INTO presensi_lokasi_petugas\n        (user_id, nama_petugas, jenis_presensi, lokasi_presensi, latitude, longitude, accuracy, distance_meter, lokasi_valid, foto_presensi, catatan, created_at)\n        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n    ");
 
     if (!$stmt) {
         http_response_code(500);
@@ -166,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'simpa
     }
 
     $stmt->bind_param(
-        'isssddddiss',
+        'isssddddisss',
         $user_id,
         $nama_petugas,
         $jenis_presensi,
@@ -177,7 +199,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'simpa
         $distance_meter,
         $lokasiValidInt,
         $fotoPath,
-        $catatan
+        $catatan,
+        $createdAt
     );
 
     if (!$stmt->execute()) {
@@ -219,12 +242,13 @@ if ((int)$userId > 0) {
         SELECT jenis_presensi, catatan
         FROM presensi_lokasi_petugas
         WHERE user_id = ?
-          AND DATE(created_at) = CURDATE()
+          AND created_at >= ?
+          AND created_at < ?
     ");
 
     if ($stmtStatus) {
         $uidStatus = (int)$userId;
-        $stmtStatus->bind_param('i', $uidStatus);
+        $stmtStatus->bind_param('iss', $uidStatus, $todayStart, $todayEnd);
         $stmtStatus->execute();
         $resStatus = $stmtStatus->get_result();
         while ($rowStatus = $resStatus->fetch_assoc()) {
@@ -252,61 +276,41 @@ $presensiLengkapHariIni = $statusHariIni['Masuk'] && $statusHariIni['Pulang'];
 
     body {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        background: #f4f8fc;
+        background: #eef7fd;
         color: #0f172a;
     }
 
     .asn-page {
         min-height: 100vh;
         padding-bottom: 6rem;
-        background: #f4f8fc;
+        background:
+            radial-gradient(circle at top right, rgba(14, 165, 233, .16), transparent 34%),
+            linear-gradient(180deg, #eef7fd 0%, #f8fafc 100%);
     }
 
     .asn-header {
         position: sticky;
         top: 0;
-        z-index: 100;
-        width: 100%;
-        padding: 0;
-        background: #fff;
-        border-bottom: 1px solid #e5e7eb;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, .05);
+        z-index: 40;
+        padding: 12px;
+        background: rgba(238, 247, 253, .92);
+        backdrop-filter: blur(14px);
     }
 
     .asn-header-card {
-        width: 100%;
-        min-height: 64px;
         background: #fff;
-        border: 0;
-        border-radius: 0;
-        box-shadow: none;
-        padding: 12px 16px;
+        border: 1px solid #dbeafe;
+        border-radius: 26px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .06);
+        padding: 12px;
         display: flex;
         align-items: center;
-        justify-content: flex-start;
         gap: 12px;
     }
 
-    .asn-header h1 {
-        margin: 0;
-        color: #0284c7 !important;
-        font-size: 17px !important;
-        line-height: 1.12 !important;
-        font-weight: 900 !important;
-        letter-spacing: -.01em;
-    }
-
-    .asn-header p {
-        margin-top: 3px;
-        color: #94a3b8 !important;
-        font-size: 11px !important;
-        line-height: 1.15 !important;
-        font-weight: 700 !important;
-    }
-
     .icon-btn {
-        width: 40px;
-        height: 40px;
+        width: 42px;
+        height: 42px;
         border: 0;
         border-radius: 999px;
         background: #eff8ff;
@@ -314,18 +318,12 @@ $presensiLengkapHariIni = $statusHariIni['Masuk'] && $statusHariIni['Pulang'];
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        flex: 0 0 40px;
-        transition: .15s ease;
-    }
-
-    .icon-btn:hover {
-        background: #e0f2fe;
     }
 
     .wrap {
         max-width: 520px;
         margin: 0 auto;
-        padding: 10px 14px 28px;
+        padding: 12px 14px 28px;
     }
 
     .profile-card {
@@ -798,37 +796,6 @@ $presensiLengkapHariIni = $statusHariIni['Masuk'] && $statusHariIni['Pulang'];
         align-items: center;
         justify-content: center;
         gap: 8px;
-    }
-
-    @media (max-width: 520px) {
-        .asn-header {
-            padding: 0;
-        }
-
-        .asn-header-card {
-            width: 100%;
-            border-radius: 0;
-            padding: 12px 14px;
-            min-height: 62px;
-        }
-
-        .icon-btn {
-            width: 38px;
-            height: 38px;
-            flex-basis: 38px;
-        }
-
-        .asn-header h1 {
-            font-size: 16px !important;
-        }
-
-        .asn-header p {
-            font-size: 10.5px !important;
-        }
-
-        .wrap {
-            padding-top: 8px;
-        }
     }
 </style>
 
