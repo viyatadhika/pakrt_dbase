@@ -4235,6 +4235,381 @@ $dashKelasKosong = max(0, $dashTotalKelas - $dashKelasTerpakai);
             font-size: .63rem !important;
         }
     }
+
+
+    /* ===== AKTIVITAS TERBARU: BENAR-BENAR FULL WIDTH SEPERTI HEADER ===== */
+    body[data-page="beranda"] .activity-latest-shell {
+        position: relative;
+        left: 50%;
+        width: 100vw;
+        max-width: none !important;
+        margin-left: -50vw !important;
+        margin-right: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 1rem !important;
+        padding: 1.2rem clamp(1rem, 1.6vw, 2rem) 1.45rem;
+        isolation: isolate;
+        overflow: hidden;
+        border: 0;
+        border-radius: 0 0 34px 34px;
+        background:
+            radial-gradient(circle at 88% 12%, rgba(255, 255, 255, .18) 0 78px, transparent 79px),
+            radial-gradient(circle at 7% 112%, rgba(255, 255, 255, .11) 0 105px, transparent 106px),
+            linear-gradient(135deg, #0b55d5 0%, #1486ef 52%, #35bdf6 100%);
+        box-shadow: 0 18px 38px rgba(3, 105, 161, .22);
+        box-sizing: border-box;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        pointer-events: none;
+        background:
+            linear-gradient(115deg, transparent 0 54%, rgba(255, 255, 255, .07) 54.5% 56%, transparent 56.5%),
+            linear-gradient(180deg, rgba(255, 255, 255, .08), transparent 52%);
+    }
+
+    body[data-page="beranda"] .activity-latest-shell::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 34px;
+        z-index: -1;
+        pointer-events: none;
+        background: rgba(255, 255, 255, .08);
+        clip-path: ellipse(64% 54% at 50% 100%);
+    }
+
+    body[data-page="beranda"] .activity-latest-inner {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    body[data-page="beranda"] .activity-latest-glow {
+        position: absolute;
+        z-index: -1;
+        border-radius: 999px;
+        pointer-events: none;
+        filter: blur(1px);
+    }
+
+    body[data-page="beranda"] .activity-latest-glow-one {
+        width: 230px;
+        height: 230px;
+        top: -128px;
+        right: -72px;
+        background: rgba(255, 255, 255, .10);
+        border: 1px solid rgba(255, 255, 255, .14);
+    }
+
+    body[data-page="beranda"] .activity-latest-glow-two {
+        width: 175px;
+        height: 175px;
+        left: -92px;
+        bottom: -105px;
+        background: rgba(255, 255, 255, .08);
+        border: 1px solid rgba(255, 255, 255, .10);
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-section,
+    body[data-page="beranda"] .activity-latest-shell .latest-section-modern {
+        position: relative;
+        z-index: 2;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header,
+    body[data-page="beranda"] .activity-latest-shell .latest-header-modern {
+        margin-bottom: .95rem !important;
+        align-items: center !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header h3,
+    body[data-page="beranda"] .activity-latest-shell .latest-header-copy h3 {
+        color: #fff !important;
+        letter-spacing: -.015em;
+        text-shadow: 0 1px 2px rgba(15, 23, 42, .12);
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header-copy span,
+    body[data-page="beranda"] .activity-latest-shell .latest-header p {
+        color: rgba(255, 255, 255, .80) !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header-icon {
+        color: #fff !important;
+        background: rgba(255, 255, 255, .16) !important;
+        border-color: rgba(255, 255, 255, .24) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+
+    /* Tombol Lihat Semua dibuat lebih rapi, tegas, dan modern */
+    body[data-page="beranda"] .activity-latest-shell .latest-header>a,
+    body[data-page="beranda"] .activity-latest-shell .latest-see-all {
+        min-height: 36px !important;
+        padding: .58rem .88rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: .46rem !important;
+        border-radius: 999px !important;
+        color: #075fbd !important;
+        background: rgba(255, 255, 255, .96) !important;
+        border: 1px solid rgba(255, 255, 255, .82) !important;
+        box-shadow: 0 9px 22px rgba(3, 82, 155, .20) !important;
+        font-size: .68rem !important;
+        font-weight: 900 !important;
+        line-height: 1 !important;
+        letter-spacing: .01em !important;
+        text-decoration: none !important;
+        white-space: nowrap !important;
+        transition: transform .18s ease, box-shadow .18s ease, background .18s ease !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header>a::after,
+    body[data-page="beranda"] .activity-latest-shell .latest-see-all::after {
+        content: "\f061";
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: .65rem;
+        line-height: 1;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header>a:hover,
+    body[data-page="beranda"] .activity-latest-shell .latest-see-all:hover {
+        color: #064f9c !important;
+        background: #fff !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 13px 28px rgba(3, 82, 155, .26) !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-scroll,
+    body[data-page="beranda"] .activity-latest-shell .latest-grid-modern {
+        gap: .78rem !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-card,
+    body[data-page="beranda"] .activity-latest-shell .latest-card-modern {
+        background: rgba(255, 255, 255, .97) !important;
+        border-color: rgba(255, 255, 255, .86) !important;
+        box-shadow: 0 12px 26px rgba(2, 73, 149, .16) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-card:hover,
+    body[data-page="beranda"] .activity-latest-shell .latest-card-modern:hover {
+        border-color: #fff !important;
+        box-shadow: 0 17px 34px rgba(2, 73, 149, .22) !important;
+        transform: translateY(-2px);
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .empty-state,
+    body[data-page="beranda"] .activity-latest-shell .latest-empty-modern {
+        background: rgba(255, 255, 255, .94) !important;
+        border-color: rgba(255, 255, 255, .76) !important;
+    }
+
+    @media (max-width: 900px) {
+        body[data-page="beranda"] .activity-latest-shell {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            border-radius: 0 0 28px 28px;
+        }
+    }
+
+    @media (max-width: 520px) {
+        body[data-page="beranda"] .activity-latest-shell {
+            padding: 1rem 1rem 1.25rem !important;
+            border-radius: 0 0 24px 24px;
+            box-shadow: 0 14px 28px rgba(3, 105, 161, .20);
+        }
+
+        body[data-page="beranda"] .activity-latest-shell .latest-header>a,
+        body[data-page="beranda"] .activity-latest-shell .latest-see-all {
+            min-height: 34px !important;
+            padding: .52rem .72rem !important;
+            font-size: .64rem !important;
+        }
+
+        body[data-page="beranda"] .activity-latest-glow-one {
+            width: 170px;
+            height: 170px;
+            top: -90px;
+            right: -55px;
+        }
+    }
+
+
+    /* ===== FINAL: AKTIVITAS TERBARU TANPA BACKGROUND WARNA ===== */
+    body[data-page="beranda"] .activity-latest-shell {
+        position: relative !important;
+        left: auto !important;
+        right: auto !important;
+        width: auto !important;
+        max-width: none !important;
+        margin: 0 1rem 1rem !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        isolation: auto !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell::before,
+    body[data-page="beranda"] .activity-latest-shell::after,
+    body[data-page="beranda"] .activity-latest-glow {
+        display: none !important;
+        content: none !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-inner {
+        position: relative !important;
+        z-index: auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-section,
+    body[data-page="beranda"] .activity-latest-shell .latest-section-modern {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header,
+    body[data-page="beranda"] .activity-latest-shell .latest-header-modern {
+        margin-bottom: .72rem !important;
+        padding: 0 !important;
+        align-items: center !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header h3,
+    body[data-page="beranda"] .activity-latest-shell .latest-header-copy h3 {
+        color: #0f172a !important;
+        text-shadow: none !important;
+        letter-spacing: -.012em !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header-copy span,
+    body[data-page="beranda"] .activity-latest-shell .latest-header p {
+        color: #94a3b8 !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header-icon {
+        color: #0284c7 !important;
+        background: #e0f2fe !important;
+        border-color: #bae6fd !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header>a,
+    body[data-page="beranda"] .activity-latest-shell .latest-see-all {
+        min-height: 34px !important;
+        padding: .5rem .78rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: .42rem !important;
+        border-radius: 999px !important;
+        color: #0369a1 !important;
+        background: #f0f9ff !important;
+        border: 1px solid #bae6fd !important;
+        box-shadow: none !important;
+        font-size: .66rem !important;
+        font-weight: 900 !important;
+        line-height: 1 !important;
+        text-decoration: none !important;
+        white-space: nowrap !important;
+        transition: transform .18s ease, background .18s ease, border-color .18s ease !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-header>a:hover,
+    body[data-page="beranda"] .activity-latest-shell .latest-see-all:hover {
+        color: #075985 !important;
+        background: #e0f2fe !important;
+        border-color: #7dd3fc !important;
+        transform: translateY(-1px) !important;
+        box-shadow: none !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-scroll,
+    body[data-page="beranda"] .activity-latest-shell .latest-grid-modern {
+        width: 100% !important;
+        gap: .75rem !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-card,
+    body[data-page="beranda"] .activity-latest-shell .latest-card-modern {
+        background: #fff !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .05) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .latest-card:hover,
+    body[data-page="beranda"] .activity-latest-shell .latest-card-modern:hover {
+        border-color: #bae6fd !important;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .075) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    body[data-page="beranda"] .activity-latest-shell .empty-state,
+    body[data-page="beranda"] .activity-latest-shell .latest-empty-modern {
+        background: #fff !important;
+        border-color: #cbd5e1 !important;
+    }
+
+    @media (max-width: 900px) {
+        body[data-page="beranda"] .activity-latest-shell {
+            width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            margin-bottom: 1rem !important;
+        }
+    }
+
+    @media (max-width: 520px) {
+        body[data-page="beranda"] .activity-latest-shell {
+            padding: 0 !important;
+            border-radius: 0 !important;
+        }
+
+        body[data-page="beranda"] .activity-latest-shell .latest-header,
+        body[data-page="beranda"] .activity-latest-shell .latest-header-modern {
+            align-items: center !important;
+            gap: .65rem !important;
+        }
+
+        body[data-page="beranda"] .activity-latest-shell .latest-header>a,
+        body[data-page="beranda"] .activity-latest-shell .latest-see-all {
+            min-height: 32px !important;
+            padding: .46rem .65rem !important;
+            font-size: .62rem !important;
+        }
+    }
 </style>
 
 <body data-page="beranda">
