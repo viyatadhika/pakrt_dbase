@@ -964,6 +964,78 @@ $dashKelasKosong = max(0, $dashTotalKelas - $dashKelasTerpakai);
 
 
 
+/* ===================== JADWAL PRESENSI USER LOGIN ===================== */
+$homeUserId = (int)($_SESSION['user']['id'] ?? 0);
+$homeRoleRaw = strtolower(trim(str_replace(['_', '-'], ' ', (string)($_SESSION['user']['role'] ?? ''))));
+$homeRoleRaw = preg_replace('/\s+/', ' ', $homeRoleRaw);
+$homeIsOb = in_array($homeRoleRaw, ['ob', 'office boy', 'officeboy', 'cleaning service', 'cleaningservice', 'cleaning', 'cs'], true);
+$homeIsSpv = in_array($homeRoleRaw, ['supervisor', 'spv'], true);
+$homeJadwal = [
+    'terbatas' => $homeIsOb || $homeIsSpv,
+    'ada' => false,
+    'aktif' => true,
+    'libur' => false,
+    'shift' => 'Presensi Umum',
+    'jam' => 'Mengikuti ketentuan umum',
+    'tanggal' => $todaySql,
+    'pesan' => 'Presensi tersedia.',
+    'status_masuk' => false,
+    'status_pulang' => false
+];
+if ($homeJadwal['terbatas'] && $homeUserId > 0 && dashboardTableExists($conn, 'jadwal_shift_petugas')) {
+    $nowHome = new DateTimeImmutable('now', new DateTimeZone('Asia/Jakarta'));
+    $todayHome = $nowHome->format('Y-m-d');
+    $yesterdayHome = $nowHome->modify('-1 day')->format('Y-m-d');
+    $stmtHome = $conn->prepare("SELECT tanggal,shift,jam_masuk,jam_pulang,status FROM jadwal_shift_petugas WHERE user_id=? AND tanggal IN (?,?) AND status='Aktif' ORDER BY tanggal DESC");
+    if ($stmtHome) {
+        $stmtHome->bind_param('iss', $homeUserId, $todayHome, $yesterdayHome);
+        $stmtHome->execute();
+        $rsHome = $stmtHome->get_result();
+        $candidatesHome = [];
+        while ($rowHome = $rsHome->fetch_assoc()) $candidatesHome[] = $rowHome;
+        $stmtHome->close();
+        foreach ($candidatesHome as $rowHome) {
+            $shiftHome = trim((string)($rowHome['shift'] ?? ''));
+            $isOffHome = in_array(strtolower($shiftHome), ['libur', 'l', 'off'], true);
+            $startHome = new DateTimeImmutable($rowHome['tanggal'] . ' ' . $rowHome['jam_masuk'], new DateTimeZone('Asia/Jakarta'));
+            $endHome = new DateTimeImmutable($rowHome['tanggal'] . ' ' . $rowHome['jam_pulang'], new DateTimeZone('Asia/Jakarta'));
+            if (!$isOffHome && $endHome <= $startHome) $endHome = $endHome->modify('+1 day');
+            $isTodayHome = $rowHome['tanggal'] === $todayHome;
+            $isOvernightActive = !$isOffHome && $rowHome['tanggal'] === $yesterdayHome && $nowHome <= $endHome;
+            if (!$isTodayHome && !$isOvernightActive) continue;
+            $homeJadwal['ada'] = true;
+            $homeJadwal['libur'] = $isOffHome;
+            $homeJadwal['aktif'] = !$isOffHome && $nowHome >= $startHome->modify('-60 minutes') && $nowHome <= $endHome->modify('+120 minutes');
+            $homeJadwal['shift'] = $isOffHome ? 'Libur' : $shiftHome;
+            $homeJadwal['jam'] = $isOffHome ? '-' : substr((string)$rowHome['jam_masuk'], 0, 5) . ' - ' . substr((string)$rowHome['jam_pulang'], 0, 5);
+            $homeJadwal['tanggal'] = (string)$rowHome['tanggal'];
+            $homeJadwal['pesan'] = $isOffHome ? 'Hari ini Anda dijadwalkan libur.' : ($homeJadwal['aktif'] ? 'Jadwal aktif. Silakan lakukan presensi sesuai status Anda.' : 'Presensi belum tersedia atau waktu shift telah berakhir.');
+            break;
+        }
+    }
+    if (!$homeJadwal['ada']) {
+        $homeJadwal['aktif'] = false;
+        $homeJadwal['shift'] = 'Belum Ada Jadwal';
+        $homeJadwal['jam'] = '-';
+        $homeJadwal['pesan'] = 'Jadwal shift hari ini belum tersedia. Hubungi admin atau supervisor.';
+    }
+}
+if ($homeUserId > 0 && dashboardTableExists($conn, 'presensi_lokasi_petugas')) {
+    $qHomeStatus = $conn->prepare("SELECT jenis_presensi FROM presensi_lokasi_petugas WHERE user_id=? AND DATE(created_at)=CURDATE()");
+    if ($qHomeStatus) {
+        $qHomeStatus->bind_param('i', $homeUserId);
+        $qHomeStatus->execute();
+        $rHomeStatus = $qHomeStatus->get_result();
+        while ($stHome = $rHomeStatus->fetch_assoc()) {
+            $jHome = strtolower(trim((string)$stHome['jenis_presensi']));
+            if ($jHome === 'masuk') $homeJadwal['status_masuk'] = true;
+            if ($jHome === 'pulang') $homeJadwal['status_pulang'] = true;
+        }
+        $qHomeStatus->close();
+    }
+}
+
+
 ?>
 
 <style>
@@ -4673,23 +4745,184 @@ $dashKelasKosong = max(0, $dashTotalKelas - $dashKelasTerpakai);
 
 
 
+
+        <style>
+            .home-shift-card {
+                margin: 0 0 16px;
+                padding: 18px;
+                border-radius: 24px;
+                background: linear-gradient(135deg, #ffffff, #f0f9ff);
+                border: 1px solid #dbeafe;
+                box-shadow: 0 12px 30px rgba(2, 132, 199, .10);
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                gap: 14px;
+                align-items: center
+            }
+
+            .home-shift-icon {
+                width: 52px;
+                height: 52px;
+                border-radius: 18px;
+                display: grid;
+                place-items: center;
+                background: #e0f2fe;
+                color: #0284c7;
+                font-size: 20px
+            }
+
+            .home-shift-card.off .home-shift-icon {
+                background: #fee2e2;
+                color: #dc2626
+            }
+
+            .home-shift-kicker {
+                font-size: 10px;
+                font-weight: 900;
+                letter-spacing: .08em;
+                text-transform: uppercase;
+                color: #0284c7
+            }
+
+            .home-shift-title {
+                margin-top: 3px;
+                font-size: 16px;
+                font-weight: 900;
+                color: #0f172a
+            }
+
+            .home-shift-desc {
+                margin-top: 4px;
+                font-size: 11px;
+                font-weight: 700;
+                color: #64748b;
+                line-height: 1.45
+            }
+
+            .home-shift-side {
+                text-align: right
+            }
+
+            .home-shift-time {
+                font-size: 13px;
+                font-weight: 900;
+                color: #0f172a
+            }
+
+            .home-shift-status {
+                display: inline-flex;
+                margin-top: 7px;
+                padding: 6px 9px;
+                border-radius: 999px;
+                background: #dcfce7;
+                color: #166534;
+                font-size: 9px;
+                font-weight: 900
+            }
+
+            .home-shift-status.locked {
+                background: #fee2e2;
+                color: #991b1b
+            }
+
+            .home-shift-actions {
+                grid-column: 1/-1;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 9px;
+                margin-top: 2px
+            }
+
+            .home-shift-btn {
+                height: 42px;
+                border-radius: 13px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                text-decoration: none;
+                font-size: 11px;
+                font-weight: 900
+            }
+
+            .home-shift-btn.primary {
+                background: linear-gradient(135deg, #0ea5e9, #0284c7);
+                color: white
+            }
+
+            .home-shift-btn.secondary {
+                background: #fff;
+                color: #0369a1;
+                border: 1px solid #bae6fd
+            }
+
+            .home-shift-btn.disabled {
+                pointer-events: none;
+                opacity: .48;
+                background: #cbd5e1;
+                color: #64748b;
+                border: 0
+            }
+
+            @media(max-width:520px) {
+                .home-shift-card {
+                    grid-template-columns: auto 1fr;
+                    padding: 15px;
+                    border-radius: 20px
+                }
+
+                .home-shift-side {
+                    grid-column: 1/-1;
+                    text-align: left;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between
+                }
+
+                .home-shift-actions {
+                    grid-template-columns: 1fr
+                }
+
+                .home-shift-title {
+                    font-size: 14px
+                }
+            }
+        </style>
+        <?php if ($homeJadwal['terbatas']): ?>
+            <section class="home-shift-card <?= ($homeJadwal['libur'] || !$homeJadwal['aktif']) ? 'off' : '' ?>">
+                <div class="home-shift-icon"><i class="fa-solid <?= $homeJadwal['libur'] ? 'fa-calendar-xmark' : 'fa-user-clock' ?>"></i></div>
+                <div>
+                    <div class="home-shift-kicker">Jadwal Presensi Saya</div>
+                    <div class="home-shift-title"><?= htmlspecialchars($homeJadwal['shift'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <div class="home-shift-desc"><?= htmlspecialchars($homeJadwal['pesan'], ENT_QUOTES, 'UTF-8') ?></div>
+                </div>
+                <div class="home-shift-side">
+                    <div class="home-shift-time"><?= htmlspecialchars($homeJadwal['jam'], ENT_QUOTES, 'UTF-8') ?> WIB</div><span class="home-shift-status <?= $homeJadwal['aktif'] ? '' : 'locked' ?>"><?= $homeJadwal['libur'] ? 'LIBUR' : ($homeJadwal['aktif'] ? 'AKTIF' : 'TERKUNCI') ?></span>
+                </div>
+                <div class="home-shift-actions">
+                    <a href="presensi_lokasi_petugas.php" class="home-shift-btn primary <?= $homeJadwal['aktif'] ? '' : 'disabled' ?>"><i class="fa-solid fa-camera"></i><?= $homeJadwal['status_masuk'] ? ($homeJadwal['status_pulang'] ? 'Presensi Hari Ini Lengkap' : 'Lakukan Presensi Pulang') : 'Lakukan Presensi Masuk' ?></a>
+                    <a href="riwayat_absensi.php" class="home-shift-btn secondary"><i class="fa-solid fa-clock-rotate-left"></i>Lihat Riwayat Presensi</a>
+                </div>
+            </section>
+        <?php endif; ?>
+
         <section class="exec-wrap">
             <div class="exec-hero">
                 <div class="exec-top">
                     <div>
                         <div class="exec-kicker">Executive Dashboard</div>
                         <div class="exec-title">Operasional Hari Ini</div>
-                        <div class="exec-date"><?= date('l, d M Y') ?> • Update realtime dari data aplikasi</div>
+                        <div class="exec-date"><?= date('l, d M Y') ?> • Diperbarui <span id="dashboardUpdatedAt"><?= date('H:i:s') ?></span> WIB</div>
                     </div>
                     <div class="exec-badge"><i class="fa-solid fa-signal"></i> Monitoring aktif</div>
                 </div>
                 <div class="exec-grid">
-                    <div class="exec-mini"><span>Total Pegawai</span><strong><?= (int)$execTotalUsers ?></strong></div>
-                    <div class="exec-mini"><span>Hadir</span><strong><?= (int)$dashPresensi['hadir'] ?></strong></div>
-                    <div class="exec-mini"><span>Belum Hadir</span><strong><?= (int)$dashPresensi['belum'] ?></strong></div>
-                    <div class="exec-mini"><span>Terlambat</span><strong><?= (int)$dashPresensi['telat'] ?></strong></div>
-                    <div class="exec-mini"><span>WFO</span><strong><?= (int)$dashPresensi['wfo'] ?></strong></div>
-                    <div class="exec-mini"><span>WFA</span><strong><?= (int)$dashPresensi['wfa'] ?></strong></div>
+                    <div class="exec-mini"><span>Total Pegawai</span><strong id="dashTotalUsers"><?= (int)$execTotalUsers ?></strong></div>
+                    <div class="exec-mini"><span>Hadir</span><strong id="dashHadir"><?= (int)$dashPresensi['hadir'] ?></strong></div>
+                    <div class="exec-mini"><span>Belum Hadir</span><strong id="dashBelum"><?= (int)$dashPresensi['belum'] ?></strong></div>
+                    <div class="exec-mini"><span>Terlambat</span><strong id="dashTelat"><?= (int)$dashPresensi['telat'] ?></strong></div>
+                    <div class="exec-mini"><span>WFO</span><strong id="dashWfo"><?= (int)$dashPresensi['wfo'] ?></strong></div>
+                    <div class="exec-mini"><span>WFA</span><strong id="dashWfa"><?= (int)$dashPresensi['wfa'] ?></strong></div>
                 </div>
             </div>
 
@@ -4714,9 +4947,9 @@ $dashKelasKosong = max(0, $dashTotalKelas - $dashKelasTerpakai);
                         <canvas id="trendKehadiranChart" aria-label="Grafik tren kehadiran tujuh hari terakhir" role="img"></canvas>
                     </div>
                     <div class="trend-summary-row">
-                        <span>Rata-rata <strong><?= number_format($trendAverage, 1, ',', '.') ?> pegawai/hari</strong></span>
-                        <span>Hari terakhir <strong><?= $trendLast ?> pegawai</strong></span>
-                        <span>Perubahan <strong><?= $trendChange > 0 ? '+' : '' ?><?= $trendChange ?></strong> dari hari sebelumnya</span>
+                        <span>Rata-rata <strong id="dashTrendAverage"><?= number_format($trendAverage, 1, ',', '.') ?> pegawai/hari</strong></span>
+                        <span>Hari terakhir <strong id="dashTrendLast"><?= $trendLast ?> pegawai</strong></span>
+                        <span>Perubahan <strong id="dashTrendChange"><?= $trendChange > 0 ? '+' : '' ?><?= $trendChange ?></strong> dari hari sebelumnya</span>
                     </div>
                 </div>
                 <div class="presensi-soft-card agenda-donut-card">
@@ -5757,7 +5990,7 @@ $dashKelasKosong = max(0, $dashTotalKelas - $dashKelasTerpakai);
                 };
             };
 
-            new Chart(ctx, {
+            window.dashboardTrendChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -6007,4 +6240,116 @@ $dashKelasKosong = max(0, $dashTotalKelas - $dashKelasTerpakai);
             });
         })();
     </script>
+
+    <script>
+        (function() {
+            const REFRESH_INTERVAL = 30000;
+            let refreshTimer = null;
+            let refreshController = null;
+
+            function setText(id, value) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const next = String(value ?? 0);
+                if (el.textContent !== next) {
+                    el.textContent = next;
+                }
+            }
+
+            function formatDecimal(value) {
+                return Number(value || 0).toLocaleString('id-ID', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                });
+            }
+
+            function updateTrend(data) {
+                if (!data || !window.dashboardTrendChart) return;
+
+                const labels = Array.isArray(data.labels) ? data.labels : [];
+                const values = Array.isArray(data.values) ? data.values.map(Number) : [];
+
+                window.dashboardTrendChart.data.labels = labels;
+                window.dashboardTrendChart.data.datasets[0].data = values;
+                window.dashboardTrendChart.update('none');
+
+                const average = values.length ?
+                    values.reduce((sum, value) => sum + value, 0) / values.length :
+                    0;
+                const last = values.length ? values[values.length - 1] : 0;
+                const previous = values.length > 1 ? values[values.length - 2] : 0;
+                const change = last - previous;
+
+                setText('dashTrendAverage', formatDecimal(average) + ' pegawai/hari');
+                setText('dashTrendLast', last + ' pegawai');
+                setText('dashTrendChange', (change > 0 ? '+' : '') + change);
+            }
+
+            async function refreshDashboard() {
+                if (document.hidden) return;
+
+                if (refreshController) {
+                    refreshController.abort();
+                }
+                refreshController = new AbortController();
+
+                try {
+                    const response = await fetch(
+                        'dashboard_refresh.php?_=' + Date.now(), {
+                            method: 'GET',
+                            cache: 'no-store',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            signal: refreshController.signal
+                        }
+                    );
+
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    if (!data || data.success !== true) return;
+
+                    const p = data.presensi || {};
+                    setText('dashTotalUsers', data.total_users || 0);
+                    setText('dashHadir', p.hadir || 0);
+                    setText('dashBelum', p.belum || 0);
+                    setText('dashTelat', p.telat || 0);
+                    setText('dashWfo', p.wfo || 0);
+                    setText('dashWfa', p.wfa || 0);
+                    setText('dashboardUpdatedAt', data.updated_at || '--:--:--');
+                    updateTrend(data.trend_7_hari || {});
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error('Dashboard refresh:', error);
+                    }
+                }
+            }
+
+            function startRefresh() {
+                refreshDashboard();
+                if (refreshTimer) clearInterval(refreshTimer);
+                refreshTimer = setInterval(refreshDashboard, REFRESH_INTERVAL);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', startRefresh, {
+                    once: true
+                });
+            } else {
+                startRefresh();
+            }
+
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) refreshDashboard();
+            });
+
+            window.addEventListener('beforeunload', function() {
+                if (refreshTimer) clearInterval(refreshTimer);
+                if (refreshController) refreshController.abort();
+            });
+        })();
+    </script>
+
     <?php include 'footer.php'; ?>

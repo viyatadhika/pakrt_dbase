@@ -512,15 +512,6 @@ $title = "Log Aktivitas";
    Riwayat disimpan di user_lokasi_history oleh api/simpan_lokasi_tracking.php
    ============================================================ */
 date_default_timezone_set('Asia/Jakarta');
-if (isset($conn) && $conn instanceof mysqli) {
-    @$conn->query("SET time_zone = '+07:00'");
-}
-
-/* Threshold dibuat sama untuk seluruh proses baca live tracking.
-   PAK RT hanya menjadi viewer: data tetap dikirim oleh aplikasi Warga RT. */
-define('AL_TRACKING_ONLINE_SECONDS', 60);
-define('AL_TRACKING_IDLE_SECONDS', 300);
-define('AL_TRACKING_LIVE_WINDOW_SECONDS', 300);
 
 $conn->query("CREATE TABLE IF NOT EXISTS user_lokasi_live (
     user_id INT NOT NULL PRIMARY KEY,
@@ -554,16 +545,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS user_lokasi_history (
 
 function al_trackingRows(mysqli $conn): array
 {
-    /*
-       Admin Log PAK RT hanya membaca data live tracking dari aplikasi Warga RT.
-       Yang ditampilkan hanya user yang benar-benar masih aktif mengirim heartbeat
-       ke user_lokasi_live dalam jendela waktu AL_TRACKING_LIVE_WINDOW_SECONDS.
-       Ini membuat hasilnya sama dengan konsep live tracking Warga RT: bukan semua
-       riwayat user lama, tetapi posisi live yang masih segar.
-    */
-    $window = defined('AL_TRACKING_LIVE_WINDOW_SECONDS') ? (int)AL_TRACKING_LIVE_WINDOW_SECONDS : 300;
-    if ($window < 60) $window = 60;
-
     $sql = "
         SELECT
             l.user_id AS id,
@@ -577,30 +558,24 @@ function al_trackingRows(mysqli $conn): array
             l.ip_address,
             l.first_seen,
             l.last_seen AS created_at,
-            GREATEST(0, TIMESTAMPDIFF(SECOND, l.last_seen, NOW())) AS age_second
+            TIMESTAMPDIFF(SECOND, l.last_seen, NOW()) AS age_second
         FROM user_lokasi_live l
         LEFT JOIN users u ON u.id = l.user_id
-        WHERE l.last_seen IS NOT NULL
-          AND l.last_seen >= DATE_SUB(NOW(), INTERVAL {$window} SECOND)
-          AND l.latitude BETWEEN -90 AND 90
-          AND l.longitude BETWEEN -180 AND 180
-          AND NOT (l.latitude = 0 AND l.longitude = 0)
         ORDER BY l.last_seen DESC
-        LIMIT 500
+        LIMIT 200
     ";
     $q = $conn->query($sql);
     if (!$q) return [];
     return $q->fetch_all(MYSQLI_ASSOC);
 }
+
 function al_trackingStatus(int $ageSecond): array
 {
-    $online = defined('AL_TRACKING_ONLINE_SECONDS') ? (int)AL_TRACKING_ONLINE_SECONDS : 60;
-    $idle = defined('AL_TRACKING_IDLE_SECONDS') ? (int)AL_TRACKING_IDLE_SECONDS : 300;
-
-    if ($ageSecond <= $online) return ['online', 'Online', '🟢'];
-    if ($ageSecond <= $idle) return ['idle', 'Idle', '🟡'];
+    if ($ageSecond <= 30) return ['online', 'Online', '🟢'];
+    if ($ageSecond <= 120) return ['idle', 'Idle', '🟡'];
     return ['offline', 'Offline', '🔴'];
 }
+
 function al_trackingAgeText(int $ageSecond): string
 {
     if ($ageSecond < 60) return $ageSecond . ' detik lalu';
@@ -612,13 +587,10 @@ function al_trackingAgeText(int $ageSecond): string
 function al_trackingSummary(array $rows): array
 {
     $online = $idle = $offline = 0;
-    $onlineLimit = defined('AL_TRACKING_ONLINE_SECONDS') ? (int)AL_TRACKING_ONLINE_SECONDS : 60;
-    $idleLimit = defined('AL_TRACKING_IDLE_SECONDS') ? (int)AL_TRACKING_IDLE_SECONDS : 300;
-
     foreach ($rows as $r) {
         $age = max(0, (int)($r['age_second'] ?? 999999));
-        if ($age <= $onlineLimit) $online++;
-        elseif ($age <= $idleLimit) $idle++;
+        if ($age <= 30) $online++;
+        elseif ($age <= 120) $idle++;
         else $offline++;
     }
     return [
@@ -628,6 +600,7 @@ function al_trackingSummary(array $rows): array
         'offline' => $offline,
     ];
 }
+
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'tracking') {
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -661,6 +634,100 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'tracking') {
 
 $activeTab = $_GET['tab'] ?? 'aktivitas';
 if (!in_array($activeTab, ['aktivitas', 'tracking'], true)) $activeTab = 'aktivitas';
+
+/* ============================================================
+   PEMERIKSAAN KEAMANAN LOG
+   - Membedakan akun aplikasi dengan percobaan memakai NIP tak dikenal
+   - Menandai percobaan berulang dari IP yang sama
+   - Tidak langsung menyimpulkan sebagai serangan tanpa bukti cukup
+   ============================================================ */
+function al_normalizeIp($ip)
+{
+    $ip = trim((string)$ip);
+    if (strpos($ip, ',') !== false) {
+        $parts = explode(',', $ip);
+        $ip = trim($parts[0]);
+    }
+    return $ip;
+}
+
+function al_isPrivateIp($ip)
+{
+    $ip = al_normalizeIp($ip);
+    if ($ip === '' || $ip === '::1' || $ip === '127.0.0.1') return true;
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) return null;
+    return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+}
+
+function al_isFailedLoginDetail(array $detail, $namaPetugas, $aksi)
+{
+    if (strtolower(trim((string)$aksi)) !== 'login') return false;
+
+    $nama = strtolower(trim((string)$namaPetugas));
+    $reason = strtolower(trim((string)($detail['alasan'] ?? $detail['reason'] ?? $detail['message'] ?? '')));
+    $status = strtolower(trim((string)($detail['status'] ?? '')));
+    $haystack = $nama . ' ' . $reason . ' ' . $status;
+
+    foreach (
+        [
+            'unknown',
+            'akun tidak ditemukan',
+            'user tidak ditemukan',
+            'pengguna tidak ditemukan',
+            'password salah',
+            'kata sandi salah',
+            'sandi salah',
+            'login gagal',
+            'invalid',
+            'ditolak'
+        ] as $needle
+    ) {
+        if (strpos($haystack, $needle) !== false) return true;
+    }
+    return false;
+}
+
+function al_securityMeta(array $row, array $detail, array $failedIpCounts)
+{
+    $ip = al_normalizeIp($row['ip_address'] ?? '');
+    $isFailed = al_isFailedLoginDetail($detail, $row['nama_petugas'] ?? '', $row['aksi'] ?? '');
+    $attempts = isset($failedIpCounts[$ip]) ? (int)$failedIpCounts[$ip] : 0;
+    $private = al_isPrivateIp($ip);
+
+    if (!$isFailed) {
+        return [
+            'class' => 'sec-ok',
+            'label' => 'Normal',
+            'icon' => 'fa-shield-check',
+            'title' => 'Aktivitas biasa',
+            'message' => 'Tidak ada indikator login gagal pada log ini.',
+            'attempts' => 0,
+            'network' => $private === true ? 'Jaringan internal/lokal' : ($private === false ? 'IP publik' : 'IP tidak dikenali'),
+        ];
+    }
+
+    if ($attempts >= 5) {
+        return [
+            'class' => 'sec-danger',
+            'label' => 'Mencurigakan',
+            'icon' => 'fa-triangle-exclamation',
+            'title' => 'Percobaan login berulang',
+            'message' => 'Terdapat ' . $attempts . ' percobaan login gagal dari IP yang sama dalam 10 menit terakhir. Periksa access log server sebelum memblokir IP.',
+            'attempts' => $attempts,
+            'network' => $private === true ? 'Jaringan internal/lokal' : ($private === false ? 'IP publik' : 'IP tidak dikenali'),
+        ];
+    }
+
+    return [
+        'class' => 'sec-warn',
+        'label' => 'Login gagal',
+        'icon' => 'fa-user-shield',
+        'title' => 'Akun tidak dikenal',
+        'message' => 'NIP yang dikirim tidak ditemukan di tabel users. Satu kejadian saja belum cukup untuk disebut serangan.',
+        'attempts' => max(1, $attempts),
+        'network' => $private === true ? 'Jaringan internal/lokal' : ($private === false ? 'IP publik' : 'IP tidak dikenali'),
+    ];
+}
 
 /* ============================================================
    EXPORT HANDLER
@@ -839,6 +906,30 @@ $totalSubmit = (int)$conn->query("SELECT COUNT(*) AS c FROM activity_log WHERE a
 $totalEdit   = (int)$conn->query("SELECT COUNT(*) AS c FROM activity_log WHERE aksi='edit'")->fetch_assoc()['c'];
 $totalDelete = (int)$conn->query("SELECT COUNT(*) AS c FROM activity_log WHERE aksi='delete'")->fetch_assoc()['c'];
 $todayCount  = (int)$conn->query("SELECT COUNT(*) AS c FROM activity_log WHERE DATE(created_at)=CURDATE()")->fetch_assoc()['c'];
+
+/* Hitung percobaan login gagal per IP dalam 10 menit terakhir. */
+$failedIpCounts = [];
+$failedSql = "
+    SELECT ip_address, COUNT(*) AS jumlah
+    FROM activity_log
+    WHERE created_at >= (NOW() - INTERVAL 10 MINUTE)
+      AND LOWER(aksi) = 'login'
+      AND (
+            LOWER(nama_petugas) = 'unknown'
+         OR LOWER(detail) LIKE '%akun tidak ditemukan%'
+         OR LOWER(detail) LIKE '%user tidak ditemukan%'
+         OR LOWER(detail) LIKE '%pengguna tidak ditemukan%'
+         OR LOWER(detail) LIKE '%password salah%'
+         OR LOWER(detail) LIKE '%kata sandi salah%'
+         OR LOWER(detail) LIKE '%login gagal%'
+      )
+    GROUP BY ip_address
+";
+if ($failedResult = $conn->query($failedSql)) {
+    while ($failedRow = $failedResult->fetch_assoc()) {
+        $failedIpCounts[al_normalizeIp($failedRow['ip_address'])] = (int)$failedRow['jumlah'];
+    }
+}
 
 $qBase = http_build_query(array_filter($filter));
 $qBase = $qBase ? '&' . $qBase : '';
@@ -1674,6 +1765,76 @@ include 'header.php';
         .card-ip {
             font-size: .66rem;
             color: var(--muted-l);
+        }
+
+        /* Security indicator */
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: .62rem;
+            font-weight: 800;
+            white-space: nowrap;
+            border: 1px solid transparent;
+        }
+
+        .security-badge.sec-ok {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+
+        .security-badge.sec-warn {
+            background: #fffbeb;
+            color: #92400e;
+            border-color: #fde68a;
+        }
+
+        .security-badge.sec-danger {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: #fecaca;
+        }
+
+        .security-alert {
+            border-radius: 12px;
+            padding: 12px 13px;
+            margin-bottom: 12px;
+            border: 1px solid;
+            font-size: .76rem;
+            line-height: 1.55;
+        }
+
+        .security-alert.sec-ok {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+
+        .security-alert.sec-warn {
+            background: #fffbeb;
+            color: #78350f;
+            border-color: #fde68a;
+        }
+
+        .security-alert.sec-danger {
+            background: #fef2f2;
+            color: #7f1d1d;
+            border-color: #fecaca;
+        }
+
+        .security-alert-title {
+            font-weight: 900;
+            margin-bottom: 3px;
+        }
+
+        .security-meta {
+            margin-top: 7px;
+            font-size: .68rem;
+            font-weight: 700;
+            opacity: .82;
         }
 
         /* ══════════════════════════════════════════
@@ -2986,228 +3147,6 @@ include 'header.php';
                 display: none;
             }
         }
-
-
-        /* =========================================================
-           FINAL OVERRIDE - HEADER ADMIN LOG PUTIH FULL + KIRI
-           Hanya mengubah header dan jarak halaman.
-           Logika, query, tab, tracking, export, dan modal tidak diubah.
-        ========================================================= */
-        :root {
-            --al-hdr-h: 64px;
-            --al-bg-soft: #f4f8fc;
-            --al-blue: #0284c7;
-            --al-blue-soft: #eff8ff;
-            --al-header-line: #e5e7eb;
-        }
-
-        html,
-        body {
-            background: var(--al-bg-soft) !important;
-        }
-
-        .al-topbar {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            z-index: 1000 !important;
-            width: 100% !important;
-            height: var(--al-hdr-h) !important;
-            padding: 0 16px !important;
-            background: #fff !important;
-            border: 0 !important;
-            border-bottom: 1px solid var(--al-header-line) !important;
-            border-radius: 0 !important;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, .045) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: flex-start !important;
-            gap: 12px !important;
-        }
-
-        .al-topbar::before {
-            display: none !important;
-            content: none !important;
-        }
-
-        .al-back {
-            width: 40px !important;
-            height: 40px !important;
-            border-radius: 999px !important;
-            background: var(--al-blue-soft) !important;
-            border: 0 !important;
-            color: var(--al-blue) !important;
-            box-shadow: none !important;
-            flex: 0 0 40px !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-
-        .al-back:hover {
-            background: #e0f2fe !important;
-            color: #0369a1 !important;
-            border: 0 !important;
-        }
-
-        .al-topbar>div:not(.al-topbar-right) {
-            min-width: 0 !important;
-            text-align: left !important;
-        }
-
-        .al-title {
-            margin: 0 !important;
-            font-size: 17px !important;
-            font-weight: 900 !important;
-            color: var(--al-blue) !important;
-            line-height: 1.12 !important;
-            letter-spacing: -.01em !important;
-            text-align: left !important;
-        }
-
-        .al-subtitle {
-            margin-top: 3px !important;
-            font-size: 11px !important;
-            font-weight: 700 !important;
-            color: #94a3b8 !important;
-            line-height: 1.15 !important;
-            text-align: left !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            max-width: 100% !important;
-        }
-
-        .al-topbar-right {
-            margin-left: auto !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 8px !important;
-            padding-right: 0 !important;
-            position: relative !important;
-            z-index: 1 !important;
-            flex-shrink: 0 !important;
-        }
-
-        .live-badge {
-            height: 32px !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            gap: 6px !important;
-            padding: 0 12px !important;
-            border-radius: 999px !important;
-            background: #f0fdf4 !important;
-            border: 1px solid #bbf7d0 !important;
-            color: #15803d !important;
-            font-size: 11px !important;
-            font-weight: 900 !important;
-            white-space: nowrap !important;
-        }
-
-        .al-date {
-            height: 32px !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            padding: 0 12px !important;
-            border-radius: 999px !important;
-            background: #fff !important;
-            border: 1px solid #e2e8f0 !important;
-            color: #64748b !important;
-            font-size: 11px !important;
-            font-weight: 800 !important;
-            white-space: nowrap !important;
-        }
-
-        .al-page {
-            padding: calc(var(--al-hdr-h) + 20px) 20px 80px !important;
-            background: var(--al-bg-soft) !important;
-            min-height: 100vh !important;
-        }
-
-        .al-tabs,
-        .filter-card,
-        .table-card,
-        .tracking-toolbar,
-        .tracking-map-panel,
-        .tracking-list-panel {
-            border-color: #e0f2fe !important;
-            box-shadow: 0 10px 26px rgba(15, 23, 42, .035) !important;
-        }
-
-        @media (max-width: 900px) {
-            :root {
-                --al-hdr-h: 64px;
-            }
-
-            html,
-            body {
-                background: #fff !important;
-            }
-
-            .al-topbar {
-                height: var(--al-hdr-h) !important;
-                padding: 0 14px !important;
-                background: #fff !important;
-                border-bottom: 1px solid #f1f5f9 !important;
-                box-shadow: 0 2px 8px rgba(15, 23, 42, .04) !important;
-            }
-
-            .al-back {
-                width: 38px !important;
-                height: 38px !important;
-                flex-basis: 38px !important;
-                background: #f0f9ff !important;
-            }
-
-            .al-title {
-                font-size: 16px !important;
-                line-height: 1.15 !important;
-            }
-
-            .al-subtitle {
-                margin-top: 2px !important;
-                font-size: 10.5px !important;
-                font-weight: 700 !important;
-                color: #94a3b8 !important;
-            }
-
-            .al-topbar-right {
-                padding-right: 0 !important;
-            }
-
-            .al-date {
-                display: none !important;
-            }
-
-            .live-badge {
-                height: 30px !important;
-                padding: 0 10px !important;
-                font-size: 10px !important;
-            }
-
-            .al-page {
-                padding: calc(var(--al-hdr-h) + 16px) 14px 92px !important;
-                background: #fff !important;
-            }
-        }
-
-        @media (max-width: 420px) {
-            .al-topbar {
-                padding-left: 12px !important;
-                padding-right: 12px !important;
-                gap: 10px !important;
-            }
-
-            .al-page {
-                padding-left: 12px !important;
-                padding-right: 12px !important;
-            }
-
-            .live-badge {
-                display: none !important;
-            }
-        }
     </style>
 
     <!-- TOPBAR -->
@@ -3215,7 +3154,7 @@ include 'header.php';
         <a href="javascript:history.back()" class="al-back"><i class="fa-solid fa-arrow-left"></i></a>
         <div>
             <div class="al-title">Log Aktivitas</div>
-            <div class="al-subtitle">Audit trail dan live tracking pengguna</div>
+            <div class="al-subtitle">Audit trail sistem</div>
         </div>
         <div class="al-topbar-right">
             <div class="live-badge"><span class="live-dot"></span> Live</div>
@@ -3242,9 +3181,9 @@ include 'header.php';
             <section class="tracking-hero">
                 <div class="tracking-hero-inner">
                     <h2>Live Tracking Petugas</h2>
-                    <p>Monitoring posisi terakhir pengguna dari aplikasi Warga RT. PAK RT hanya membaca data live yang masih aktif dalam 5 menit terakhir.</p>
+                    <p>Monitoring posisi terakhir pengguna yang sedang membuka aplikasi. Data otomatis diperbarui tanpa reload halaman setiap 5 detik.</p>
                     <div class="tracking-stat-grid">
-                        <div class="tracking-stat"><span>Live Terpantau</span><strong id="sumTotal"><?= (int)$trackingSummary['total'] ?></strong></div>
+                        <div class="tracking-stat"><span>Total Terpantau</span><strong id="sumTotal"><?= (int)$trackingSummary['total'] ?></strong></div>
                         <div class="tracking-stat"><span>Online</span><strong id="sumOnline"><?= (int)$trackingSummary['online'] ?></strong></div>
                         <div class="tracking-stat"><span>Idle</span><strong id="sumIdle"><?= (int)$trackingSummary['idle'] ?></strong></div>
                         <div class="tracking-stat"><span>Offline</span><strong id="sumOffline"><?= (int)$trackingSummary['offline'] ?></strong></div>
@@ -3694,6 +3633,7 @@ $accentMap = ['submit' => 'acc-submit', 'edit' => 'acc-edit', 'delete' => 'acc-d
                     <th style="min-width:120px">Modul / Form</th>
                     <th style="width:60px">ID</th>
                     <th style="width:118px">IP Address</th>
+                    <th style="width:105px">Keamanan</th>
                     <th style="min-width:170px">Detail</th>
                     <th style="width:68px">Info</th>
                 </tr>
@@ -3713,6 +3653,9 @@ $accentMap = ['submit' => 'acc-submit', 'edit' => 'acc-edit', 'delete' => 'acc-d
                             $excerptParts[] = htmlspecialchars($k) . ': ' . htmlspecialchars((string)$v);
                         }
                         $excerpt = implode(' · ', array_slice($excerptParts, 0, 2));
+                        $security = al_securityMeta($row, is_array($detail) ? $detail : [], $failedIpCounts);
+                        $rawName = trim((string)$row['nama_petugas']);
+                        $displayName = strtolower($rawName) === 'unknown' ? 'Akun tidak dikenal' : ($rawName !== '' ? $rawName : 'Tanpa nama');
                     ?>
                         <tr>
                             <td class="td-no"><?= $offset + $i + 1 ?></td>
@@ -3721,7 +3664,7 @@ $accentMap = ['submit' => 'acc-submit', 'edit' => 'acc-edit', 'delete' => 'acc-d
                                 <div class="td-time"><?= date('H:i:s', $ts) ?></div>
                             </td>
                             <td>
-                                <div class="td-name"><?= htmlspecialchars($row['nama_petugas']) ?></div>
+                                <div class="td-name"><?= htmlspecialchars($displayName) ?></div>
                                 <?php if ($roleLabel): ?><span class="role-tag"><?= $roleLabel ?></span><?php endif; ?>
                             </td>
                             <td>
@@ -3737,11 +3680,16 @@ $accentMap = ['submit' => 'acc-submit', 'edit' => 'acc-edit', 'delete' => 'acc-d
                             </td>
                             <td class="td-ip"><?= htmlspecialchars($row['ip_address']) ?></td>
                             <td>
+                                <span class="security-badge <?= htmlspecialchars($security['class']) ?>" title="<?= htmlspecialchars($security['message']) ?>">
+                                    <i class="fa-solid <?= htmlspecialchars($security['icon']) ?>"></i><?= htmlspecialchars($security['label']) ?>
+                                </span>
+                            </td>
+                            <td>
                                 <?= $excerpt ? '<span class="excerpt" title="' . htmlspecialchars(implode(' · ', $excerptParts)) . '">' . $excerpt . '</span>' : '<span class="td-dash">—</span>' ?>
                             </td>
                             <td>
                                 <?php if ($clean): ?>
-                                    <button class="detail-btn" onclick='showDetail(<?= htmlspecialchars(json_encode($clean), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($row['nama_petugas']), ENT_QUOTES) ?>)'>
+                                    <button class="detail-btn" onclick='showDetail(<?= htmlspecialchars(json_encode($clean), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($displayName), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($security), ENT_QUOTES) ?>)'>
                                         <i class="fa-solid fa-eye"></i> Detail
                                     </button>
                                 <?php else: ?>
@@ -3752,7 +3700,7 @@ $accentMap = ['submit' => 'acc-submit', 'edit' => 'acc-edit', 'delete' => 'acc-d
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="9">
+                        <td colspan="10">
                             <div class="empty-state">
                                 <i class="fa-solid fa-inbox"></i>
                                 <p>Tidak ada log<?= array_filter($filter) ? ' untuk filter ini' : '' ?>.</p>
@@ -3780,6 +3728,9 @@ $accentMap = ['submit' => 'acc-submit', 'edit' => 'acc-edit', 'delete' => 'acc-d
                 $roleLabel = htmlspecialchars($detail['_role'] ?? '');
                 $ts        = strtotime($row['created_at']);
                 $modul     = $row['form_type'] ? ucfirst(str_replace('_', ' ', $row['form_type'])) : '';
+                $security  = al_securityMeta($row, is_array($detail) ? $detail : [], $failedIpCounts);
+                $rawName   = trim((string)$row['nama_petugas']);
+                $displayName = strtolower($rawName) === 'unknown' ? 'Akun tidak dikenal' : ($rawName !== '' ? $rawName : 'Tanpa nama');
             ?>
                 <div class="log-card">
                     <div class="card-accent-bar <?= $accClass ?>"></div>
@@ -3802,8 +3753,16 @@ $accentMap = ['submit' => 'acc-submit', 'edit' => 'acc-edit', 'delete' => 'acc-d
                         <div class="card-row">
                             <div class="card-key">Petugas</div>
                             <div class="card-val">
-                                <strong><?= htmlspecialchars($row['nama_petugas']) ?></strong>
+                                <strong><?= htmlspecialchars($displayName) ?></strong>
                                 <?php if ($roleLabel): ?><span class="role-tag" style="margin-left:4px"><?= $roleLabel ?></span><?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="card-row">
+                            <div class="card-key">Keamanan</div>
+                            <div class="card-val">
+                                <span class="security-badge <?= htmlspecialchars($security['class']) ?>">
+                                    <i class="fa-solid <?= htmlspecialchars($security['icon']) ?>"></i><?= htmlspecialchars($security['label']) ?>
+                                </span>
                             </div>
                         </div>
                         <?php if ($modul): ?>
@@ -3822,7 +3781,7 @@ $accentMap = ['submit' => 'acc-submit', 'edit' => 'acc-edit', 'delete' => 'acc-d
                     <div class="card-foot">
                         <span class="card-ip"><i class="fa-solid fa-network-wired" style="font-size:.6rem;margin-right:3px"></i><?= htmlspecialchars($row['ip_address']) ?></span>
                         <?php if ($clean): ?>
-                            <button class="detail-btn" onclick='showDetail(<?= htmlspecialchars(json_encode($clean), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($row['nama_petugas']), ENT_QUOTES) ?>)'>
+                            <button class="detail-btn" onclick='showDetail(<?= htmlspecialchars(json_encode($clean), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($displayName), ENT_QUOTES) ?>,<?= htmlspecialchars(json_encode($security), ENT_QUOTES) ?>)'>
                                 <i class="fa-solid fa-eye"></i> Detail
                             </button>
                         <?php endif; ?>
@@ -3925,10 +3884,19 @@ $accentMap = ['submit' => 'acc-submit', 'edit' => 'acc-edit', 'delete' => 'acc-d
     }
 
     /* modal */
-    function showDetail(detail, name) {
+    function showDetail(detail, name, security) {
         document.getElementById('modalSub').textContent = name || '';
         const body = document.getElementById('modalBody');
         let html = '';
+
+        if (security && security.title) {
+            html += `<div class="security-alert ${esc(security.class || 'sec-warn')}">
+                <div class="security-alert-title"><i class="fa-solid ${esc(security.icon || 'fa-shield-halved')}"></i> ${esc(security.title)}</div>
+                <div>${esc(security.message || '')}</div>
+                <div class="security-meta">Jaringan: ${esc(security.network || '-')} · Percobaan 10 menit: ${esc(security.attempts || 0)}</div>
+            </div>`;
+        }
+
         for (const [k, v] of Object.entries(detail)) {
             const isObj = typeof v === 'object' && v !== null;
             html += `<div class="drow">

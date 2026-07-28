@@ -1679,6 +1679,17 @@ include 'header.php';
     let waveInterval = null;
     let quickRecordTarget = null;
     let quickRecordTimer = null;
+    let sttRequested = false;
+    let reconnectTimer = null;
+    let heartbeatTimer = null;
+    let wakeLock = null;
+    let isStartingRecognition = false;
+    let intentionalStop = false;
+    let restartAttempts = 0;
+    let lastFinalText = '';
+    let lastFinalAt = 0;
+    const STT_STORAGE_KEY = 'notulen_stt_' + BOOKING_ID + '_' + SELECTED_DATE;
+    const FORM_STORAGE_KEY = 'notulen_form_' + BOOKING_ID + '_' + SELECTED_DATE;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -1689,6 +1700,19 @@ include 'header.php';
             return;
         }
         setupRecognition();
+        restoreLocalDraft();
+        startSttHeartbeat();
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && sttRequested && !sttActive && !isStartingRecognition) scheduleSttRestart(300);
+            if (!document.hidden) requestWakeLock();
+        });
+        window.addEventListener('focus', () => {
+            if (sttRequested && !sttActive && !isStartingRecognition) scheduleSttRestart(300);
+        });
+        window.addEventListener('online', () => {
+            restartAttempts = 0;
+            if (sttRequested && !sttActive) scheduleSttRestart(500);
+        });
     }
 
     function setupRecognition() {
@@ -1726,31 +1750,45 @@ include 'header.php';
             document.getElementById('sttInterim').className = 'stt-interim' + (interim ? ' live' : '');
 
             if (final.trim()) {
-                sessionTranscript += final;
-                appendToField(final.trim());
-                updateTranscriptPreview();
+                let cleaned = normalizeSpeechText(final.trim());
+                const normalized = cleaned.toLowerCase();
+                if (normalized && !(normalized === lastFinalText && (Date.now() - lastFinalAt) < 12000)) {
+                    cleaned = addSimplePunctuation(cleaned);
+                    lastFinalText = normalized;
+                    lastFinalAt = Date.now();
+                    sessionTranscript += (sessionTranscript.trim() ? ' ' : '') + cleaned;
+                    appendToField(cleaned);
+                    updateTranscriptPreview();
+                    saveLocalDraft();
+                }
             }
         };
 
         recognition.onerror = (e) => {
-            const errMap = {
-                'not-allowed': 'Izin mikrofon ditolak. Aktifkan di pengaturan browser.',
-                'no-speech': 'Tidak terdeteksi suara. Coba lagi.',
-                'audio-capture': 'Tidak ada mikrofon yang terdeteksi.',
-                'network': 'Gagal terhubung ke server speech. Cek koneksi internet.',
-                'aborted': null,
-            };
-            const msg = errMap[e.error];
-            if (msg) setStatusText(msg, false, true);
-            if (e.error !== 'no-speech') stopStt();
+            isStartingRecognition = false;
+            const err = e.error || 'unknown';
+            sttActive = false;
+            if (err === 'not-allowed' || err === 'service-not-allowed') {
+                sttRequested = false;
+                setStatusText('Izin mikrofon ditolak. Aktifkan izin mikrofon pada browser.', false, true);
+                stopSttUI();
+                return;
+            }
+            if (err === 'audio-capture') setStatusText('Mikrofon tidak tersedia. Mencoba kembali...', false, true);
+            else if (err === 'network') setStatusText('Gangguan jaringan. Menyambung ulang...', false, true);
+            else if (err === 'no-speech') setStatusText('Belum ada suara. Tetap mendengarkan...', true, false);
+            else if (err !== 'aborted') setStatusText('Speech recognition terhenti. Mencoba kembali...', false, true);
+            if (sttRequested && !intentionalStop) scheduleSttRestart(err === 'audio-capture' ? 2500 : 700);
         };
 
         recognition.onend = () => {
-            if (sttActive && sttContinuous) {
-                try {
-                    recognition.start();
-                    return;
-                } catch (ex) {}
+            isStartingRecognition = false;
+            sttActive = false;
+            if (sttRequested && sttContinuous && !intentionalStop) {
+                setBadge('Menyambung...', '#f59e0b');
+                setStatusText('Menyambung ulang rekaman...', true, false);
+                scheduleSttRestart(400);
+                return;
             }
             stopSttUI();
         };
@@ -1763,21 +1801,126 @@ include 'header.php';
     }
 
     function startStt() {
-        if (!recognition) return;
+        if (!recognition || isStartingRecognition) return;
+        intentionalStop = false;
+        sttRequested = true;
         setupRecognition();
+        requestWakeLock();
+        startRecognitionNow();
+    }
+
+    function startRecognitionNow() {
+        if (!recognition || !sttRequested || sttActive || isStartingRecognition) return;
+        isStartingRecognition = true;
         try {
             recognition.start();
         } catch (e) {
-            setStatusText('Gagal memulai: ' + e.message, false, true);
+            isStartingRecognition = false;
+            scheduleSttRestart(Math.min(1000 + restartAttempts * 700, 8000));
         }
     }
 
+    function scheduleSttRestart(delay = 500) {
+        if (!sttRequested || intentionalStop) return;
+        clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(() => {
+            if (!sttRequested || sttActive || isStartingRecognition || intentionalStop) return;
+            restartAttempts++;
+            setupRecognition();
+            startRecognitionNow();
+        }, delay);
+    }
+
     function stopStt() {
+        intentionalStop = true;
+        sttRequested = false;
         sttActive = false;
+        isStartingRecognition = false;
+        clearTimeout(reconnectTimer);
         try {
             recognition.stop();
         } catch (e) {}
+        releaseWakeLock();
         stopSttUI();
+        setTimeout(() => {
+            intentionalStop = false;
+        }, 300);
+    }
+
+    function startSttHeartbeat() {
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = setInterval(() => {
+            if (sttRequested && !sttActive && !isStartingRecognition && navigator.onLine) scheduleSttRestart(250);
+        }, 5000);
+    }
+
+    async function requestWakeLock() {
+        if (!('wakeLock' in navigator) || document.hidden || !sttRequested || wakeLock) return;
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            wakeLock.addEventListener('release', () => {
+                wakeLock = null;
+            });
+        } catch (e) {}
+    }
+
+    async function releaseWakeLock() {
+        try {
+            if (wakeLock) await wakeLock.release();
+        } catch (e) {}
+        wakeLock = null;
+    }
+
+    function normalizeSpeechText(text) {
+        return String(text || '').replace(/\s+/g, ' ').replace(/\s+([,.!?;:])/g, '$1').trim();
+    }
+
+    function addSimplePunctuation(text) {
+        let value = normalizeSpeechText(text);
+        if (!value) return value;
+        value = value.charAt(0).toUpperCase() + value.slice(1);
+        return /[.!?]$/.test(value) ? value : value + '.';
+    }
+
+    function saveLocalDraft() {
+        try {
+            localStorage.setItem(STT_STORAGE_KEY, JSON.stringify({
+                transcript: sessionTranscript,
+                target: sttTarget,
+                lang: sttLang,
+                savedAt: Date.now()
+            }));
+            localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
+                payload: getNotulenPayload(),
+                savedAt: Date.now()
+            }));
+        } catch (e) {}
+    }
+
+    function restoreLocalDraft() {
+        try {
+            const stt = JSON.parse(localStorage.getItem(STT_STORAGE_KEY) || 'null');
+            if (stt && stt.transcript) {
+                sessionTranscript = stt.transcript;
+                sttTarget = stt.target || sttTarget;
+                sttLang = stt.lang || sttLang;
+                const lang = document.getElementById('sttLang');
+                if (lang) lang.value = sttLang;
+                updateTranscriptPreview();
+            }
+            const form = JSON.parse(localStorage.getItem(FORM_STORAGE_KEY) || 'null');
+            if (form && form.payload) {
+                let restored = false;
+                Object.entries(form.payload).forEach(([id, value]) => {
+                    const el = document.getElementById(id);
+                    if (el && !el.value.trim() && String(value || '').trim()) {
+                        el.value = value;
+                        restored = true;
+                    }
+                });
+                if (restored) showToast('Draf lokal berhasil dipulihkan');
+            }
+        } catch (e) {}
     }
 
     function stopSttUI() {
@@ -1828,6 +1971,9 @@ include 'header.php';
         const t = sessionTranscript.trim();
         el.innerHTML = t ? '<span>' + escHtml(t) + '</span>' : '<span style="color:#334155;font-style:italic">Transkrip sesi akan muncul di sini...</span>';
         el.scrollTop = el.scrollHeight;
+        try {
+            el.setSelectionRange(el.value.length, el.value.length);
+        } catch (e) {}
     }
 
     function appendToField(text) {
@@ -1835,7 +1981,10 @@ include 'header.php';
         const el = document.getElementById(target);
         if (!el) return;
         const cur = el.value;
-        el.value = cur ? cur + '\n' + text : text;
+        const cleaned = addSimplePunctuation(text);
+        const lastLine = cur.trim().split('\n').pop().trim().toLowerCase();
+        if (lastLine === cleaned.toLowerCase()) return;
+        el.value = cur ? cur.trimEnd() + ' ' + cleaned : cleaned;
         el.dispatchEvent(new Event('input'));
         el.scrollTop = el.scrollHeight;
     }
@@ -2056,6 +2205,9 @@ include 'header.php';
             if (j.status) {
                 lastSavedPayload = payloadString;
                 setAutosaveStatus('Tersimpan otomatis', 'var(--green)', 'fa-check-circle');
+                try {
+                    localStorage.removeItem(FORM_STORAGE_KEY);
+                } catch (e) {}
                 if (showManualToast) showToast('✓ Notulen berhasil disimpan');
             } else {
                 setAutosaveStatus('Gagal auto-save', 'var(--red)', 'fa-triangle-exclamation');
@@ -2167,7 +2319,10 @@ include 'header.php';
     ['agenda', 'pimpinan_rapat', 'moderator', 'notulis', 'peserta_text', 'pembahasan', 'keputusan', 'tindak_lanjut'].forEach(id => {
         const el = $id(id);
         if (el) {
-            el.addEventListener('input', queueAutosave);
+            el.addEventListener('input', () => {
+                queueAutosave();
+                saveLocalDraft();
+            });
             el.addEventListener('change', queueAutosave);
         }
     });
@@ -2179,6 +2334,7 @@ include 'header.php';
         }
     });
     window.addEventListener('beforeunload', () => {
+        saveLocalDraft();
         if (!CAN_EDIT) return;
         const c = JSON.stringify(getNotulenPayload());
         if (c !== lastSavedPayload) saveNotulen(false);

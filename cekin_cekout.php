@@ -182,111 +182,140 @@ include 'config.php';
         box-shadow: 0 1px 4px rgba(2, 132, 199, .06);
     }
 
-    .badge {
-        font-size: 10px !important;
-        font-weight: 700 !important;
-        padding: 3px 9px !important;
-        border-radius: 999px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        white-space: nowrap !important;
-        line-height: 1.4 !important;
-        vertical-align: middle !important;
-        position: static !important;
-        float: none !important;
-        box-shadow: none !important;
-        text-transform: none !important;
-        letter-spacing: 0 !important;
+    /* Empty state */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 56px 24px;
+        text-align: center;
     }
 
-    .badge-pending {
-        background: #fff7ed !important;
-        color: #c2410c !important;
-        border: 1px solid #fed7aa !important;
+    .empty-state-icon {
+        width: 76px;
+        height: 76px;
+        background: #f0f9ff;
+        border: 1.5px solid #bae6fd;
+        border-radius: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 18px;
+        box-shadow: 0 4px 16px rgba(14, 165, 233, .1);
     }
 
-    .badge-in {
-        background: #ecfdf5 !important;
-        color: #047857 !important;
-        border: 1px solid #a7f3d0 !important;
+    .empty-state-icon i {
+        font-size: 30px;
+        color: #38bdf8;
     }
 
-    .badge-out {
-        background: #f8fafc !important;
-        color: #475569 !important;
-        border: 1px solid #cbd5e1 !important;
-    }
-
-    .badge-peserta {
-        background: #f0fdf4 !important;
-        color: #16a34a !important;
-        border: 1px solid #bbf7d0 !important;
-        font-size: 9px !important;
-    }
-
-    .badge-pengajar {
-        background: #eff6ff !important;
-        color: #2563eb !important;
-        border: 1px solid #bfdbfe !important;
-        font-size: 9px !important;
-    }
-
-    .badge-panitia {
-        background: #fffbeb !important;
-        color: #b45309 !important;
-        border: 1px solid #fde68a !important;
-        font-size: 9px !important;
-    }
-
-    .btn-ci {
-        padding: 6px 14px;
-        border-radius: 10px;
-        font-size: 11px;
+    .empty-state-title {
+        font-size: 14px;
         font-weight: 800;
-        background: linear-gradient(135deg, #0ea5e9, #06b6d4) !important;
-        color: #fff !important;
-        box-shadow: 0 2px 8px rgba(14, 165, 233, .35);
-        transition: all .15s;
-        white-space: nowrap;
-        border: none !important;
-        cursor: pointer;
+        color: #0c4a6e;
+        margin: 0 0 8px;
     }
 
-    .btn-ci:active {
-        transform: scale(.94);
-    }
-
-    .btn-co {
-        padding: 6px 14px;
-        border-radius: 10px;
+    .empty-state-desc {
         font-size: 11px;
-        font-weight: 800;
-        background: #fff1f2 !important;
-        color: #be123c !important;
-        border: 1px solid #fecdd3 !important;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: all .15s;
+        color: #94a3b8;
+        font-weight: 500;
+        margin: 0;
+        line-height: 1.7;
     }
 
-    .btn-co:active {
-        transform: scale(.94);
+    /* Fallback banner */
+    .fallback-banner {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 16px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .fallback-banner i {
+        color: #f97316;
+        font-size: 14px;
+        margin-top: 1px;
+        flex-shrink: 0;
+    }
+
+    .fallback-banner-title {
+        font-size: 12px;
+        font-weight: 800;
+        color: #c2410c;
+        margin: 0 0 2px;
+    }
+
+    .fallback-banner-desc {
+        font-size: 11px;
+        color: #9a3412;
+        font-weight: 500;
+        margin: 0;
     }
 
     @keyframes fadeUp {
         from {
             opacity: 0;
-            transform: translateY(5px)
+            transform: translateY(5px);
         }
 
         to {
             opacity: 1;
-            transform: translateY(0)
+            transform: translateY(0);
         }
     }
 
     .au {
         animation: fadeUp .22s ease-out forwards;
+    }
+
+
+    /* Modal konfirmasi checkout */
+    .checkout-modal-panel {
+        width: 100%;
+        max-width: 420px;
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+        overflow: hidden;
+        animation: checkoutModalIn .22s ease-out;
+    }
+
+    @keyframes checkoutModalIn {
+        from {
+            opacity: 0;
+            transform: translateY(14px) scale(.98);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .checkout-info-row {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 11px 12px;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .checkout-info-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
 </style>
 
@@ -311,14 +340,9 @@ include 'config.php';
 
 <main class="px-4 py-5">
 
-    <div id="fallbackLabel" class="hidden mb-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-2">
-        <i class="fa-solid fa-circle-info text-amber-500 text-sm shrink-0"></i>
-        <p class="text-xs font-semibold text-amber-700">Tidak ada kegiatan berlangsung — menampilkan <b>3 kegiatan terbaru</b></p>
-    </div>
-
     <div class="relative mb-3">
         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-sky-400 text-xs pointer-events-none"></i>
-        <input type="text" id="qSearch" oninput="filterAndRender()"
+        <input type="text" id="qSearch" oninput="handleSearchInput()"
             placeholder="Cari nama, kamar, instansi, kegiatan..."
             class="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-2xl text-sm outline-none shadow-sm focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition">
         <button id="btnClearSearch" onclick="clearSearch()"
@@ -344,6 +368,7 @@ include 'config.php';
     </div>
 </main>
 
+<!-- Modal Export -->
 <div id="exportModal" class="fixed inset-0 bg-black/50 z-[999] hidden">
     <div class="absolute inset-0" onclick="closeExportModal()"></div>
     <div class="relative w-full h-full flex items-end justify-center p-4">
@@ -372,6 +397,71 @@ include 'config.php';
     </div>
 </div>
 
+
+<!-- Modal Konfirmasi Check-Out -->
+<div id="checkoutConfirmModal" class="fixed inset-0 z-[1000] hidden">
+    <div class="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" onclick="closeCheckoutConfirm()"></div>
+    <div class="relative w-full h-full flex items-end sm:items-center justify-center p-4">
+        <div class="checkout-modal-panel">
+            <div class="px-5 pt-5 pb-4 border-b border-slate-100">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-door-open"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-base font-extrabold text-slate-800 leading-tight">Konfirmasi Check-Out</p>
+                            <p class="text-[11px] text-slate-400 font-medium mt-1">Periksa kembali data peserta</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeCheckoutConfirm()" class="w-9 h-9 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-5 space-y-3">
+                <div class="checkout-info-row">
+                    <div class="checkout-info-icon bg-sky-50 text-sky-600"><i class="fa-solid fa-user"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] uppercase tracking-wide font-extrabold text-slate-400">Peserta</p>
+                        <p id="checkoutConfirmName" class="text-sm font-extrabold text-slate-800 truncate">-</p>
+                    </div>
+                </div>
+
+                <div class="checkout-info-row">
+                    <div class="checkout-info-icon bg-indigo-50 text-indigo-600"><i class="fa-solid fa-bed"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] uppercase tracking-wide font-extrabold text-slate-400">Lokasi Kamar</p>
+                        <p id="checkoutConfirmRoom" class="text-sm font-bold text-slate-700 truncate">-</p>
+                    </div>
+                </div>
+
+                <div class="checkout-info-row">
+                    <div class="checkout-info-icon bg-emerald-50 text-emerald-600"><i class="fa-solid fa-arrow-right-to-bracket"></i></div>
+                    <div class="min-w-0">
+                        <p class="text-[10px] uppercase tracking-wide font-extrabold text-slate-400">Waktu Check-In</p>
+                        <p id="checkoutConfirmCheckin" class="text-sm font-bold text-slate-700">-</p>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl bg-rose-50 border border-rose-100 p-3.5 flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-500 mt-0.5"></i>
+                    <p class="text-[11px] leading-relaxed text-rose-700 font-semibold">Pastikan peserta benar-benar telah meninggalkan kamar. Setelah dikonfirmasi, tanggal dan jam Check-Out akan langsung tersimpan.</p>
+                </div>
+            </div>
+
+            <div class="px-5 pb-5 grid grid-cols-2 gap-3">
+                <button type="button" onclick="closeCheckoutConfirm()" class="py-3 rounded-2xl bg-slate-100 text-slate-600 text-sm font-extrabold">Batal</button>
+                <button type="button" id="checkoutConfirmButton" onclick="executeConfirmedCheckout()" class="py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-extrabold shadow-lg shadow-rose-200">
+                    <i class="fa-solid fa-door-open mr-1.5"></i>Ya, Check-Out
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
 <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-5 py-2.5 rounded-full text-[11px] font-bold opacity-0 transition-all z-[300] pointer-events-none shadow-lg whitespace-nowrap"></div>
 
 <script>
@@ -380,10 +470,16 @@ include 'config.php';
     let isFallback = false;
     let gedungFilter = 'Semua';
     let openAgendaIds = new Set();
+    let remoteSearchResults = [];
+    let searchTimer = null;
+    let searchRequestSeq = 0;
+    let searchLoading = false;
+    let pendingCheckout = null;
 
     const $ = id => document.getElementById(id);
     const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+    /* ── TOAST ─────────────────────────────────────────────────── */
     function showToast(msg, dur = 2500) {
         const t = $('toast');
         t.textContent = msg;
@@ -391,16 +487,33 @@ include 'config.php';
         setTimeout(() => t.style.opacity = '0', dur);
     }
 
+    /* ── HELPERS ────────────────────────────────────────────────── */
     const normSt = s => s === 'Check-in' ? 'IN' : s === 'Check-out' ? 'OUT' : 'PENDING';
 
+    function getCurrentTimeString() {
+        const d = new Date();
+        return String(d.getHours()).padStart(2, '0') + ':' +
+            String(d.getMinutes()).padStart(2, '0') + ':' +
+            String(d.getSeconds()).padStart(2, '0');
+    }
+
+    function getCurrentDateString() {
+        const d = new Date();
+        return d.getFullYear() + '-' +
+            String(d.getMonth() + 1).padStart(2, '0') + '-' +
+            String(d.getDate()).padStart(2, '0');
+    }
+
+    /* ── LOAD DATA ──────────────────────────────────────────────── */
     async function loadData() {
         try {
-            const r = await fetch(apiUrl + '?action=list_cekin');
+            const r = await fetch(apiUrl + '?action=list_cekin&before_days=2&after_days=2');
             const j = await r.json();
             if (!j.status) {
                 showToast(j.message || 'Gagal');
                 return;
             }
+
             if (j.data && Array.isArray(j.data.agendas)) {
                 rawData = j.data.agendas;
                 isFallback = j.data.is_fallback || false;
@@ -415,6 +528,7 @@ include 'config.php';
         }
     }
 
+    /* ── FILTER GEDUNG ──────────────────────────────────────────── */
     function setGedungFilter(g) {
         gedungFilter = g;
         document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
@@ -426,29 +540,149 @@ include 'config.php';
     function clearSearch() {
         $('qSearch').value = '';
         $('btnClearSearch').classList.add('hidden');
+        remoteSearchResults = [];
+        searchLoading = false;
+        searchRequestSeq++;
+        if (searchTimer) clearTimeout(searchTimer);
         filterAndRender();
     }
 
-    function getCurrentTimeString() {
-        const d = new Date();
-        return String(d.getHours()).padStart(2, '0') + ':' +
-            String(d.getMinutes()).padStart(2, '0') + ':' +
-            String(d.getSeconds()).padStart(2, '0');
+    function handleSearchInput() {
+        const q = $('qSearch').value.trim();
+        $('btnClearSearch').classList.toggle('hidden', !q);
+
+        if (searchTimer) clearTimeout(searchTimer);
+
+        if (!q) {
+            remoteSearchResults = [];
+            searchLoading = false;
+            searchRequestSeq++;
+            filterAndRender();
+            return;
+        }
+
+        searchLoading = true;
+        filterAndRender();
+        searchTimer = setTimeout(() => searchAllPeserta(q), 350);
     }
 
+    async function searchAllPeserta(q) {
+        const requestId = ++searchRequestSeq;
+        try {
+            const r = await fetch(apiUrl + '?action=search_peserta&q=' + encodeURIComponent(q) + '&limit=200');
+            const j = await r.json();
+            if (requestId !== searchRequestSeq) return;
+
+            if (!j.status) {
+                remoteSearchResults = [];
+                showToast(j.message || 'Pencarian gagal');
+            } else {
+                remoteSearchResults = (Array.isArray(j.data) ? j.data : []).map(p => ({
+                    ...p,
+                    _judul: p.judul || 'Tanpa Kegiatan',
+                    _agendaId: p.agenda_id || 0,
+                    _startDate: p.start_date || '',
+                    _endDate: p.end_date || '',
+                    _canOperate: Boolean(p.can_operate)
+                }));
+            }
+        } catch (e) {
+            if (requestId !== searchRequestSeq) return;
+            console.error(e);
+            remoteSearchResults = [];
+            showToast('Kesalahan koneksi pencarian');
+        } finally {
+            if (requestId === searchRequestSeq) {
+                searchLoading = false;
+                filterAndRender();
+            }
+        }
+    }
+
+    /* ── CAPTURE OPEN ACCORDIONS ────────────────────────────────── */
     function captureOpenAgendasFromDom() {
         const opened = new Set();
-
         document.querySelectorAll('.kegiatan-wrap').forEach(wrap => {
-            const agendaId = String(wrap.dataset.agendaId || '');
+            const id = String(wrap.dataset.agendaId || '');
             const body = wrap.querySelector('.kegiatan-body');
-            if (!agendaId || !body) return;
-
-            const isOpen = body.style.display !== 'none' && body.style.display !== '';
-            if (isOpen) opened.add(agendaId);
+            if (!id || !body) return;
+            if (body.style.display !== 'none' && body.style.display !== '') opened.add(id);
         });
-
         openAgendaIds = opened;
+    }
+
+    function restoreOpenAgendas() {
+        document.querySelectorAll('.kegiatan-wrap').forEach(wrap => {
+            const id = String(wrap.dataset.agendaId || '');
+            if (!id || !openAgendaIds.has(id)) return;
+            const body = wrap.querySelector('.kegiatan-body');
+            const icon = wrap.querySelector('.toggle-icon');
+            const hintIcon = wrap.querySelector('.toggle-hint-icon');
+            if (body) body.style.display = 'block';
+            if (icon) icon.style.transform = 'rotate(180deg)';
+            if (hintIcon) hintIcon.style.transform = 'rotate(180deg)';
+        });
+    }
+
+    /* ── BADGE & BUTTON BUILDERS ────────────────────────────────── */
+    function formatTanggalIndo(value) {
+        if (!value || value === '0000-00-00') return 'Belum tercatat';
+        const parts = String(value).slice(0, 10).split('-');
+        if (parts.length !== 3) return String(value);
+        const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const y = Number(parts[0]);
+        const m = Number(parts[1]);
+        const d = Number(parts[2]);
+        if (!y || !m || !d || !bulan[m - 1]) return String(value);
+        return String(d).padStart(2, '0') + ' ' + bulan[m - 1] + ' ' + y;
+    }
+
+    function formatJam(value) {
+        if (!value || value === '00:00:00') return 'Belum tercatat';
+        return String(value).slice(0, 5) + ' WIB';
+    }
+
+    function waktuInapHtml(p) {
+        const ciAda = !!(p.checkin_date || p.checkin_time);
+        const coAda = !!(p.checkout_date || p.checkout_time);
+
+        const ciTanggal = ciAda ? esc(formatTanggalIndo(p.checkin_date)) : 'Belum check-in';
+        const ciJam = ciAda ? esc(formatJam(p.checkin_time)) : '—';
+        const coTanggal = coAda ? esc(formatTanggalIndo(p.checkout_date)) : 'Belum check-out';
+        const coJam = coAda ? esc(formatJam(p.checkout_time)) : '—';
+
+        return `
+        <div style="margin-top:11px;padding-top:10px;border-top:1px solid #eaf2f8">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr);align-items:center;gap:5px;"><!-- Check-in -->
+            <div style="display:flex;align-items:center;gap:8px;min-width:0">
+              <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                          background:${ciAda ? '#dcfce7' : '#f1f5f9'};color:${ciAda ? '#16a34a' : '#94a3b8'}">
+                <i class="fa-solid fa-arrow-right-to-bracket" style="font-size:11px"></i>
+              </div>
+              <div style="min-width:0">
+                <div style="font-size:8px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#94a3b8;margin-bottom:2px">Check-In</div>
+                <div style="font-size:10px;font-weight:800;color:${ciAda ? '#0f172a' : '#94a3b8'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ciTanggal}</div>
+                <div style="font-size:9px;font-weight:600;color:${ciAda ? '#16a34a' : '#cbd5e1'};margin-top:1px">${ciJam}</div>
+              </div>
+            </div>
+
+            <div style="height:1px;background:linear-gradient(90deg,#dbeafe,#bae6fd,#dbeafe);position:relative">
+              <span style="position:absolute;left:50%;top:50%;width:5px;height:5px;border-radius:50%;background:#7dd3fc;transform:translate(-50%,-50%)"></span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;min-width:0;justify-content:flex-end">
+              <div style="min-width:0;text-align:right">
+                <div style="font-size:8px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#94a3b8;margin-bottom:2px">Check-Out</div>
+                <div style="font-size:10px;font-weight:800;color:${coAda ? '#0f172a' : '#94a3b8'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${coTanggal}</div>
+                <div style="font-size:9px;font-weight:600;color:${coAda ? '#64748b' : '#cbd5e1'};margin-top:1px">${coJam}</div>
+              </div>
+              <div style="width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                          background:${coAda ? '#e2e8f0' : '#f1f5f9'};color:${coAda ? '#475569' : '#94a3b8'}">
+                <i class="fa-solid fa-arrow-right-from-bracket" style="font-size:11px"></i>
+              </div>
+            </div>
+          </div>
+        </div>`;
     }
 
     function badgeSt(p, agendaId) {
@@ -472,40 +706,31 @@ include 'config.php';
                 color: '#047857',
                 border: '#a7f3d0',
                 icon: 'fa-solid fa-check',
-                label: 'CI' + time
+                label: 'Check-In'
             },
             OUT: {
                 bg: '#f8fafc',
                 color: '#475569',
                 border: '#cbd5e1',
                 icon: 'fa-solid fa-door-open',
-                label: 'CO' + time
+                label: 'Check-Out'
             }
         } [st];
 
-        if (st === 'PENDING') {
-            return `<button onclick="doStatus(${p.id},${agendaId},'IN');event.stopPropagation();"
-                style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
+        if (st === 'OUT' || p._canOperate === false) {
+            return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
                 padding:3px 9px;border-radius:999px;white-space:nowrap;line-height:1.4;
-                background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border};cursor:pointer">
+                background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border}">
                 <i class="${cfg.icon}" style="font-size:8px"></i>${cfg.label}
-            </button>`;
+            </span>`;
         }
 
-        if (st === 'IN') {
-            return `<button onclick="doStatus(${p.id},${agendaId},'OUT');event.stopPropagation();"
-                style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
-                padding:3px 9px;border-radius:999px;white-space:nowrap;line-height:1.4;
-                background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border};cursor:pointer">
-                <i class="${cfg.icon}" style="font-size:8px"></i>${cfg.label}
-            </button>`;
-        }
-
-        return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
+        return `<button onclick="${st === 'PENDING' ? `doStatus(${p.id},${agendaId},'IN')` : `confirmCheckout(${p.id},${agendaId})`};event.stopPropagation();"
+            style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
             padding:3px 9px;border-radius:999px;white-space:nowrap;line-height:1.4;
-            background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border}">
+            background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border};cursor:pointer">
             <i class="${cfg.icon}" style="font-size:8px"></i>${cfg.label}
-        </span>`;
+        </button>`;
     }
 
     function badgeRole(peran) {
@@ -535,6 +760,12 @@ include 'config.php';
 
     function btnAction(p, agendaId) {
         const st = normSt(p.status_inap);
+        if (p._canOperate === false) {
+            return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#64748b;font-weight:700;
+                padding:4px 9px;border-radius:999px;background:#f1f5f9;border:1px solid #e2e8f0">
+                <i class="fa-solid fa-clock-rotate-left" style="font-size:8px"></i>Riwayat
+            </span>`;
+        }
         if (st === 'PENDING') {
             return `<button onclick="doStatus(${p.id},${agendaId},'IN');event.stopPropagation();"
                 style="padding:6px 14px;border-radius:10px;font-size:11px;font-weight:800;
@@ -542,13 +773,14 @@ include 'config.php';
                 box-shadow:0 2px 8px rgba(14,165,233,.35);border:none;cursor:pointer;white-space:nowrap">Check-In</button>`;
         }
         if (st === 'IN') {
-            return `<button onclick="doStatus(${p.id},${agendaId},'OUT');event.stopPropagation();"
+            return `<button onclick="confirmCheckout(${p.id},${agendaId});event.stopPropagation();"
                 style="padding:6px 14px;border-radius:10px;font-size:11px;font-weight:800;
                 background:#fff1f2;color:#be123c;border:1px solid #fecdd3;cursor:pointer;white-space:nowrap">Check-Out</button>`;
         }
         return `<span style="font-size:10px;color:#cbd5e1;font-weight:700">Selesai</span>`;
     }
 
+    /* ── CARD HTML ──────────────────────────────────────────────── */
     function pesertaCardHtml(p, agendaId, delay = 0) {
         return `
 <div class="peserta-card au" style="animation-delay:${delay}s">
@@ -576,6 +808,7 @@ include 'config.php';
       </div>
     </div>
   </div>
+  ${waktuInapHtml(p)}
 </div>`;
     }
 
@@ -607,76 +840,18 @@ include 'config.php';
       <div style="margin-top:4px;font-size:10px;color:#38bdf8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
         <i class="fa-solid fa-calendar-days" style="margin-right:3px;opacity:.6"></i>${esc(p._judul || '')}
       </div>
+      <div style="margin-top:3px;font-size:9px;color:#94a3b8;font-weight:600">
+        ${esc(p._startDate || '−')} s/d ${esc(p._endDate || '−')}
+      </div>
     </div>
   </div>
+  ${waktuInapHtml(p)}
 </div>`;
     }
 
-    function restoreOpenAgendas() {
-        document.querySelectorAll('.kegiatan-wrap').forEach(wrap => {
-            const agendaId = String(wrap.dataset.agendaId || '');
-            if (!agendaId || !openAgendaIds.has(agendaId)) return;
-
-            const body = wrap.querySelector('.kegiatan-body');
-            const icon = wrap.querySelector('.toggle-icon');
-            const hintIcon = wrap.querySelector('.toggle-hint-icon');
-
-            if (body) body.style.display = 'block';
-            if (icon) icon.style.transform = 'rotate(180deg)';
-            if (hintIcon) hintIcon.style.transform = 'rotate(180deg)';
-        });
-    }
-
-    function filterAndRender() {
-        const q = $('qSearch').value.trim();
-        const ql = q.toLowerCase();
-
-        $('btnClearSearch').classList.toggle('hidden', !q);
-        const fb = $('fallbackLabel');
-        if (fb) fb.classList.toggle('hidden', !isFallback);
-
-        if (q) {
-            const results = [];
-            rawData.forEach(ag => {
-                (ag.peserta || []).forEach(p => {
-                    const mg = gedungFilter === 'Semua' || p.gedung === gedungFilter;
-                    const mq = [p.nama, p.kamar, p.gedung, p.peran, p.instansi, ag.judul]
-                        .some(v => String(v || '').toLowerCase().includes(ql));
-                    if (mg && mq) {
-                        results.push({
-                            ...p,
-                            _judul: ag.judul,
-                            _agendaId: ag.agenda_id
-                        });
-                    }
-                });
-            });
-
-            if (!results.length) {
-                $('mainContainer').innerHTML = `
-<div class="text-center py-16">
-  <i class="fa-solid fa-magnifying-glass" style="font-size:28px;color:#e2e8f0;display:block;margin-bottom:10px"></i>
-  <p class="text-slate-300 text-sm font-semibold">Tidak ada hasil untuk "<span class="text-slate-400">${esc(q)}</span>"</p>
-</div>`;
-                return;
-            }
-
-            $('mainContainer').innerHTML =
-                `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:0 4px">
-                    <i class="fa-solid fa-magnifying-glass" style="color:#38bdf8;font-size:11px"></i>
-                    <span style="font-size:12px;font-weight:700;color:#0ea5e9">${results.length} hasil ditemukan</span>
-                    <span style="font-size:12px;color:#94a3b8">untuk "<b>${esc(q)}</b>"</span>
-                </div>
-                <div class="space-y-2">${results.map(searchCardHtml).join('')}</div>`;
-            return;
-        }
-
-        if (!rawData.length) {
-            $('mainContainer').innerHTML = `<div class="text-center py-16 text-slate-300 text-sm">Tidak ada kegiatan aktif</div>`;
-            return;
-        }
-
-        $('mainContainer').innerHTML = rawData.map((ag, agIdx) => {
+    /* ── RENDER AGENDA LIST ─────────────────────────────────────── */
+    function renderAgendaList() {
+        return rawData.map((ag, agIdx) => {
             const allPeserta = (ag.peserta || []).filter(p => gedungFilter === 'Semua' || p.gedung === gedungFilter);
             const belum = allPeserta.filter(p => normSt(p.status_inap) === 'PENDING').length;
             const hadir = allPeserta.filter(p => normSt(p.status_inap) === 'IN').length;
@@ -685,7 +860,6 @@ include 'config.php';
 
             const pct = total ? Math.round((hadir / total) * 100) : 0;
             const pctCheckout = total ? Math.round((co / total) * 100) : 0;
-
             const pctColor = pct >= 80 ? '#047857' : pct >= 50 ? '#0ea5e9' : '#be123c';
             const pctCheckoutColor = pctCheckout >= 80 ? '#475569' : pctCheckout >= 50 ? '#64748b' : '#94a3b8';
 
@@ -740,16 +914,95 @@ include 'config.php';
         <span style="font-size:11px;color:#94a3b8;font-weight:600">${allPeserta.length} orang</span>
       </div>
       <div class="space-y-2">
-        ${allPeserta.map((p, i) => pesertaCardHtml(p, ag.agenda_id, i * .02)).join('') || '<p style="text-align:center;padding:24px 0;font-size:12px;color:#cbd5e1">Tidak ada peserta</p>'}
+        ${allPeserta.map((p, i) => pesertaCardHtml(p, ag.agenda_id, i * .02)).join('')
+          || '<p style="text-align:center;padding:24px 0;font-size:12px;color:#cbd5e1">Tidak ada peserta</p>'}
       </div>
     </div>
   </div>
 </div>`;
         }).join('');
+    }
 
+    /* ── MAIN RENDER ────────────────────────────────────────────── */
+    function filterAndRender() {
+        const q = $('qSearch').value.trim();
+        const ql = q.toLowerCase();
+
+        $('btnClearSearch').classList.toggle('hidden', !q);
+
+        // ── MODE SEARCH SELURUH RIWAYAT ──────────────────────────
+        if (q) {
+            if (searchLoading) {
+                $('mainContainer').innerHTML = `
+<div class="text-center py-16">
+  <i class="fa-solid fa-spinner fa-spin" style="font-size:26px;color:#38bdf8;display:block;margin-bottom:12px"></i>
+  <p class="text-slate-400 text-sm font-semibold">Mencari seluruh riwayat peserta...</p>
+</div>`;
+                return;
+            }
+
+            const results = remoteSearchResults.filter(p =>
+                gedungFilter === 'Semua' || p.gedung === gedungFilter
+            );
+
+            if (!results.length) {
+                $('mainContainer').innerHTML = `
+<div class="text-center py-16">
+  <i class="fa-solid fa-magnifying-glass" style="font-size:28px;color:#e2e8f0;display:block;margin-bottom:10px"></i>
+  <p class="text-slate-300 text-sm font-semibold">Tidak ada hasil untuk "<span class="text-slate-400">${esc(q)}</span>"</p>
+  <p style="font-size:10px;color:#cbd5e1;margin-top:6px">Pencarian mencakup kegiatan aktif dan kegiatan yang sudah selesai.</p>
+</div>`;
+                return;
+            }
+
+            $('mainContainer').innerHTML =
+                `<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:0 4px;flex-wrap:wrap">
+                    <i class="fa-solid fa-clock-rotate-left" style="color:#38bdf8;font-size:11px"></i>
+                    <span style="font-size:12px;font-weight:700;color:#0ea5e9">${results.length} hasil ditemukan</span>
+                    <span style="font-size:12px;color:#94a3b8">dari seluruh riwayat untuk "<b>${esc(q)}</b>"</span>
+                </div>
+                <div class="space-y-2">${results.map(searchCardHtml).join('')}</div>`;
+            return;
+        }
+
+        // ── TIDAK ADA DATA SAMA SEKALI ───────────────────────────
+        if (!rawData.length) {
+            $('mainContainer').innerHTML = `
+<div class="empty-state">
+  <div class="empty-state-icon">
+    <i class="fa-regular fa-calendar-xmark"></i>
+  </div>
+  <p class="empty-state-title">Tidak Ada Kegiatan dalam Rentang H-2 sampai H+2</p>
+  <p class="empty-state-desc">
+    Saat ini tidak ada kegiatan aktif.<br>
+    Kegiatan akan muncul otomatis mulai H-2 sampai H+2.
+  </p>
+</div>`;
+            return;
+        }
+
+        // ── FALLBACK: tidak ada kegiatan aktif ───────────────────
+        if (isFallback) {
+            $('mainContainer').innerHTML = `
+<div class="empty-state">
+  <div class="empty-state-icon">
+    <i class="fa-regular fa-calendar-xmark"></i>
+  </div>
+  <p class="empty-state-title">Tidak Ada Kegiatan dalam Rentang H-2 sampai H+2</p>
+  <p class="empty-state-desc">
+    Saat ini tidak ada kegiatan aktif.<br>
+    Kegiatan akan muncul otomatis mulai H-2 sampai H+2.
+  </p>
+</div>`;
+            return;
+        }
+
+        // ── MODE NORMAL: kegiatan aktif berjalan ─────────────────
+        $('mainContainer').innerHTML = `<div class="space-y-4">${renderAgendaList()}</div>`;
         restoreOpenAgendas();
     }
 
+    /* ── TOGGLE ACCORDION ───────────────────────────────────────── */
     function toggleKegiatan(headerEl) {
         const wrap = headerEl.closest('.kegiatan-wrap');
         if (!wrap) return;
@@ -762,24 +1015,70 @@ include 'config.php';
 
         const isOpen = body.style.display !== 'none' && body.style.display !== '';
 
-        if (isOpen) {
-            body.style.display = 'none';
-            if (agendaId) openAgendaIds.delete(agendaId);
-        } else {
-            body.style.display = 'block';
-            if (agendaId) openAgendaIds.add(agendaId);
-        }
-
+        body.style.display = isOpen ? 'none' : 'block';
+        if (agendaId) isOpen ? openAgendaIds.delete(agendaId) : openAgendaIds.add(agendaId);
         if (icon) icon.style.transform = isOpen ? '' : 'rotate(180deg)';
         if (hintIcon) hintIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
     }
 
+
+    function findPesertaById(pesertaId) {
+        for (const ag of rawData) {
+            const p = (ag.peserta || []).find(x => Number(x.id) === Number(pesertaId));
+            if (p) return p;
+        }
+        return remoteSearchResults.find(x => Number(x.id) === Number(pesertaId)) || null;
+    }
+
+    function confirmCheckout(pesertaId, agendaId) {
+        const peserta = findPesertaById(pesertaId);
+        if (!peserta) {
+            showToast('Data peserta tidak ditemukan');
+            return;
+        }
+
+        pendingCheckout = {
+            pesertaId,
+            agendaId
+        };
+        $('checkoutConfirmName').textContent = peserta.nama || '-';
+        $('checkoutConfirmRoom').textContent = [peserta.gedung, peserta.kamar ? 'Kamar ' + peserta.kamar : ''].filter(Boolean).join(' • ') || '-';
+
+        const tgl = peserta.checkin_date ? formatTanggalIndo(peserta.checkin_date) : 'Belum tercatat';
+        const jam = peserta.checkin_time ? formatJam(peserta.checkin_time) : '';
+        $('checkoutConfirmCheckin').textContent = jam ? tgl + ' • ' + jam : tgl;
+
+        $('checkoutConfirmModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeCheckoutConfirm() {
+        $('checkoutConfirmModal').classList.add('hidden');
+        document.body.style.overflow = '';
+        pendingCheckout = null;
+    }
+
+    async function executeConfirmedCheckout() {
+        if (!pendingCheckout) return;
+        const data = pendingCheckout;
+        const btn = $('checkoutConfirmButton');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Menyimpan...';
+        closeCheckoutConfirm();
+        try {
+            await doStatus(data.pesertaId, data.agendaId, 'OUT');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-door-open mr-1.5"></i>Ya, Check-Out';
+        }
+    }
+
+    /* ── DO STATUS (CHECK-IN / CHECK-OUT) ───────────────────────── */
     async function doStatus(pesertaId, agendaId, type) {
         captureOpenAgendasFromDom();
 
-        let found = null;
-        let foundAgenda = null;
-
+        let found = null,
+            foundAgenda = null;
         for (const ag of rawData) {
             const p = (ag.peserta || []).find(x => Number(x.id) === Number(pesertaId));
             if (p) {
@@ -790,27 +1089,32 @@ include 'config.php';
         }
 
         if (!found) {
+            found = remoteSearchResults.find(x => Number(x.id) === Number(pesertaId)) || null;
+        }
+
+        if (!found) {
             showToast('Data tidak ditemukan');
             return;
         }
 
         const now = getCurrentTimeString();
-
+        const today = getCurrentDateString();
         const fd = new FormData();
-        [
-            'id', 'agenda_id', 'nama', 'instansi', 'nip', 'no_hp', 'peran', 'jenis_kelamin',
+
+        ['id', 'agenda_id', 'nama', 'instansi', 'nip', 'no_hp', 'peran', 'jenis_kelamin',
             'gedung', 'lantai', 'kamar', 'bed', 'checkin_date', 'checkin_time',
             'checkout_date', 'checkout_time', 'kondisi', 'catatan'
-        ].forEach(k => fd.append(k, found[k] || ''));
+        ]
+        .forEach(k => fd.append(k, found[k] || ''));
 
         fd.set('status_inap', type === 'IN' ? 'Check-in' : 'Check-out');
-
         if (type === 'IN') {
             fd.set('checkin_time', now);
+            fd.set('checkin_date', today);
         } else {
             fd.set('checkout_time', now);
+            fd.set('checkout_date', today);
         }
-
         fd.append('force_kamar', '1');
 
         try {
@@ -818,7 +1122,6 @@ include 'config.php';
                 method: 'POST',
                 body: fd
             });
-
             const j = await r.json();
             if (!j.status) {
                 showToast(j.message || 'Gagal');
@@ -828,26 +1131,24 @@ include 'config.php';
             if (type === 'IN') {
                 found.status_inap = 'Check-in';
                 found.checkin_time = now;
+                found.checkin_date = today;
             } else {
                 found.status_inap = 'Check-out';
                 found.checkout_time = now;
+                found.checkout_date = today;
             }
 
             if (foundAgenda) {
-                const peserta = foundAgenda.peserta || [];
-                foundAgenda.belum = peserta.filter(p => normSt(p.status_inap) === 'PENDING').length;
-                foundAgenda.hadir = peserta.filter(p => normSt(p.status_inap) === 'IN').length;
-                foundAgenda.checkout = peserta.filter(p => normSt(p.status_inap) === 'OUT').length;
-                foundAgenda.total = peserta.length;
+                const ps = foundAgenda.peserta || [];
+                foundAgenda.belum = ps.filter(p => normSt(p.status_inap) === 'PENDING').length;
+                foundAgenda.hadir = ps.filter(p => normSt(p.status_inap) === 'IN').length;
+                foundAgenda.checkout = ps.filter(p => normSt(p.status_inap) === 'OUT').length;
+                foundAgenda.total = ps.length;
             }
 
             filterAndRender();
-
-            requestAnimationFrame(() => {
-                restoreOpenAgendas();
-            });
-
-            showToast(`${found.nama} ${type === 'IN' ? 'Check-In' : 'Check-Out'} @ ${now.slice(0, 5)}`);
+            requestAnimationFrame(() => restoreOpenAgendas());
+            showToast(`${found.nama} ${type === 'IN' ? 'Check-In' : 'Check-Out'} @ ${now.slice(0,5)}`);
 
         } catch (e) {
             console.error(e);
@@ -855,6 +1156,7 @@ include 'config.php';
         }
     }
 
+    /* ── EXPORT MODAL ───────────────────────────────────────────── */
     function openExportModal() {
         const today = new Date();
         const prior = new Date();

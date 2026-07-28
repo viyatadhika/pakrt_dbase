@@ -20,15 +20,11 @@ while ($r = $res->fetch_assoc()) {
 ?>
 
 <style>
-    .sticky-header {
-        position: fixed;
+    .header-container {
+        position: sticky;
         top: 0;
-        left: 0;
-        right: 0;
         z-index: 50;
-        background: #ffffff;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: #fff;
     }
 
     .jenis-tab.active {
@@ -43,40 +39,149 @@ while ($r = $res->fetch_assoc()) {
     .spinner.show {
         display: flex;
     }
+
+    .periode-btn.active {
+        background: #0284c7;
+        color: #fff;
+        border-color: #0284c7;
+    }
+
+    .new-data-toast {
+        position: fixed;
+        right: 16px;
+        bottom: 92px;
+        z-index: 120;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 15px;
+        border-radius: 999px;
+        background: #0284c7;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        box-shadow: 0 12px 30px rgba(2, 132, 199, .28);
+    }
+
+    .new-data-toast.show {
+        display: flex;
+        animation: toastIn .22s ease-out;
+    }
+
+    @keyframes toastIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px)
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0)
+        }
+    }
+
+    .item-card.new-guest {
+        animation: newGuest .7s ease-out;
+    }
+
+    @keyframes newGuest {
+        0% {
+            background: #e0f2fe;
+            transform: translateY(-5px)
+        }
+
+        100% {
+            background: #fff;
+            transform: none
+        }
+    }
+
+    .tgl-section {
+        border: 1px solid #e5e7eb;
+        border-radius: 24px;
+        background: #fff;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+    }
+
+    .tgl-head {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px;
+        background: #fff;
+    }
+
+    .tgl-list {
+        padding: 0 14px 14px;
+    }
+
+    .tgl-section.collapsed .tgl-list {
+        display: none;
+    }
+
+    .tgl-section.collapsed .tgl-chevron {
+        transform: rotate(-90deg);
+    }
+
+    .tgl-chevron {
+        transition: .2s;
+    }
+
+    .item-card {
+        transition: .2s;
+    }
+
+    .item-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+    }
 </style>
 
 <!-- Header -->
-<header class="sticky-header px-5 py-4 relative">
-    <div class="flex items-center gap-3 min-w-0">
-        <a href="javascript:window.history.back()"
-            class="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 transition">
-            <i class="fa-solid fa-arrow-left text-sm"></i>
-        </a>
-        <div class="min-w-0">
-            <h1 class="text-[17px] font-extrabold text-sky-600 leading-tight truncate">Daftar Tamu</h1>
-            <p class="text-[12px] text-gray-400 font-medium leading-tight">Riwayat kunjungan tamu</p>
+<div class="header-container">
+    <header class="px-4 py-4 flex items-center justify-between bg-white">
+        <div class="flex items-center gap-4">
+            <a href="javascript:window.history.back()"
+                class="w-10 h-10 flex items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 transition">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-lg font-extrabold text-sky-600 leading-tight">Daftar Tamu</h1>
+                <p class="text-[11px] text-gray-500 font-medium">Riwayat kunjungan tamu</p>
+            </div>
         </div>
-    </div>
-    <button onclick="openDownloadModal()"
-        class="absolute top-5 right-4 w-11 h-11 flex items-center justify-center text-sky-600 hover:bg-sky-50 rounded-full transition text-lg">
-        <i class="fa-solid fa-download text-lg"></i>
-    </button>
-</header>
+        <button onclick="openDownloadModal()"
+            class="w-10 h-10 flex items-center justify-center text-sky-600 hover:bg-sky-50 rounded-full transition">
+            <i class="fa-solid fa-download text-lg"></i>
+        </button>
+    </header>
 
-<!-- Search & Filter (di luar header) -->
-<div data-fixed-bar style="position:fixed; top:73px; left:0; right:0; z-index:48; background:#fff;">
-    <div class="px-4 pt-3 pb-2">
+    <!-- Search -->
+    <div class="px-4 pt-2 pb-2 bg-white">
         <div class="relative group">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <i class="fa-solid fa-magnifying-glass text-gray-400 group-focus-within:text-sky-500 transition-colors"></i>
             </div>
             <input type="text" id="mainSearch"
                 placeholder="Cari nama, instansi, email..."
-                class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-sky-300 outline-none transition-all">
+                class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-sky-300 focus:ring-4 focus:ring-sky-50 outline-none transition-all">
         </div>
     </div>
+
+    <!-- Filter Periode -->
+    <div class="px-4 py-2 bg-white overflow-x-auto">
+        <div class="flex gap-2 min-w-max" id="periodeContainer">
+            <button class="periode-btn active px-4 py-2 rounded-xl border text-xs font-bold" data-period="all" onclick="switchPeriod('all',this)">Semua</button>
+            <button class="periode-btn px-4 py-2 rounded-xl border text-xs font-bold bg-gray-50 text-gray-600" data-period="today" onclick="switchPeriod('today',this)">Hari Ini</button>
+            <button class="periode-btn px-4 py-2 rounded-xl border text-xs font-bold bg-gray-50 text-gray-600" data-period="7" onclick="switchPeriod('7',this)">7 Hari</button>
+            <button class="periode-btn px-4 py-2 rounded-xl border text-xs font-bold bg-gray-50 text-gray-600" data-period="30" onclick="switchPeriod('30',this)">30 Hari</button>
+        </div>
+    </div>
+
     <!-- Filter Tabs -->
-    <div class="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide" id="tabContainer">
+    <div class="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide bg-white" id="tabContainer">
         <button type="button" class="jenis-tab active shrink-0 px-5 py-2 rounded-2xl text-xs font-semibold border border-transparent transition flex items-center gap-1.5"
             data-jenis="" onclick="switchTab('', this)">
             Semua
@@ -100,9 +205,10 @@ while ($r = $res->fetch_assoc()) {
     </div>
 </div>
 
-<!-- Main List — offset: 73px header + ~110px searchbar+tabs -->
-<main id="listTamu" class="px-4 py-4 mb-28 bg-white" id="mainContent" style="margin-top:183px;">
+<!-- Main List -->
+<main id="listTamu" class="px-4 py-4 mb-28 bg-white">
 
+    <!-- Empty State -->
     <div id="emptyState" class="hidden flex-col items-center justify-center py-20 px-6 text-center">
         <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
             <i class="fa-solid fa-users text-3xl text-gray-200"></i>
@@ -114,10 +220,14 @@ while ($r = $res->fetch_assoc()) {
 
     <div id="sectionsWrapper" class="space-y-8"></div>
 
+    <!-- Spinner -->
     <div id="spinner" class="spinner items-center justify-center py-8">
         <i class="fa-solid fa-circle-notch animate-spin text-sky-400 text-2xl"></i>
     </div>
 
+    <div class="text-center py-4"><button id="loadMoreBtn" onclick="loadData()" class="hidden px-5 py-3 rounded-2xl bg-sky-50 text-sky-700 text-xs font-extrabold">Muat Data Berikutnya</button></div>
+
+    <!-- End -->
     <div id="endMsg" class="hidden text-center py-6 text-[11px] text-gray-400 font-medium">
         Semua data sudah ditampilkan
     </div>
@@ -138,7 +248,9 @@ while ($r = $res->fetch_assoc()) {
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
+
                 <div id="detailBadge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-5"></div>
+
                 <div class="space-y-3">
                     <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-2xl">
                         <div class="w-8 h-8 bg-white rounded-xl flex items-center justify-center border border-gray-100 shrink-0">
@@ -186,6 +298,7 @@ while ($r = $res->fetch_assoc()) {
                         </div>
                     </div>
                 </div>
+
                 <button id="btnHapusTamu" type="button" onclick="hapusTamu()"
                     class="w-full mt-5 py-3 rounded-2xl bg-red-50 text-red-600 font-extrabold text-sm">
                     <i class="fa-solid fa-trash-can mr-2"></i> Hapus Data Tamu
@@ -225,52 +338,65 @@ while ($r = $res->fetch_assoc()) {
     </div>
 </div>
 
+<button type="button" id="newDataToast" class="new-data-toast" onclick="applyPendingRefresh()"><i class="fa-solid fa-rotate"></i><span>Ada tamu baru — tampilkan</span></button>
+
 <?php include 'footer.php'; ?>
 
 <script>
-    let currentPage = 1,
-        currentJenis = '',
-        currentSearch = '';
-    let isLoading = false,
-        hasMore = true,
-        searchDebounce = null,
-        currentDetailId = null;
+    let currentPage = 1;
+    let currentJenis = '';
+    let currentSearch = '';
+    let currentPeriod = 'all';
+    let isLoading = false;
+    let hasMore = true;
+    let searchDebounce = null;
+    let currentDetailId = null;
+    let latestGuestId = 0;
+    let autoRefreshTimer = null;
+    const AUTO_REFRESH_MS = 3000;
 
     const sectionsWrapper = document.getElementById('sectionsWrapper');
     const spinner = document.getElementById('spinner');
     const emptyState = document.getElementById('emptyState');
     const endMsg = document.getElementById('endMsg');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const newDataToast = document.getElementById('newDataToast');
 
     const jenisColorMap = {
         pelayanan_umum: {
             icon: 'bg-sky-50 text-sky-600',
             badge: 'bg-sky-50 text-sky-600',
-            kode: 'text-sky-500'
+            kode: 'text-sky-500',
+            bar: 'bg-sky-500'
         },
         pelayanan_informasi: {
             icon: 'bg-amber-50 text-amber-600',
             badge: 'bg-amber-50 text-amber-600',
-            kode: 'text-amber-500'
+            kode: 'text-amber-500',
+            bar: 'bg-amber-500'
         },
         pelayanan_pengaduan: {
             icon: 'bg-red-50 text-red-600',
             badge: 'bg-red-50 text-red-600',
-            kode: 'text-red-500'
+            kode: 'text-red-500',
+            bar: 'bg-red-500'
         },
     };
     const jenisIconMap = {
         pelayanan_umum: 'fa-users',
         pelayanan_informasi: 'fa-circle-info',
-        pelayanan_pengaduan: 'fa-bullhorn'
+        pelayanan_pengaduan: 'fa-bullhorn',
     };
     const jenisLabelMap = {
         pelayanan_umum: 'Pelayanan Umum',
         pelayanan_informasi: 'Pelayanan Informasi',
-        pelayanan_pengaduan: 'Pelayanan Pengaduan'
+        pelayanan_pengaduan: 'Pelayanan Pengaduan',
     };
 
+    // ===== LOAD =====
     async function loadData(reset = false) {
         if (isLoading || (!hasMore && !reset)) return;
+
         if (reset) {
             currentPage = 1;
             hasMore = true;
@@ -279,24 +405,48 @@ while ($r = $res->fetch_assoc()) {
             emptyState.classList.add('hidden');
             emptyState.classList.remove('flex');
         }
+
         isLoading = true;
         spinner.classList.add('show');
+
         try {
-            const url = `daftar_tamu_ajax.php?page=${currentPage}&jenis=${encodeURIComponent(currentJenis)}&q=${encodeURIComponent(currentSearch)}`;
-            const res = await fetch(url);
-            const data = await res.json();
+            const url = `daftar_tamu_ajax.php?page=${currentPage}&jenis=${encodeURIComponent(currentJenis)}&q=${encodeURIComponent(currentSearch)}&period=${encodeURIComponent(currentPeriod)}`;
+            const res = await fetch(url, {
+                cache: 'no-store'
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const text = await res.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Respons AJAX:', text);
+                throw e;
+            }
+            if (!Array.isArray(data.rows)) throw new Error('Format data tidak valid');
+
             renderRows(data.rows);
+            if (data.rows.length) latestGuestId = Math.max(latestGuestId, ...data.rows.map(r => Number(r.id) || 0));
+
             hasMore = data.hasMore;
             currentPage++;
-            if (data.counts) Object.keys(data.counts).forEach(k => {
-                const el = document.getElementById('badge-' + k);
-                if (el) el.textContent = data.counts[k];
-            });
+            loadMoreBtn.classList.toggle('hidden', !hasMore);
+
+            // Update badge counts
+            if (data.counts) {
+                Object.keys(data.counts).forEach(k => {
+                    const el = document.getElementById('badge-' + k);
+                    if (el) el.textContent = data.counts[k];
+                });
+            }
+
             if (data.total === 0) {
                 emptyState.classList.remove('hidden');
                 emptyState.classList.add('flex');
             }
-            if (!hasMore && data.total > 0) endMsg.classList.remove('hidden');
+            if (!hasMore && data.total > 0) {
+                endMsg.classList.remove('hidden');
+            }
         } catch (e) {
             console.error(e);
         } finally {
@@ -305,21 +455,35 @@ while ($r = $res->fetch_assoc()) {
         }
     }
 
+    // ===== RENDER — persis style stok_barang =====
     function renderRows(rows) {
         rows.forEach(r => {
             const tgl = r.tanggal_key;
             const warna = jenisColorMap[r.jenis_layanan] || jenisColorMap['pelayanan_umum'];
             const icon = jenisIconMap[r.jenis_layanan] || 'fa-user';
             const label = jenisLabelMap[r.jenis_layanan] || '-';
+
+            // Buat section tanggal kalau belum ada
             let sec = sectionsWrapper.querySelector(`.tgl-section[data-tgl="${tgl}"]`);
             if (!sec) {
                 sec = document.createElement('section');
                 sec.className = 'tgl-section';
                 sec.dataset.tgl = tgl;
-                sec.innerHTML = `<div class="flex items-center gap-2 mb-4"><div class="h-5 w-1.5 bg-sky-500 rounded-full"></div><h2 class="font-bold text-gray-800 text-sm">${r.tanggal_label}</h2></div><div class="space-y-3 tgl-list"></div>`;
+                sec.innerHTML = `
+                <button type="button" class="tgl-head" onclick="toggleTanggal(this)">
+                    <div class="flex items-center gap-3 text-left">
+                        <div class="h-8 w-1.5 bg-sky-500 rounded-full"></div>
+                        <div><h2 class="font-extrabold text-gray-800 text-sm">${r.tanggal_label}</h2><p class="text-[10px] text-gray-400"><span class="tgl-count">0</span> kunjungan</p></div>
+                    </div>
+                    <i class="fa-solid fa-chevron-down text-gray-400 tgl-chevron"></i>
+                </button>
+                <div class="space-y-3 tgl-list"></div>
+            `;
                 sectionsWrapper.appendChild(sec);
             }
+
             const list = sec.querySelector('.tgl-list');
+
             const detail = JSON.stringify({
                 id: r.id,
                 nama: r.nama,
@@ -327,10 +491,11 @@ while ($r = $res->fetch_assoc()) {
                 asal: r.asal,
                 no_hp: r.no_hp,
                 jenis: r.jenis_layanan,
-                label,
+                label: label,
                 keperluan: r.keperluan,
                 waktu: r.waktu_label
             });
+
             const card = document.createElement('div');
             card.className = 'item-card bg-white rounded-3xl p-4 flex justify-between items-center border shadow-sm cursor-pointer';
             card.dataset.id = r.id;
@@ -338,28 +503,35 @@ while ($r = $res->fetch_assoc()) {
             card.onclick = function() {
                 openDetail(JSON.parse(this.dataset.detail));
             };
+
             card.innerHTML = `
-                <div class="flex gap-4 items-center min-w-0">
-                    <div class="w-12 h-12 rounded-2xl ${warna.icon} flex items-center justify-center shrink-0">
-                        <i class="fa-solid ${icon} text-xl"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <span class="text-[10px] font-bold ${warna.kode}">${label}</span>
-                        <h3 class="font-bold text-gray-800 text-sm truncate">${escHtml(r.nama)}</h3>
-                        <p class="text-xs text-gray-500 truncate">${escHtml(r.asal)}</p>
-                    </div>
+            <div class="flex gap-4 items-center min-w-0">
+                <div class="w-12 h-12 rounded-2xl ${warna.icon} flex items-center justify-center shrink-0">
+                    <i class="fa-solid ${icon} text-xl"></i>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-[10px] text-gray-400">${r.jam}</span>
-                    <button type="button" class="w-10 h-10 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400">
-                        <i class="fa-solid fa-chevron-right text-xs"></i>
-                    </button>
-                </div>`;
-            card.querySelector('button').onclick = e => {
+                <div class="min-w-0">
+                    <span class="text-[10px] font-bold ${warna.kode}">${label}</span>
+                    <h3 class="font-bold text-gray-800 text-sm truncate">${escHtml(r.nama)}</h3>
+                    <p class="text-xs text-gray-500 truncate">${escHtml(r.asal)}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-[10px] text-gray-400">${r.jam}</span>
+                <button type="button"
+                    class="w-10 h-10 flex items-center justify-center rounded-2xl bg-gray-50 text-gray-400">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+        `;
+
+            // stop propagation tombol panah
+            card.querySelector('button').onclick = function(e) {
                 e.stopPropagation();
                 openDetail(JSON.parse(card.dataset.detail));
             };
+
             list.appendChild(card);
+            sec.querySelector('.tgl-count').textContent = list.children.length;
         });
     }
 
@@ -367,13 +539,36 @@ while ($r = $res->fetch_assoc()) {
         return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    function toggleTanggal(btn) {
+        btn.closest('.tgl-section').classList.toggle('collapsed');
+    }
+
+    function switchPeriod(period, btn) {
+        currentPeriod = period;
+        document.querySelectorAll('.periode-btn').forEach(b => {
+            b.classList.remove('active');
+            b.classList.add('bg-gray-50', 'text-gray-600');
+        });
+        btn.classList.add('active');
+        btn.classList.remove('bg-gray-50', 'text-gray-600');
+        loadData(true);
+    }
+
+    // ===== RESET =====
     function resetTampilan() {
         currentSearch = '';
         document.getElementById('mainSearch').value = '';
-        const allTab = document.querySelectorAll('.jenis-tab')[0];
+        const tabContainer = document.getElementById('tabContainer');
+        if (tabContainer) tabContainer.scrollTo({
+            left: 0,
+            behavior: 'smooth'
+        });
+        const allTab = document.querySelector('.jenis-tab[onclick*="switchTab(\'\', this)"]') ||
+            document.querySelectorAll('.jenis-tab')[0];
         if (allTab) switchTab('', allTab);
     }
 
+    // ===== SWITCH TAB =====
     function switchTab(jenis, btn) {
         currentJenis = jenis;
         currentSearch = '';
@@ -387,6 +582,7 @@ while ($r = $res->fetch_assoc()) {
         loadData(true);
     }
 
+    // ===== SEARCH =====
     document.getElementById('mainSearch').addEventListener('input', function() {
         clearTimeout(searchDebounce);
         const val = this.value.trim();
@@ -396,10 +592,13 @@ while ($r = $res->fetch_assoc()) {
         }, 400);
     });
 
+    // ===== INFINITE SCROLL =====
     window.addEventListener('scroll', () => {
-        if (!isLoading && hasMore && window.scrollY + window.innerHeight >= document.body.offsetHeight - 300) loadData();
+        if (isLoading || !hasMore) return;
+        if (window.scrollY + window.innerHeight >= document.body.offsetHeight - 300) loadData();
     });
 
+    // ===== DETAIL =====
     function openDetail(data) {
         currentDetailId = data.id;
         document.getElementById('detailNama').textContent = data.nama || '-';
@@ -408,11 +607,13 @@ while ($r = $res->fetch_assoc()) {
         document.getElementById('detailHp').textContent = data.no_hp || '-';
         document.getElementById('detailKeperluan').textContent = data.keperluan || '-';
         document.getElementById('detailWaktu').textContent = data.waktu || '-';
+
         const warna = jenisColorMap[data.jenis] || jenisColorMap['pelayanan_umum'];
         const icon = jenisIconMap[data.jenis] || 'fa-user';
         const badge = document.getElementById('detailBadge');
         badge.className = `inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-5 ${warna.badge}`;
         badge.innerHTML = `<i class="fa-solid ${icon}"></i> ${data.label}`;
+
         document.getElementById('detailModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
@@ -423,13 +624,18 @@ while ($r = $res->fetch_assoc()) {
         currentDetailId = null;
     }
 
+    // ===== HAPUS =====
     function hapusTamu() {
-        if (!currentDetailId || !confirm('Hapus data tamu ini?')) return;
+        if (!currentDetailId) return;
+        if (!confirm('Hapus data tamu ini?')) return;
+
         const btn = document.getElementById('btnHapusTamu');
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Menghapus...';
+
         const fd = new FormData();
         fd.append('id', currentDetailId);
+
         fetch('buku_tamu_hapus.php', {
                 method: 'POST',
                 body: fd
@@ -442,6 +648,7 @@ while ($r = $res->fetch_assoc()) {
                     alert('Gagal: ' + (res.message || 'Error'));
                     return;
                 }
+
                 const card = sectionsWrapper.querySelector(`.item-card[data-id="${currentDetailId}"]`);
                 if (card) {
                     const sec = card.closest('.tgl-section');
@@ -458,6 +665,7 @@ while ($r = $res->fetch_assoc()) {
             });
     }
 
+    // ===== DOWNLOAD =====
     function openDownloadModal() {
         const today = new Date(),
             past = new Date();
@@ -472,27 +680,21 @@ while ($r = $res->fetch_assoc()) {
     }
 
     function doDownload() {
-        const from = document.getElementById('dlFrom').value,
-            to = document.getElementById('dlTo').value;
+        const from = document.getElementById('dlFrom').value;
+        const to = document.getElementById('dlTo').value;
         if (from && to && from > to) {
             alert("Tanggal 'Dari' tidak boleh lebih besar dari 'Sampai'");
             return;
         }
+        let url = 'buku_tamu_export.php';
         const p = [];
         if (from) p.push('from=' + encodeURIComponent(from));
         if (to) p.push('to=' + encodeURIComponent(to));
-        window.location.href = 'buku_tamu_export.php' + (p.length ? '?' + p.join('&') : '');
+        if (p.length) url += '?' + p.join('&');
+        window.location.href = url;
         closeDownloadModal();
     }
 
+    // ===== INIT =====
     loadData(true);
-
-    // Dynamic offset agar konten tidak tertutup fixed bar
-    function updateOffset() {
-        var bar = document.querySelector('[data-fixed-bar]');
-        var main = document.getElementById('mainContent');
-        if (bar && main) main.style.marginTop = (bar.offsetHeight + 73) + 'px';
-    }
-    window.addEventListener('load', updateOffset);
-    window.addEventListener('resize', updateOffset);
 </script>

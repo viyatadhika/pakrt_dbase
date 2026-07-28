@@ -15,12 +15,12 @@ function sendOTPEmail($toEmail, $otpCode)
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
-        $mail->Username = 'timedit1pusdiklat@gmail.com';
-        $mail->Password = 'nqxx mxxk ipbu geev';
+        $mail->Username = 'timedit2pusdiklat@gmail.com';
+        $mail->Password = 'vazj qboo apqt szfv';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
 
-        $mail->setFrom('timedit1pusdiklat@gmail.com', 'WARGA RT Super App');
+        $mail->setFrom('timedit2pusdiklat@gmail.com', 'WARGA RT Super App');
         $mail->addAddress($toEmail);
 
         $mail->isHTML(true);

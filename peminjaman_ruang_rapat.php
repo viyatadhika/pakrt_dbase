@@ -10,7 +10,7 @@ $isAdmin = $isLoggedIn && strtolower($_SESSION['user']['role'] ?? '') === 'admin
 
 if (!defined('INSTANSI')) define('INSTANSI', 'Pusdiklat Mahkamah Agung RI');
 if (!defined('BASE_URL')) {
-    define('BASE_URL', 'http://192.168.200.49/wargart/');
+    define('BASE_URL', 'https://app.bsdk.mahkamahagung.go.id/wargart/');
 }
 ?>
 

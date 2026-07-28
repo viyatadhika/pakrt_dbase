@@ -82,7 +82,7 @@ function generatePin(): string
 
 function appBaseUrl(): string
 {
-    return 'http://192.168.200.49/wargart/';
+    return 'https://app.bsdk.mahkamahagung.go.id/wargart/';
 }
 
 function absUrl(string $path): string

@@ -6,6 +6,67 @@ session_start();
 require 'config.php';
 date_default_timezone_set('Asia/Jakarta');
 
+// =====================================================================
+// AJAX LIVE DATA — dipanggil otomatis tanpa me-refresh seluruh halaman
+// =====================================================================
+if (isset($_GET['action']) && $_GET['action'] === 'live') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 8;
+    $limit = max(1, min($limit, 20));
+
+    $response = [
+        'success' => false,
+        'server_time' => date('Y-m-d H:i:s'),
+        'total_hari_ini' => 0,
+        'latest_id' => 0,
+        'items' => [],
+    ];
+
+    try {
+        $countResult = $conn->query("SELECT COUNT(*) AS total FROM buku_tamu WHERE DATE(created_at) = CURDATE()");
+        if ($countResult) {
+            $countRow = $countResult->fetch_assoc();
+            $response['total_hari_ini'] = (int) ($countRow['total'] ?? 0);
+        }
+
+        $sql = "SELECT id, nama, asal, jenis_layanan, keperluan, created_at
+                FROM buku_tamu
+                WHERE DATE(created_at) = CURDATE()
+                ORDER BY created_at DESC, id DESC
+                LIMIT " . $limit;
+        $result = $conn->query($sql);
+
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $id = (int) ($row['id'] ?? 0);
+                if ($id > $response['latest_id']) {
+                    $response['latest_id'] = $id;
+                }
+
+                $response['items'][] = [
+                    'id' => $id,
+                    'nama' => (string) ($row['nama'] ?? ''),
+                    'asal' => (string) ($row['asal'] ?? ''),
+                    'jenis_layanan' => (string) ($row['jenis_layanan'] ?? ''),
+                    'keperluan' => (string) ($row['keperluan'] ?? ''),
+                    'created_at' => (string) ($row['created_at'] ?? ''),
+                ];
+            }
+        }
+
+        $response['success'] = true;
+    } catch (Throwable $e) {
+        http_response_code(500);
+        $response['message'] = 'Gagal memuat data tamu terbaru.';
+    }
+
+    echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 $pesan     = '';
 $pesanTipe = '';
 $submitted = isset($_GET['sukses']) && $_GET['sukses'] === '1';
@@ -688,6 +749,248 @@ $jenisIcon = [
                 opacity: 1;
             }
         }
+
+
+        /* ===================== LIVE GUEST LIST ===================== */
+        .live-section {
+            padding: 0 20px 36px;
+        }
+
+        .live-card {
+            max-width: 760px;
+            margin: 0 auto;
+            background: var(--white);
+            border: 1px solid rgba(226, 232, 240, .9);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: 0 8px 28px rgba(15, 23, 42, .07);
+        }
+
+        .live-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 14px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .live-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            min-width: 0;
+        }
+
+        .live-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--blue-md);
+            background: var(--blue-lt);
+        }
+
+        .live-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--ink);
+        }
+
+        .live-subtitle {
+            margin-top: 2px;
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+        .live-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            color: #047857;
+            background: #ecfdf5;
+            font-size: 9px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .live-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        .live-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 11px 13px;
+            border-radius: 14px;
+            background: #f8fafc;
+        }
+
+        .live-total-label {
+            font-size: 10px;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .live-total-value {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--blue-dk);
+        }
+
+        .live-updated {
+            text-align: right;
+            font-size: 9px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        .guest-list {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .guest-item {
+            display: grid;
+            grid-template-columns: 42px minmax(0, 1fr) auto;
+            gap: 11px;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            background: #fff;
+            transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease, background .25s ease;
+        }
+
+        .guest-item.is-new {
+            background: #eff6ff;
+            border-color: #93c5fd;
+            box-shadow: 0 7px 20px rgba(37, 99, 235, .13);
+            animation: newGuestIn .45s ease both;
+        }
+
+        @keyframes newGuestIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px) scale(.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .guest-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            background: linear-gradient(135deg, var(--blue-md), var(--teal));
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .guest-main {
+            min-width: 0;
+        }
+
+        .guest-name {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .guest-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px 9px;
+            align-items: center;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 9px;
+            line-height: 1.45;
+        }
+
+        .guest-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .guest-time {
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--blue-md);
+            white-space: nowrap;
+        }
+
+        .guest-empty,
+        .guest-error {
+            padding: 24px 16px;
+            text-align: center;
+            border: 1px dashed var(--border);
+            border-radius: 15px;
+            color: #94a3b8;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .guest-error {
+            color: #b91c1c;
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
+
+        @media (min-width: 768px) {
+            .live-section {
+                padding-left: 32px;
+                padding-right: 32px;
+            }
+
+            .live-card {
+                padding: 22px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .live-head {
+                align-items: flex-start;
+            }
+
+            .live-status {
+                padding: 6px 8px;
+            }
+
+            .guest-item {
+                grid-template-columns: 40px minmax(0, 1fr);
+            }
+
+            .guest-time {
+                grid-column: 2;
+                justify-self: start;
+            }
+        }
     </style>
 </head>
 
@@ -927,6 +1230,37 @@ $jenisIcon = [
 
     <?php endif; ?>
 
+    <!-- DATA TAMU TERBARU — otomatis diperbarui tanpa reload halaman -->
+    <section class="live-section" aria-labelledby="liveGuestTitle">
+        <div class="live-card">
+            <div class="live-head">
+                <div class="live-title-wrap">
+                    <div class="live-icon"><i class="fa-solid fa-users-viewfinder"></i></div>
+                    <div>
+                        <h2 class="live-title" id="liveGuestTitle">Tamu Hari Ini</h2>
+                        <p class="live-subtitle">Data baru muncul otomatis tanpa me-refresh halaman</p>
+                    </div>
+                </div>
+                <div class="live-status" id="liveStatus">
+                    <span class="live-status-dot"></span>
+                    LIVE
+                </div>
+            </div>
+
+            <div class="live-summary">
+                <div>
+                    <div class="live-total-label">Total kunjungan hari ini</div>
+                    <div class="live-total-value" id="liveTotal">0</div>
+                </div>
+                <div class="live-updated" id="liveUpdated">Menghubungkan ke data...</div>
+            </div>
+
+            <div class="guest-list" id="guestList">
+                <div class="guest-empty"><i class="fa-solid fa-spinner fa-spin"></i><br>Memuat tamu terbaru...</div>
+            </div>
+        </div>
+    </section>
+
     <script>
         // Clock
         function updateClock() {
@@ -937,6 +1271,178 @@ $jenisIcon = [
             if (el) el.textContent = hh + ':' + mm;
         }
         setInterval(updateClock, 10000);
+        updateClock();
+
+        // ==========================================================
+        // LIVE GUEST DATA — polling ringan setiap 5 detik
+        // ==========================================================
+        const LIVE_REFRESH_MS = 5000;
+        let liveTimer = null;
+        let lastLatestId = 0;
+        let isFirstLiveLoad = true;
+        let liveRequestRunning = false;
+
+        const jenisMeta = {
+            pelayanan_umum: {
+                label: 'Pelayanan Umum',
+                icon: 'fa-users'
+            },
+            pelayanan_informasi: {
+                label: 'Pelayanan Informasi',
+                icon: 'fa-circle-info'
+            },
+            pelayanan_pengaduan: {
+                label: 'Pelayanan Pengaduan',
+                icon: 'fa-bullhorn'
+            }
+        };
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function guestInitials(name) {
+            const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+            if (!parts.length) return 'T';
+            const first = parts[0].charAt(0);
+            const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+            return (first + last).toUpperCase();
+        }
+
+        function formatLiveTime(dateValue) {
+            if (!dateValue) return '--:--';
+            const normalized = String(dateValue).replace(' ', 'T');
+            const date = new Date(normalized);
+            if (Number.isNaN(date.getTime())) {
+                const match = String(dateValue).match(/(\d{2}:\d{2})/);
+                return match ? match[1] : '--:--';
+            }
+            return new Intl.DateTimeFormat('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).format(date).replace('.', ':');
+        }
+
+        function renderGuestList(items, latestId) {
+            const list = document.getElementById('guestList');
+            if (!list) return;
+
+            if (!Array.isArray(items) || items.length === 0) {
+                list.innerHTML = '<div class="guest-empty"><i class="fa-regular fa-calendar-xmark"></i><br>Belum ada tamu yang tercatat hari ini.</div>';
+                return;
+            }
+
+            list.innerHTML = items.map((item) => {
+                const meta = jenisMeta[item.jenis_layanan] || {
+                    label: 'Layanan',
+                    icon: 'fa-building-circle-check'
+                };
+                const isNew = !isFirstLiveLoad && Number(item.id) > lastLatestId;
+                return `
+                    <article class="guest-item ${isNew ? 'is-new' : ''}" data-id="${Number(item.id) || 0}">
+                        <div class="guest-avatar">${escapeHtml(guestInitials(item.nama))}</div>
+                        <div class="guest-main">
+                            <div class="guest-name">${escapeHtml(item.nama || 'Tamu')}</div>
+                            <div class="guest-meta">
+                                <span><i class="fa-solid fa-building"></i>${escapeHtml(item.asal || '-')}</span>
+                                <span><i class="fa-solid ${meta.icon}"></i>${escapeHtml(meta.label)}</span>
+                            </div>
+                        </div>
+                        <time class="guest-time">${escapeHtml(formatLiveTime(item.created_at))} WIB</time>
+                    </article>`;
+            }).join('');
+
+            if (!isFirstLiveLoad && latestId > lastLatestId) {
+                window.setTimeout(() => {
+                    document.querySelectorAll('.guest-item.is-new').forEach(el => el.classList.remove('is-new'));
+                }, 3500);
+            }
+        }
+
+        async function loadLiveGuests() {
+            if (liveRequestRunning || document.hidden) return;
+            liveRequestRunning = true;
+
+            const status = document.getElementById('liveStatus');
+            try {
+                const response = await fetch('buku_tamu.php?action=live&limit=8&_=' + Date.now(), {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'Data tidak tersedia');
+                }
+
+                const latestId = Number(data.latest_id || 0);
+                renderGuestList(data.items || [], latestId);
+
+                const total = document.getElementById('liveTotal');
+                const updated = document.getElementById('liveUpdated');
+                if (total) total.textContent = Number(data.total_hari_ini || 0).toLocaleString('id-ID');
+                if (updated) {
+                    const now = new Date();
+                    updated.innerHTML = 'Terakhir diperbarui<br><strong>' +
+                        now.toLocaleTimeString('id-ID', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        }).replace(/\./g, ':') +
+                        ' WIB</strong>';
+                }
+                if (status) {
+                    status.style.background = '#ecfdf5';
+                    status.style.color = '#047857';
+                    status.innerHTML = '<span class="live-status-dot"></span> LIVE';
+                }
+
+                if (latestId > lastLatestId) lastLatestId = latestId;
+                isFirstLiveLoad = false;
+            } catch (error) {
+                console.error('Gagal memuat data tamu:', error);
+                const list = document.getElementById('guestList');
+                if (list && isFirstLiveLoad) {
+                    list.innerHTML = '<div class="guest-error"><i class="fa-solid fa-triangle-exclamation"></i><br>Data tamu belum dapat dimuat. Sistem akan mencoba kembali otomatis.</div>';
+                }
+                if (status) {
+                    status.style.background = '#fef2f2';
+                    status.style.color = '#b91c1c';
+                    status.innerHTML = '<i class="fa-solid fa-rotate"></i> MENCOBA LAGI';
+                }
+            } finally {
+                liveRequestRunning = false;
+            }
+        }
+
+        function startLiveRefresh() {
+            window.clearInterval(liveTimer);
+            loadLiveGuests();
+            liveTimer = window.setInterval(loadLiveGuests, LIVE_REFRESH_MS);
+        }
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                window.clearInterval(liveTimer);
+            } else {
+                startLiveRefresh();
+            }
+        });
+
+        startLiveRefresh();
 
         // Client-side validation + disable double submit
         const form = document.getElementById('formTamu');

@@ -8,6 +8,11 @@ date_default_timezone_set('Asia/Jakarta');
 session_start();
 require_once 'config.php';
 
+// Fallback aman: definisi utama sebaiknya tetap berada di config.php.
+if (!defined('EXTERNAL_API_KEY')) {
+    define('EXTERNAL_API_KEY', '');
+}
+
 $db = $conn ?? $koneksi ?? null;
 if (!($db instanceof mysqli)) {
     echo json_encode([
@@ -62,40 +67,276 @@ function tc($v)
     return $v === '' ? null : mb_convert_case($v, MB_CASE_TITLE, 'UTF-8');
 }
 
-function normalize_date_value($v)
+// Ambil header request dengan cara yang aman meski getallheaders() tidak tersedia
+function get_request_header($name)
 {
-    $v = nullable($v);
-    if ($v === null) return null;
-    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : null;
-}
-
-function normalize_time_value($v)
-{
-    $v = nullable($v);
-    if ($v === null) return null;
-
-    $v = str_replace('.', ':', $v);
-
-    if (preg_match('/^\d{2}:\d{2}$/', $v)) {
-        $v .= ':00';
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        foreach ($headers as $k => $v) {
+            if (strcasecmp($k, $name) === 0) return $v;
+        }
     }
-
-    return preg_match('/^\d{2}:\d{2}:\d{2}$/', $v) ? $v : null;
-}
-
-function bind_params_dynamic($stmt, $types, &$params)
-{
-    $bind = [$types];
-    foreach ($params as $k => $v) {
-        $bind[] = &$params[$k];
-    }
-    return call_user_func_array([$stmt, 'bind_param'], $bind);
+    $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+    return isset($_SERVER[$serverKey]) ? $_SERVER[$serverKey] : '';
 }
 
 $action = $_GET['action'] ?? '';
 
+/* ── EXTERNAL API: SYNC KAMAR (laskar.bsdk) ───────────────
+   Endpoint khusus untuk aplikasi laskar.bsdk.mahkamahagung.go.id
+   menarik data kamar peserta beserta NIP untuk keperluan sinkronisasi.
+   Metode: POST, autentikasi via header X-API-Key.
+──────────────────────────────────────────────────────────── */
+if ($action === 'sync_kamar') {
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        err('Method tidak diizinkan, gunakan POST', null, 405);
+    }
+
+    header('Access-Control-Allow-Origin: https://laskar.bsdk.mahkamahagung.go.id');
+    header('Access-Control-Allow-Methods: POST');
+    header('Access-Control-Allow-Headers: X-API-Key, Content-Type');
+
+    if (!defined('EXTERNAL_API_KEY') || EXTERNAL_API_KEY === '') {
+        err('API key belum dikonfigurasi di server', null, 500);
+    }
+
+    $key = get_request_header('X-API-Key');
+
+    if ($key === '' || !hash_equals(EXTERNAL_API_KEY, $key)) {
+        err('Unauthorized', null, 401);
+    }
+
+    // Filter opsional: agenda_id dan kategori (penyelenggara, mis. "Pusdiklat Teknis")
+    // Bisa dikirim lewat form POST biasa atau JSON body.
+    $jsonBody = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($jsonBody)) $jsonBody = [];
+
+    $agendaFilter = '';
+    if (isset($_POST['agenda_id']) && $_POST['agenda_id'] !== '') {
+        $agendaFilter = $_POST['agenda_id'];
+    } elseif (isset($jsonBody['agenda_id']) && $jsonBody['agenda_id'] !== '') {
+        $agendaFilter = $jsonBody['agenda_id'];
+    }
+    $agendaFilter = $agendaFilter === '' ? null : (int)$agendaFilter;
+
+    $kategoriFilter = '';
+    if (isset($_POST['kategori']) && $_POST['kategori'] !== '') {
+        $kategoriFilter = $_POST['kategori'];
+    } elseif (isset($jsonBody['kategori']) && $jsonBody['kategori'] !== '') {
+        $kategoriFilter = $jsonBody['kategori'];
+    }
+    $kategoriFilter = trim((string)$kategoriFilter) === '' ? null : trim((string)$kategoriFilter);
+
+    // Validasi kategori: hanya 4 nilai ini yang valid di sistem
+    $validKategori = ['Kerjasama', 'Teknis', 'Menpim', 'Pustrajak'];
+    if ($kategoriFilter !== null && !in_array($kategoriFilter, $validKategori, true)) {
+        err('Kategori tidak valid. Gunakan salah satu: ' . implode(', ', $validKategori), null, 400);
+    }
+
+    $peranFilter = '';
+    if (isset($_POST['peran']) && $_POST['peran'] !== '') {
+        $peranFilter = $_POST['peran'];
+    } elseif (isset($jsonBody['peran']) && $jsonBody['peran'] !== '') {
+        $peranFilter = $jsonBody['peran'];
+    }
+    $peranFilter = trim((string)$peranFilter) === '' ? null : trim((string)$peranFilter);
+
+    // Validasi peran: hanya 3 nilai ini yang valid di sistem
+    $validPeran = ['Peserta', 'Pengajar', 'Panitia'];
+    if ($peranFilter !== null && !in_array($peranFilter, $validPeran, true)) {
+        err('Peran tidak valid. Gunakan salah satu: ' . implode(', ', $validPeran), null, 400);
+    }
+
+    // Filter per personal: berdasarkan NIP (untuk ambil data satu orang saja)
+    $nipFilter = '';
+    if (isset($_POST['nip']) && $_POST['nip'] !== '') {
+        $nipFilter = $_POST['nip'];
+    } elseif (isset($jsonBody['nip']) && $jsonBody['nip'] !== '') {
+        $nipFilter = $jsonBody['nip'];
+    }
+    $nipFilter = trim((string)$nipFilter) === '' ? null : trim((string)$nipFilter);
+
+    $sql = "SELECT 
+                p.id,
+                p.nama,
+                p.nip,
+                p.instansi,
+                p.peran,
+                p.jenis_kelamin,
+                p.no_hp,
+                p.gedung,
+                p.lantai,
+                p.kamar,
+                p.bed,
+                p.checkin_date,
+                p.checkin_time,
+                p.checkout_date,
+                p.checkout_time,
+                p.status_inap,
+                p.kondisi,
+                p.catatan,
+                p.updated_at,
+                a.id AS agenda_id,
+                a.judul,
+                a.kategori,
+                a.start_date,
+                a.end_date
+            FROM peserta_penginapan p
+            LEFT JOIN agenda_kegiatan a ON a.id = p.agenda_id
+            WHERE (p.agenda_id IS NULL OR COALESCE(a.status, 'active') = 'active')";
+
+    $params = [];
+    $types = '';
+
+    if ($agendaFilter !== null) {
+        $sql .= " AND p.agenda_id = ?";
+        $params[] = $agendaFilter;
+        $types .= 'i';
+    }
+
+    if ($peranFilter !== null) {
+        $sql .= " AND p.peran = ?";
+        $params[] = $peranFilter;
+        $types .= 's';
+    }
+
+    if ($nipFilter !== null) {
+        $sql .= " AND p.nip = ?";
+        $params[] = $nipFilter;
+        $types .= 's';
+    }
+
+    if ($kategoriFilter !== null) {
+        $sql .= " AND a.kategori = ?";
+        $params[] = $kategoriFilter;
+        $types .= 's';
+    }
+
+    $sql .= " ORDER BY 
+                p.gedung,
+                CAST(COALESCE(NULLIF(p.lantai,''),'0') AS UNSIGNED),
+                CAST(COALESCE(NULLIF(p.kamar,''),'0') AS UNSIGNED),
+                p.nama";
+
+    if (empty($params)) {
+        $res = $db->query($sql);
+        if (!$res) err('Gagal query: ' . $db->error);
+    } else {
+        $st = $db->prepare($sql);
+        if (!$st) err('Prepare gagal: ' . $db->error);
+        $st->bind_param($types, ...$params);
+        $st->execute();
+        $res = $st->get_result();
+    }
+
+    $rows = [];
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+
+    ok('OK', $rows, [
+        'meta' => [
+            'synced_at' => date('Y-m-d H:i:s'),
+            'timezone' => date_default_timezone_get(),
+            'filter_agenda_id' => $agendaFilter,
+            'filter_peran' => $peranFilter,
+            'filter_kategori' => $kategoriFilter,
+            'filter_nip' => $nipFilter,
+            'count' => count($rows)
+        ]
+    ]);
+}
+
+/* ── EXTERNAL API: SYNC PELATIHAN (laskar.bsdk) ───────────
+   Endpoint untuk laskar.bsdk mengambil daftar pelatihan/agenda
+   (id, judul, kategori, tanggal) agar bisa memilih agenda_id
+   untuk difilter di endpoint sync_kamar.
+   Metode: POST, autentikasi via header X-API-Key.
+──────────────────────────────────────────────────────────── */
+if ($action === 'sync_pelatihan') {
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        err('Method tidak diizinkan, gunakan POST', null, 405);
+    }
+
+    header('Access-Control-Allow-Origin: https://laskar.bsdk.mahkamahagung.go.id');
+    header('Access-Control-Allow-Methods: POST');
+    header('Access-Control-Allow-Headers: X-API-Key, Content-Type');
+
+    if (!defined('EXTERNAL_API_KEY') || EXTERNAL_API_KEY === '') {
+        err('API key belum dikonfigurasi di server', null, 500);
+    }
+
+    $key = get_request_header('X-API-Key');
+
+    if ($key === '' || !hash_equals(EXTERNAL_API_KEY, $key)) {
+        err('Unauthorized', null, 401);
+    }
+
+    // Filter opsional: kategori (penyelenggara)
+    $jsonBody = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($jsonBody)) $jsonBody = [];
+
+    $kategoriFilter = '';
+    if (isset($_POST['kategori']) && $_POST['kategori'] !== '') {
+        $kategoriFilter = $_POST['kategori'];
+    } elseif (isset($jsonBody['kategori']) && $jsonBody['kategori'] !== '') {
+        $kategoriFilter = $jsonBody['kategori'];
+    }
+    $kategoriFilter = trim((string)$kategoriFilter) === '' ? null : trim((string)$kategoriFilter);
+
+    $validKategori = ['Kerjasama', 'Teknis', 'Menpim', 'Pustrajak'];
+    if ($kategoriFilter !== null && !in_array($kategoriFilter, $validKategori, true)) {
+        err('Kategori tidak valid. Gunakan salah satu: ' . implode(', ', $validKategori), null, 400);
+    }
+
+    $sql = "SELECT 
+                id AS agenda_id,
+                judul,
+                kategori,
+                start_date,
+                end_date
+            FROM agenda_kegiatan
+            WHERE COALESCE(status, 'active') = 'active'";
+
+    $params = [];
+    $types = '';
+
+    if ($kategoriFilter !== null) {
+        $sql .= " AND kategori = ?";
+        $params[] = $kategoriFilter;
+        $types .= 's';
+    }
+
+    $sql .= " ORDER BY start_date DESC, id DESC";
+
+    if (empty($params)) {
+        $res = $db->query($sql);
+        if (!$res) err('Gagal query: ' . $db->error);
+    } else {
+        $st = $db->prepare($sql);
+        if (!$st) err('Prepare gagal: ' . $db->error);
+        $st->bind_param($types, ...$params);
+        $st->execute();
+        $res = $st->get_result();
+    }
+
+    $rows = [];
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+
+    ok('OK', $rows, [
+        'meta' => [
+            'synced_at' => date('Y-m-d H:i:s'),
+            'timezone' => date_default_timezone_get(),
+            'filter_kategori' => $kategoriFilter,
+            'count' => count($rows)
+        ]
+    ]);
+}
+
 /* ── LIST ALL ───────────────────────────────────────── */
 if ($action === 'list') {
+    // ✅ Peserta dari kegiatan yang dibatalkan tidak dimunculkan
+    // Peserta tanpa kegiatan (agenda_id NULL) tetap ditampilkan
     $sql = "SELECT 
                 p.*, 
                 a.judul, 
@@ -104,6 +345,7 @@ if ($action === 'list') {
                 a.kategori
             FROM peserta_penginapan p
             LEFT JOIN agenda_kegiatan a ON a.id = p.agenda_id
+            WHERE (p.agenda_id IS NULL OR COALESCE(a.status, 'active') = 'active')
             ORDER BY 
                 p.gedung,
                 CAST(COALESCE(NULLIF(p.lantai,''),'0') AS UNSIGNED),
@@ -130,10 +372,21 @@ if ($action === 'list') {
 if ($action === 'list_cekin') {
     $today = date('Y-m-d');
 
+    // Rentang tampil daftar peserta:
+    // - mulai 2 hari sebelum kegiatan
+    // - selama kegiatan berlangsung
+    // - sampai 2 hari setelah kegiatan selesai
+    $beforeDays = isset($_GET['before_days']) ? max(0, min(30, (int)$_GET['before_days'])) : 2;
+    $afterDays  = isset($_GET['after_days']) ? max(0, min(30, (int)$_GET['after_days'])) : 2;
+
     $sqlAgenda = "SELECT id, judul, start_date, end_date
                   FROM agenda_kegiatan
-                  WHERE start_date <= CURDATE()
-                    AND (end_date >= CURDATE() OR end_date IS NULL)
+                  WHERE DATE_SUB(start_date, INTERVAL {$beforeDays} DAY) <= CURDATE()
+                    AND (
+                        end_date IS NULL
+                        OR DATE_ADD(end_date, INTERVAL {$afterDays} DAY) >= CURDATE()
+                    )
+                    AND COALESCE(status, 'active') = 'active'
                   ORDER BY start_date DESC, id DESC";
 
     $resA = $db->query($sqlAgenda);
@@ -145,20 +398,8 @@ if ($action === 'list_cekin') {
     $isFallback = false;
 
     if (empty($agendas)) {
-        $isFallback = true;
-
-        $sqlFb = "SELECT id, judul, start_date, end_date
-                  FROM agenda_kegiatan
-                  ORDER BY 
-                    COALESCE(end_date, start_date) DESC,
-                    start_date DESC,
-                    id DESC
-                  LIMIT 3";
-
-        $resFb = $db->query($sqlFb);
-        if (!$resFb) err('Gagal query fallback agenda: ' . $db->error);
-
-        while ($a = $resFb->fetch_assoc()) $agendas[] = $a;
+        // Tidak menampilkan agenda lama di luar rentang H-2 sampai H+2.
+        $isFallback = false;
     }
 
     $result = [];
@@ -231,7 +472,95 @@ if ($action === 'list_cekin') {
         'is_fallback' => $isFallback,
         'server_date' => $today,
         'server_time' => date('Y-m-d H:i:s'),
-        'timezone' => date_default_timezone_get()
+        'timezone' => date_default_timezone_get(),
+        'before_days' => $beforeDays,
+        'after_days' => $afterDays
+    ]);
+}
+
+/* ── SEARCH ALL PESERTA / RIWAYAT ─────────────────── */
+if ($action === 'search_peserta') {
+    $q = clean($_GET['q'] ?? '');
+    if ($q === '') {
+        ok('OK', [], [
+            'meta' => [
+                'query' => '',
+                'count' => 0,
+                'limit' => 100
+            ]
+        ]);
+    }
+
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
+    $limit = max(1, min(200, $limit));
+    $like = '%' . $q . '%';
+
+    $sql = "SELECT
+                p.id,
+                p.agenda_id,
+                p.nama,
+                p.instansi,
+                p.nip,
+                p.no_hp,
+                p.peran,
+                p.jenis_kelamin,
+                p.gedung,
+                p.lantai,
+                p.kamar,
+                p.bed,
+                p.checkin_date,
+                p.checkin_time,
+                p.checkout_date,
+                p.checkout_time,
+                p.status_inap,
+                p.kondisi,
+                p.catatan,
+                p.updated_at,
+                a.judul,
+                a.start_date,
+                a.end_date,
+                CASE
+                    WHEN a.id IS NOT NULL
+                     AND DATE_SUB(a.start_date, INTERVAL 2 DAY) <= CURDATE()
+                     AND (a.end_date IS NULL OR DATE_ADD(a.end_date, INTERVAL 2 DAY) >= CURDATE())
+                     AND COALESCE(a.status, 'active') = 'active'
+                    THEN 1 ELSE 0
+                END AS can_operate
+            FROM peserta_penginapan p
+            LEFT JOIN agenda_kegiatan a ON a.id = p.agenda_id
+            WHERE p.nama LIKE ?
+               OR COALESCE(p.nip, '') LIKE ?
+               OR COALESCE(p.instansi, '') LIKE ?
+               OR COALESCE(p.kamar, '') LIKE ?
+               OR COALESCE(a.judul, '') LIKE ?
+            ORDER BY
+                CASE WHEN a.end_date IS NULL THEN 0 ELSE 1 END,
+                COALESCE(a.end_date, a.start_date) DESC,
+                a.start_date DESC,
+                p.nama ASC
+            LIMIT ?";
+
+    $st = $db->prepare($sql);
+    if (!$st) err('Prepare pencarian gagal: ' . $db->error);
+
+    $st->bind_param('sssssi', $like, $like, $like, $like, $like, $limit);
+    if (!$st->execute()) err('Pencarian gagal: ' . $st->error);
+
+    $rs = $st->get_result();
+    $rows = [];
+    while ($row = $rs->fetch_assoc()) {
+        $row['can_operate'] = (bool)$row['can_operate'];
+        $rows[] = $row;
+    }
+
+    ok('OK', $rows, [
+        'meta' => [
+            'query' => $q,
+            'count' => count($rows),
+            'limit' => $limit,
+            'server_date' => date('Y-m-d'),
+            'server_time' => date('Y-m-d H:i:s')
+        ]
     ]);
 }
 
@@ -264,8 +593,8 @@ if ($action === 'check') {
     $nip    = clean($_GET['nip'] ?? '');
     $kamar  = clean($_GET['kamar'] ?? '');
     $gedung = clean($_GET['gedung'] ?? '');
-    $ci     = normalize_date_value($_GET['checkin_date'] ?? '');
-    $co     = normalize_date_value($_GET['checkout_date'] ?? '');
+    $ci     = clean($_GET['checkin_date'] ?? '');
+    $co     = clean($_GET['checkout_date'] ?? '');
     $excl   = (int)($_GET['exclude_id'] ?? 0);
 
     $result = [
@@ -300,7 +629,7 @@ if ($action === 'check') {
         $st = $db->prepare($q);
         if (!$st) err('Prepare gagal: ' . $db->error);
 
-        bind_params_dynamic($st, $types, $args);
+        $st->bind_param($types, ...$args);
         $st->execute();
         $rs = $st->get_result();
 
@@ -328,10 +657,10 @@ if ($action === 'save') {
     $lantai    = nullable($_POST['lantai'] ?? '');
     $kamar     = nullable(upper($_POST['kamar'] ?? ''));
     $bed       = nullable(upper($_POST['bed'] ?? ''));
-    $ci_date   = normalize_date_value($_POST['checkin_date'] ?? '');
-    $ci_time   = normalize_time_value($_POST['checkin_time'] ?? '');
-    $co_date   = normalize_date_value($_POST['checkout_date'] ?? '');
-    $co_time   = normalize_time_value($_POST['checkout_time'] ?? '');
+    $ci_date   = nullable($_POST['checkin_date'] ?? '');
+    $ci_time   = nullable($_POST['checkin_time'] ?? '');
+    $co_date   = nullable($_POST['checkout_date'] ?? '');
+    $co_time   = nullable($_POST['checkout_time'] ?? '');
     $status    = clean($_POST['status_inap'] ?? 'Belum Check-in');
     $kondisi   = tc($_POST['kondisi'] ?? '');
     $catatan   = nullable($_POST['catatan'] ?? '');
@@ -345,18 +674,6 @@ if ($action === 'save') {
 
     if (!in_array($status, ['Belum Check-in', 'Check-in', 'Check-out'], true)) {
         $status = 'Belum Check-in';
-    }
-
-    /* AUTO FILL TANGGAL CHECK-IN / CHECK-OUT */
-    $today = date('Y-m-d');
-
-    if ($status === 'Check-in') {
-        if (!$ci_date) $ci_date = $today;
-    }
-
-    if ($status === 'Check-out') {
-        if (!$ci_date) $ci_date = $today;
-        if (!$co_date) $co_date = $today;
     }
 
     if ($nip) {
@@ -388,7 +705,7 @@ if ($action === 'save') {
         $st = $db->prepare($q);
         if (!$st) err('Prepare gagal: ' . $db->error);
 
-        bind_params_dynamic($st, $types, $args);
+        $st->bind_param($types, ...$args);
         $st->execute();
 
         $penghuni = [];
@@ -510,10 +827,10 @@ if ($action === 'batch_save') {
         $lantai = nullable(isset($r['lantai']) ? $r['lantai'] : '');
         $kamar = nullable(upper(isset($r['kamar']) ? $r['kamar'] : ''));
         $bed = nullable(upper(isset($r['bed']) ? $r['bed'] : ''));
-        $ci_date = normalize_date_value(isset($r['checkin_date']) ? $r['checkin_date'] : '');
-        $ci_time = normalize_time_value(isset($r['checkin_time']) ? $r['checkin_time'] : '');
-        $co_date = normalize_date_value(isset($r['checkout_date']) ? $r['checkout_date'] : '');
-        $co_time = normalize_time_value(isset($r['checkout_time']) ? $r['checkout_time'] : '');
+        $ci_date = nullable(isset($r['checkin_date']) ? $r['checkin_date'] : '');
+        $ci_time = nullable(isset($r['checkin_time']) ? $r['checkin_time'] : '');
+        $co_date = nullable(isset($r['checkout_date']) ? $r['checkout_date'] : '');
+        $co_time = nullable(isset($r['checkout_time']) ? $r['checkout_time'] : '');
         $status = clean(isset($r['status_inap']) ? $r['status_inap'] : 'Belum Check-in');
         $kondisi = tc(isset($r['kondisi']) ? $r['kondisi'] : '');
         $catatan = nullable(isset($r['catatan']) ? $r['catatan'] : '');
@@ -557,7 +874,7 @@ if ($action === 'batch_save') {
     $st = $db->prepare($sql);
     if (!$st) err('Prepare batch gagal: ' . $db->error);
 
-    bind_params_dynamic($st, $types, $vals);
+    $st->bind_param($types, ...$vals);
 
     if (!$st->execute()) {
         err('Batch gagal: ' . $st->error);
@@ -598,7 +915,7 @@ if ($action === 'delete_batch') {
     if (!$st) err('Prepare gagal: ' . $db->error);
 
     $types = str_repeat('i', count($ids));
-    bind_params_dynamic($st, $types, $ids);
+    $st->bind_param($types, ...array_values($ids));
 
     if (!$st->execute()) err('Gagal: ' . $st->error);
     ok(count($ids) . ' data dihapus');
