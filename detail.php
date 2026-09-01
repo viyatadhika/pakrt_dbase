@@ -9,6 +9,145 @@ if (!isset($_SESSION['user'])) {
 
 include 'config.php';
 
+function isAdminUser(): bool
+{
+    $user = $_SESSION['user'] ?? [];
+    $roleKeys = ['role', 'level', 'user_role', 'tipe_user', 'akses'];
+    $adminValues = ['admin', 'administrator', 'superadmin', 'super_admin'];
+
+    foreach ($roleKeys as $key) {
+        if (isset($user[$key]) && in_array(strtolower(trim((string)$user[$key])), $adminValues, true)) return true;
+        if (isset($_SESSION[$key]) && in_array(strtolower(trim((string)$_SESSION[$key])), $adminValues, true)) return true;
+    }
+
+    foreach (['is_admin', 'admin'] as $key) {
+        if (isset($user[$key]) && in_array(strtolower(trim((string)$user[$key])), ['1', 'true', 'yes', 'admin'], true)) return true;
+        if (isset($_SESSION[$key]) && in_array(strtolower(trim((string)$_SESSION[$key])), ['1', 'true', 'yes', 'admin'], true)) return true;
+    }
+    return false;
+}
+
+function checklistPhotoDiskPath(string $raw): ?string
+{
+    if ($raw === '') return null;
+    $filename = basename($raw);
+    $candidates = [
+        $raw,
+        __DIR__ . '/uploads/' . $filename,
+        dirname(__DIR__) . '/uploads/' . $filename,
+    ];
+    foreach ($candidates as $path) {
+        if ($path && is_file($path)) return $path;
+    }
+    return null;
+}
+
+$isAdmin = isAdminUser();
+if (empty($_SESSION['csrf_admin_history'])) {
+    $_SESSION['csrf_admin_history'] = bin2hex(random_bytes(32));
+}
+$csrfToken = $_SESSION['csrf_admin_history'];
+
+// Aksi hapus hanya diproses untuk admin dan sebelum header HTML dikirim.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_action'])) {
+    if (!$isAdmin) {
+        http_response_code(403);
+        exit('Akses ditolak.');
+    }
+    if (!hash_equals($csrfToken, (string)($_POST['csrf_token'] ?? ''))) {
+        http_response_code(419);
+        exit('Token keamanan tidak valid. Muat ulang halaman lalu coba kembali.');
+    }
+
+    $action = (string)$_POST['admin_action'];
+    $formId = (int)($_POST['form_id'] ?? 0);
+    if ($formId <= 0) {
+        http_response_code(400);
+        exit('ID riwayat tidak valid.');
+    }
+
+    try {
+        if ($action === 'delete_item') {
+            $itemId = (int)($_POST['item_id'] ?? 0);
+            $stmt = $conn->prepare('DELETE FROM checklist_items WHERE id=? AND form_id=?');
+            $stmt->bind_param('ii', $itemId, $formId);
+            $stmt->execute();
+            $stmt->close();
+            header('Location: ' . basename($_SERVER['PHP_SELF']) . '?id=' . $formId . '&updated=1');
+            exit;
+        }
+
+        if ($action === 'delete_photo') {
+            $fotoId = (int)($_POST['foto_id'] ?? 0);
+            $stmt = $conn->prepare('SELECT foto_path FROM checklist_fotos WHERE id=? AND form_id=? LIMIT 1');
+            $stmt->bind_param('ii', $fotoId, $formId);
+            $stmt->execute();
+            $photo = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if (!$photo) throw new Exception('Foto tidak ditemukan.');
+
+            $diskPath = checklistPhotoDiskPath((string)$photo['foto_path']);
+            $conn->begin_transaction();
+            $stmt = $conn->prepare('DELETE FROM checklist_reactions WHERE foto_id=?');
+            $stmt->bind_param('i', $fotoId);
+            $stmt->execute();
+            $stmt->close();
+            $stmt = $conn->prepare('DELETE FROM checklist_fotos WHERE id=? AND form_id=?');
+            $stmt->bind_param('ii', $fotoId, $formId);
+            $stmt->execute();
+            $stmt->close();
+            $conn->commit();
+
+            if ($diskPath && is_file($diskPath)) @unlink($diskPath);
+            header('Location: ' . basename($_SERVER['PHP_SELF']) . '?id=' . $formId . '&updated=1');
+            exit;
+        }
+
+        if ($action === 'delete_history') {
+            $photoPaths = [];
+            $stmt = $conn->prepare('SELECT foto_path FROM checklist_fotos WHERE form_id=?');
+            $stmt->bind_param('i', $formId);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            while ($p = $res->fetch_assoc()) $photoPaths[] = (string)$p['foto_path'];
+            $stmt->close();
+
+            $conn->begin_transaction();
+            foreach (
+                [
+                    'DELETE FROM checklist_reactions WHERE form_id=?',
+                    'DELETE FROM checklist_fotos WHERE form_id=?',
+                    'DELETE FROM checklist_items WHERE form_id=?',
+                    'DELETE FROM checklist_forms WHERE id=?'
+                ] as $sql
+            ) {
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param('i', $formId);
+                $stmt->execute();
+                $stmt->close();
+            }
+            $conn->commit();
+
+            foreach ($photoPaths as $raw) {
+                $diskPath = checklistPhotoDiskPath($raw);
+                if ($diskPath && is_file($diskPath)) @unlink($diskPath);
+            }
+            header('Location: riwayat.php?deleted=1');
+            exit;
+        }
+    } catch (Throwable $e) {
+        if ($conn->errno === 0) {
+            // no-op
+        }
+        try {
+            $conn->rollback();
+        } catch (Throwable $ignored) {
+        }
+        http_response_code(500);
+        exit('Gagal menghapus data: ' . htmlspecialchars($e->getMessage()));
+    }
+}
+
 $title = "Detail Riwayat";
 include 'header.php';
 
@@ -42,11 +181,11 @@ if (!$data) {
 }
 
 $items = [];
-$stmtItems = $conn->prepare("SELECT area,item FROM checklist_items WHERE form_id=? ORDER BY id ASC");
+$stmtItems = $conn->prepare("SELECT id,area,item FROM checklist_items WHERE form_id=? ORDER BY id ASC");
 $stmtItems->bind_param("i", $id);
 $stmtItems->execute();
 $resItems = $stmtItems->get_result();
-while ($r = $resItems->fetch_assoc()) $items[$r['area']][] = $r['item'];
+while ($r = $resItems->fetch_assoc()) $items[$r['area']][] = ['id' => (int)$r['id'], 'item' => $r['item']];
 $stmtItems->close();
 
 $photos = [];
@@ -262,6 +401,57 @@ $formTypeLower = strtolower(trim($data['form_type']));
     .hidden {
         display: none;
     }
+
+    .admin-delete-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 1px solid #fecaca;
+        background: #fff1f2;
+        color: #be123c;
+        border-radius: 10px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .admin-delete-btn:hover {
+        background: #ffe4e6;
+    }
+
+    .admin-delete-btn.small {
+        padding: 3px 7px;
+        font-size: 11px;
+        border-radius: 8px;
+    }
+
+    .checklist-admin-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .checklist-admin-row .item-text {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .photo-admin-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 8px;
+    }
+
+    .admin-danger-zone {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid #fee2e2;
+        display: flex;
+        justify-content: flex-end;
+    }
 </style>
 
 <div class="detail-header-bar">
@@ -305,7 +495,18 @@ $formTypeLower = strtolower(trim($data['form_type']));
                     foreach ($items as $area => $list):
                         echo "<p class='area-title'>" . htmlspecialchars($area) . "</p>";
                         echo "<ul class='list-disc ml-5 text-gray-800'>";
-                        foreach ($list as $it) echo "<li>" . htmlspecialchars($it) . "</li>";
+                        foreach ($list as $it) {
+                            echo "<li><div class='checklist-admin-row'><span class='item-text'>" . htmlspecialchars($it['item']) . "</span>";
+                            if ($isAdmin) {
+                                echo "<form method='POST' onsubmit=\"return confirm('Hapus checklist ini?')\">";
+                                echo "<input type='hidden' name='csrf_token' value='" . htmlspecialchars($csrfToken) . "'>";
+                                echo "<input type='hidden' name='admin_action' value='delete_item'>";
+                                echo "<input type='hidden' name='form_id' value='" . (int)$id . "'>";
+                                echo "<input type='hidden' name='item_id' value='" . (int)$it['id'] . "'>";
+                                echo "<button type='submit' class='admin-delete-btn small'><i class='fa-solid fa-trash'></i> Hapus</button></form>";
+                            }
+                            echo "</div></li>";
+                        }
                         echo "</ul>";
                     endforeach;
                 else:
@@ -352,6 +553,18 @@ $formTypeLower = strtolower(trim($data['form_type']));
                         <img src="<?= htmlspecialchars($src) ?>" class="photo-full"
                             data-src="<?= htmlspecialchars($src) ?>">
 
+                        <?php if ($isAdmin): ?>
+                            <div class="photo-admin-actions">
+                                <form method="POST" onsubmit="return confirm('Hapus foto ini? Foto dan reaction terkait akan dihapus permanen.')">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                                    <input type="hidden" name="admin_action" value="delete_photo">
+                                    <input type="hidden" name="form_id" value="<?= (int)$id ?>">
+                                    <input type="hidden" name="foto_id" value="<?= $fotoId ?>">
+                                    <button type="submit" class="admin-delete-btn"><i class="fa-solid fa-trash"></i> Hapus Foto</button>
+                                </form>
+                            </div>
+                        <?php endif; ?>
+
                         <div class="reaction-picker" data-foto-id="<?= $fotoId ?>">
                             <?php foreach (['👍', '❤️', '😂', '😮', '😢', '🙏'] as $e): ?>
                                 <span
@@ -387,6 +600,17 @@ $formTypeLower = strtolower(trim($data['form_type']));
                     </div>
             <?php endforeach;
             endforeach; ?>
+        <?php endif; ?>
+
+        <?php if ($isAdmin): ?>
+            <div class="admin-danger-zone">
+                <form method="POST" onsubmit="return confirm('Hapus SELURUH riwayat ini? Semua checklist, foto, dan reaction akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.')">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                    <input type="hidden" name="admin_action" value="delete_history">
+                    <input type="hidden" name="form_id" value="<?= (int)$id ?>">
+                    <button type="submit" class="admin-delete-btn"><i class="fa-solid fa-triangle-exclamation"></i> Hapus Seluruh Riwayat</button>
+                </form>
+            </div>
         <?php endif; ?>
     </div>
 </div>

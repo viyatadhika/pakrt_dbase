@@ -7,6 +7,98 @@ if (!isset($_SESSION['user'])) {
 
 include 'config.php';
 
+function isAdminUser(): bool
+{
+    $user = $_SESSION['user'] ?? [];
+    $roleKeys = ['role', 'level', 'user_role', 'tipe_user', 'akses'];
+    $adminValues = ['admin', 'administrator', 'superadmin', 'super_admin'];
+    foreach ($roleKeys as $key) {
+        if (isset($user[$key]) && in_array(strtolower(trim((string)$user[$key])), $adminValues, true)) return true;
+        if (isset($_SESSION[$key]) && in_array(strtolower(trim((string)$_SESSION[$key])), $adminValues, true)) return true;
+    }
+    foreach (['is_admin', 'admin'] as $key) {
+        if (isset($user[$key]) && in_array(strtolower(trim((string)$user[$key])), ['1', 'true', 'yes', 'admin'], true)) return true;
+        if (isset($_SESSION[$key]) && in_array(strtolower(trim((string)$_SESSION[$key])), ['1', 'true', 'yes', 'admin'], true)) return true;
+    }
+    return false;
+}
+
+function checklistPhotoDiskPath(string $raw): ?string
+{
+    if ($raw === '') return null;
+    $filename = basename($raw);
+    foreach ([$raw, __DIR__ . '/uploads/' . $filename, dirname(__DIR__) . '/uploads/' . $filename] as $path) {
+        if ($path && is_file($path)) return $path;
+    }
+    return null;
+}
+
+$isAdmin = isAdminUser();
+if (empty($_SESSION['csrf_admin_history'])) {
+    $_SESSION['csrf_admin_history'] = bin2hex(random_bytes(32));
+}
+$csrfToken = $_SESSION['csrf_admin_history'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['admin_action'] ?? '') === 'delete_history') {
+    if (!$isAdmin) {
+        http_response_code(403);
+        exit('Akses ditolak.');
+    }
+    if (!hash_equals($csrfToken, (string)($_POST['csrf_token'] ?? ''))) {
+        http_response_code(419);
+        exit('Token keamanan tidak valid. Muat ulang halaman lalu coba kembali.');
+    }
+
+    $formId = (int)($_POST['form_id'] ?? 0);
+    if ($formId <= 0) {
+        http_response_code(400);
+        exit('ID riwayat tidak valid.');
+    }
+
+    $photoPaths = [];
+    try {
+        $stmt = $conn->prepare('SELECT foto_path FROM checklist_fotos WHERE form_id=?');
+        $stmt->bind_param('i', $formId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($p = $res->fetch_assoc()) $photoPaths[] = (string)$p['foto_path'];
+        $stmt->close();
+
+        $conn->begin_transaction();
+        foreach (
+            [
+                'DELETE FROM checklist_reactions WHERE form_id=?',
+                'DELETE FROM checklist_fotos WHERE form_id=?',
+                'DELETE FROM checklist_items WHERE form_id=?',
+                'DELETE FROM checklist_forms WHERE id=?'
+            ] as $sql
+        ) {
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('i', $formId);
+            $stmt->execute();
+            $stmt->close();
+        }
+        $conn->commit();
+
+        foreach ($photoPaths as $raw) {
+            $diskPath = checklistPhotoDiskPath($raw);
+            if ($diskPath && is_file($diskPath)) @unlink($diskPath);
+        }
+
+        $params = $_GET;
+        $params['deleted'] = 1;
+        header('Location: ' . basename($_SERVER['PHP_SELF']) . '?' . http_build_query($params));
+        exit;
+    } catch (Throwable $e) {
+        try {
+            $conn->rollback();
+        } catch (Throwable $ignored) {
+        }
+        http_response_code(500);
+        exit('Gagal menghapus riwayat: ' . htmlspecialchars($e->getMessage()));
+    }
+}
+
 $activePage = basename($_SERVER['PHP_SELF']);
 
 $title      = "Riwayat Checklist";
@@ -74,6 +166,12 @@ $listPetugas = $conn->query("
     <h2 class="text-xl font-bold text-sky-700">Riwayat Checklist</h2>
     <p class="text-sm text-gray-500 mt-1">Semua aktivitas checklist petugas</p>
 </div>
+
+<?php if (isset($_GET['deleted'])): ?>
+    <div class="mx-6 mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+        <i class="fa-solid fa-check-circle mr-1"></i> Riwayat berhasil dihapus.
+    </div>
+<?php endif; ?>
 
 <!-- ==================== FILTER BOX ==================== -->
 <form method="GET" class="filter-box">
@@ -262,11 +360,26 @@ $filterUsed = ($tgl_awal || $tgl_akhir || $petugas || $form_type);
                         </div>
 
                         <!-- TOMBOL LIHAT DETAIL -->
-                        <a href="<?= htmlspecialchars($detailUrl); ?>"
-                            class="inline-flex items-center gap-2 text-xs font-medium text-sky-600 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-full transition">
-                            <i class="fa-solid fa-eye text-[11px]"></i>
-                            Lihat Detail
-                        </a>
+                        <div class="flex items-center gap-2">
+                            <?php if ($isAdmin): ?>
+                                <form method="POST" onsubmit="return confirm('Hapus seluruh riwayat ini? Semua checklist, foto, dan reaction terkait akan dihapus permanen.')">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                                    <input type="hidden" name="admin_action" value="delete_history">
+                                    <input type="hidden" name="form_id" value="<?= (int)$row['id'] ?>">
+                                    <button type="submit"
+                                        class="inline-flex items-center gap-2 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 px-3 py-1.5 rounded-full transition">
+                                        <i class="fa-solid fa-trash text-[11px]"></i>
+                                        Hapus
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+
+                            <a href="<?= htmlspecialchars($detailUrl); ?>"
+                                class="inline-flex items-center gap-2 text-xs font-medium text-sky-600 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-full transition">
+                                <i class="fa-solid fa-eye text-[11px]"></i>
+                                Lihat Detail
+                            </a>
+                        </div>
 
                     </div>
 
