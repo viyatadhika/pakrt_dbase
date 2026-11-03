@@ -109,6 +109,24 @@ $namaDepan = explode(' ', trim($namaLengkap))[0];
                 </div>
             </a>
 
+            <?php if (strtolower($_SESSION['user']['role'] ?? '') === 'admin') : ?>
+                <!-- MANAJEMEN PASSWORD USER - KHUSUS ADMIN -->
+                <a
+                    href="admin_user_password.php"
+                    class="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-2xl
+               shadow-sm hover:shadow-md hover:bg-amber-50 transition-all">
+
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                        <i class="fa-solid fa-key text-amber-600 text-lg"></i>
+                    </div>
+
+                    <div>
+                        <p class="text-sm font-medium text-gray-800">Manajemen Password User</p>
+                        <p class="text-xs text-gray-500">Ubah password akun pengguna</p>
+                    </div>
+                </a>
+            <?php endif; ?>
+
 
             <!-- Nomor Ext Telepon -->
             <a
