@@ -697,14 +697,22 @@ if ($listResult) {
             <div class="full"><label>Role</label><select class="input" id="role" name="role" required>
                 <option value="admin">Admin</option>
                 <option value="pimpinan">Pimpinan</option>
+                <option value="petugas">Petugas</option>
+                <option value="security">Security</option>
+                <option value="ob">OB / Cleaning Service</option>
+                <option value="teknisi">Teknisi</option>
                 <option value="koordinator">Koordinator</option>
+                <option value="poliklinik">Poliklinik</option>
+                <option value="gudang">Gudang</option>
+                <option value="driver">Driver</option>
+                <option value="perpustakaan">Perpustakaan</option>
+                <option value="sekretariat">Sekretariat</option>
                 <option value="supervisor">Supervisor</option>
                 <option value="admin_ob">Admin OB</option>
-                <option value="ob">OB / Cleaning Service</option>
-                <option value="petugas">Petugas</option>
-                <option value="ksp">KSP</option>
-                <option value="kasir">Kasir</option>
-                <option value="rental">Rental</option>
+                <option value="admin_sekretariat">Admin Sekretariat</option>
+                <option value="admin_security">Admin Security</option>
+                <option value="ob_outsourcing">OB Outsourcing</option>
+                <option value="spv_outsourcing">SPV Outsourcing</option>
               </select></div>
           </div>
           <div class="password-section"><strong><i class="fa-solid fa-key"></i> Reset Password</strong>
