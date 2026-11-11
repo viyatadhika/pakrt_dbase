@@ -4,7 +4,7 @@ header("Pragma: no-cache");
 header("Expires: 0");
 
 if (!defined('CSS_VERSION')) {
-    define('CSS_VERSION', '1.0.6');
+    define('CSS_VERSION', '1.0.7');
 }
 
 if (!isset($title) || trim((string)$title) === '') {
@@ -18,15 +18,16 @@ if (!isset($title) || trim((string)$title) === '') {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff">
+    <meta name="color-scheme" content="light">
 
     <title><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
 
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0ea5e9">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="PAK RT">
 
     <!-- Icon -->
@@ -48,9 +49,10 @@ if (!isset($title) || trim((string)$title) === '') {
     <script>
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", function() {
-                navigator.serviceWorker.register("service-worker.js")
+                navigator.serviceWorker.register("/pakrt/service-worker.js", { scope: "/pakrt/", updateViaCache: "none" })
                     .then(function(registration) {
                         console.log("Service Worker aktif:", registration.scope);
+                        registration.update();
                     })
                     .catch(function(error) {
                         console.error("Service Worker gagal:", error);

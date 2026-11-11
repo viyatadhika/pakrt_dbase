@@ -1,4 +1,5 @@
-const CACHE_NAME = "pakrt-v2";
+const CACHE_NAME = "pakrt-v3";
+const APP_SCOPE = "/pakrt/";
 
 self.addEventListener("install", function (event) {
   self.skipWaiting();
@@ -28,8 +29,12 @@ self.addEventListener("activate", function (event) {
 self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
 
+  var url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.indexOf(APP_SCOPE) !== 0) return;
+
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: "no-store" })
       .then(function (response) {
         return response;
       })
